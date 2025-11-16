@@ -164,12 +164,21 @@ CREATE TABLE proposal_meeting_occurrences (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ユーザーテーブル (ログインユーザー管理)
+CREATE TABLE users (
+    user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255),
+    picture TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_login_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- インデックスの作成
 CREATE INDEX idx_conferences_governing_body ON conferences(governing_body_id);
 CREATE INDEX idx_meetings_conference ON meetings(conference_id);
 CREATE INDEX idx_minutes_meeting ON minutes(meeting_id);
 CREATE INDEX idx_politicians_political_party ON politicians(political_party_id);
-CREATE INDEX idx_politicians_speaker ON politicians(speaker_id);
 CREATE INDEX idx_pledges_politician ON pledges(politician_id);
 CREATE INDEX idx_party_membership_politician ON party_membership_history(politician_id);
 CREATE INDEX idx_party_membership_party ON party_membership_history(political_party_id);
@@ -181,6 +190,8 @@ CREATE INDEX idx_politician_affiliations_politician ON politician_affiliations(p
 CREATE INDEX idx_politician_affiliations_conference ON politician_affiliations(conference_id);
 CREATE INDEX idx_proposal_meeting_occurrences_proposal ON proposal_meeting_occurrences(proposal_id);
 CREATE INDEX idx_proposal_meeting_occurrences_meeting ON proposal_meeting_occurrences(meeting_id);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_last_login_at ON users(last_login_at);
 
 -- トリガー関数：updated_atカラムを自動更新
 CREATE OR REPLACE FUNCTION update_updated_at_column()

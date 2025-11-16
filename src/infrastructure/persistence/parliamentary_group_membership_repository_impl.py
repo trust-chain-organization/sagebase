@@ -2,6 +2,7 @@
 
 from datetime import date
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -86,6 +87,7 @@ class ParliamentaryGroupMembershipRepositoryImpl(
         group_id: int,
         start_date: date,
         role: str | None = None,
+        created_by_user_id: UUID | None = None,
     ) -> ParliamentaryGroupMembershipEntity:
         """Create a new membership."""
         # Check if already exists using ORM
@@ -108,6 +110,7 @@ class ParliamentaryGroupMembershipRepositoryImpl(
             parliamentary_group_id=group_id,
             start_date=start_date,
             role=role,
+            created_by_user_id=created_by_user_id,
         )
         self.session.add(new_model)
         await self.session.flush()  # Get the ID without committing
@@ -122,6 +125,7 @@ class ParliamentaryGroupMembershipRepositoryImpl(
         start_date: date,
         role: str | None = None,
         end_date: date | None = None,
+        created_by_user_id: UUID | None = None,
     ) -> ParliamentaryGroupMembershipEntity:
         """Add a new parliamentary group membership.
 
@@ -131,6 +135,7 @@ class ParliamentaryGroupMembershipRepositoryImpl(
             start_date: Membership start date
             role: Member role (optional)
             end_date: Membership end date (optional)
+            created_by_user_id: User ID who created the membership (optional)
 
         Returns:
             Created membership entity
@@ -158,6 +163,7 @@ class ParliamentaryGroupMembershipRepositoryImpl(
             start_date=start_date,
             end_date=end_date,
             role=role,
+            created_by_user_id=created_by_user_id,
         )
         self.session.add(new_model)
         await self.session.flush()
@@ -219,6 +225,7 @@ class ParliamentaryGroupMembershipRepositoryImpl(
             start_date=model.start_date,
             end_date=model.end_date,
             role=model.role,
+            created_by_user_id=model.created_by_user_id,
         )
 
     def _to_model(
@@ -234,6 +241,7 @@ class ParliamentaryGroupMembershipRepositoryImpl(
             start_date=entity.start_date,
             end_date=entity.end_date,
             role=entity.role,
+            created_by_user_id=entity.created_by_user_id,
             created_at=datetime.now() if not entity.id else None,
             updated_at=datetime.now(),
         )
@@ -249,3 +257,4 @@ class ParliamentaryGroupMembershipRepositoryImpl(
         model.start_date = entity.start_date
         model.end_date = entity.end_date
         model.role = entity.role
+        model.created_by_user_id = entity.created_by_user_id

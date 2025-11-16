@@ -1,11 +1,15 @@
 """View for parliamentary group management."""
 
+import asyncio
 from datetime import date
 from typing import Any, cast
 
 import pandas as pd
 import streamlit as st
 
+from src.application.usecases.authenticate_user_usecase import AuthenticateUserUseCase
+from src.infrastructure.di.container import Container
+from src.interfaces.web.streamlit.auth import google_sign_in
 from src.interfaces.web.streamlit.presenters.parliamentary_group_member_presenter import (  # noqa: E501
     ParliamentaryGroupMemberPresenter,
 )
@@ -976,6 +980,17 @@ def render_create_memberships_subtab(presenter: ParliamentaryGroupMemberPresente
         "（parliamentary_group_memberships）を作成します"
     )
 
+    # Get user info from session (from Google Sign-In)
+    user_info = google_sign_in()
+    if not user_info:
+        st.warning("ユーザー情報を取得できません。ログインしてください。")
+        return
+
+    # Display current user
+    user_name = user_info.get("name", "Unknown")
+    user_email = user_info.get("email", "Unknown")
+    st.info(f"実行ユーザー: {user_name} ({user_email})")
+
     # Get parliamentary groups
     parliamentary_groups = presenter.get_all_parliamentary_groups()
 
@@ -1028,13 +1043,32 @@ def render_create_memberships_subtab(presenter: ParliamentaryGroupMemberPresente
         # Creation button
         if st.button("メンバーシップ作成", type="primary"):
             with st.spinner("メンバーシップを作成中..."):
-                created_count, skipped_count, created_memberships = (
-                    presenter.create_memberships(
-                        parliamentary_group_id=group_id,
-                        min_confidence=min_confidence,
-                        start_date=start_date,
+                try:
+                    # Authenticate user and get user_id
+                    container = Container()
+                    auth_usecase = AuthenticateUserUseCase(
+                        user_repository=container.repositories.user_repository()
                     )
-                )
+
+                    email = user_info.get("email", "")
+                    name = user_info.get("name")
+                    user = asyncio.run(auth_usecase.execute(email=email, name=name))
+
+                    # Create memberships with user_id
+                    created_count, skipped_count, created_memberships = (
+                        presenter.create_memberships(
+                            parliamentary_group_id=group_id,
+                            min_confidence=min_confidence,
+                            start_date=start_date,
+                            user_id=user.user_id,
+                        )
+                    )
+                except Exception as e:
+                    st.error(f"エラーが発生しました: {e}")
+                    import traceback
+
+                    st.code(traceback.format_exc())
+                    return
 
                 # Display results
                 if created_count > 0:
