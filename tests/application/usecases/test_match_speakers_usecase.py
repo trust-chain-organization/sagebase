@@ -277,3 +277,102 @@ class TestMatchSpeakersUseCase:
         assert len(results) == 1
         assert results[0].matched_politician_id is None
         assert results[0].matching_method == "none"
+
+    @pytest.mark.asyncio
+    async def test_execute_saves_user_id_on_successful_match(
+        self, use_case, mock_speaker_repo, mock_politician_repo
+    ):
+        """Test that user_id is saved when matching succeeds."""
+        from uuid import uuid4
+
+        # Setup
+        test_user_id = uuid4()
+        speaker = Speaker(id=1, name="山田太郎", is_politician=True)
+        politician = Politician(id=10, name="山田太郎", political_party_id=1)
+
+        mock_speaker_repo.get_politicians.return_value = [speaker]
+        mock_politician_repo.search_by_name.return_value = [politician]
+
+        # Mock the update method to capture the updated speaker
+        updated_speaker = None
+
+        async def capture_update(s):
+            nonlocal updated_speaker
+            updated_speaker = s
+            return s
+
+        mock_speaker_repo.update = capture_update
+
+        # Execute
+        results = await use_case.execute(use_llm=False, user_id=test_user_id)
+
+        # Verify
+        assert updated_speaker is not None
+        assert updated_speaker.matched_by_user_id == test_user_id
+        assert updated_speaker.politician_id == 10
+        assert len(results) == 1
+        assert results[0].matched_politician_id == 10
+
+    @pytest.mark.asyncio
+    async def test_execute_without_user_id(
+        self, use_case, mock_speaker_repo, mock_politician_repo
+    ):
+        """Test that matching works when user_id is None."""
+        # Setup
+        speaker = Speaker(id=1, name="山田太郎", is_politician=True)
+        politician = Politician(id=10, name="山田太郎", political_party_id=1)
+
+        mock_speaker_repo.get_politicians.return_value = [speaker]
+        mock_politician_repo.search_by_name.return_value = [politician]
+
+        updated_speaker = None
+
+        async def capture_update(s):
+            nonlocal updated_speaker
+            updated_speaker = s
+            return s
+
+        mock_speaker_repo.update = capture_update
+
+        # Execute without user_id
+        results = await use_case.execute(use_llm=False, user_id=None)
+
+        # Verify
+        assert updated_speaker is not None
+        assert updated_speaker.matched_by_user_id is None  # NULL is acceptable
+        assert updated_speaker.politician_id == 10
+        assert len(results) == 1
+        assert results[0].matched_politician_id == 10
+
+    @pytest.mark.asyncio
+    async def test_execute_does_not_update_user_id_for_existing_match(
+        self, use_case, mock_speaker_repo, mock_politician_repo
+    ):
+        """Test that user_id is not updated for existing politician links."""
+        from uuid import uuid4
+
+        # Setup
+        original_user_id = uuid4()
+        new_user_id = uuid4()
+        speaker = Speaker(
+            id=1,
+            name="山田太郎",
+            is_politician=True,
+            politician_id=10,
+            matched_by_user_id=original_user_id,
+        )
+        politician = Politician(id=10, name="山田太郎", political_party_id=1)
+
+        mock_speaker_repo.get_politicians.return_value = [speaker]
+        mock_politician_repo.get_by_id.return_value = politician
+
+        # Ensure update is not called
+        mock_speaker_repo.update = AsyncMock()
+
+        # Execute with different user_id
+        results = await use_case.execute(use_llm=False, user_id=new_user_id)
+
+        # Verify - user_id should NOT be updated
+        assert results[0].matching_method == "existing"
+        # update should not be called for existing matches
+        mock_speaker_repo.update.assert_not_called()

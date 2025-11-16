@@ -1,5 +1,7 @@
 """Use case for matching speakers to politicians."""
 
+from uuid import UUID
+
 from src.application.dtos.speaker_dto import SpeakerMatchingDTO
 from src.domain.entities.speaker import Speaker
 from src.domain.repositories.conversation_repository import ConversationRepository
@@ -62,6 +64,7 @@ class MatchSpeakersUseCase:
         use_llm: bool = True,
         speaker_ids: list[int] | None = None,
         limit: int | None = None,
+        user_id: UUID | None = None,
     ) -> list[SpeakerMatchingDTO]:
         """発言者と政治家のマッチングを実行する
 
@@ -74,6 +77,7 @@ class MatchSpeakersUseCase:
             use_llm: LLMマッチングを使用するか（デフォルト: True）
             speaker_ids: 処理対象の発言者IDリスト（Noneの場合は全件）
             limit: 処理する発言者数の上限
+            user_id: マッチング作業を実行したユーザーのID（UUID）
 
         Returns:
             SpeakerMatchingDTOのリスト。各DTOには以下が含まれる：
@@ -132,6 +136,11 @@ class MatchSpeakersUseCase:
                 match_result = await self._llm_based_matching(speaker)
 
             if match_result:
+                # Update speaker with matched politician_id and user_id
+                if match_result.matched_politician_id:
+                    speaker.politician_id = match_result.matched_politician_id
+                    speaker.matched_by_user_id = user_id
+                    await self.speaker_repo.update(speaker)
                 results.append(match_result)
             else:
                 # No match found

@@ -1,6 +1,13 @@
 """View for conversations and speakers management."""
 
+import asyncio
+
 import streamlit as st
+
+from src.application.usecases.authenticate_user_usecase import AuthenticateUserUseCase
+from src.application.usecases.match_speakers_usecase import MatchSpeakersUseCase
+from src.infrastructure.di.container import Container
+from src.interfaces.web.streamlit.auth import google_sign_in
 
 
 def render_conversations_speakers_page():
@@ -47,9 +54,72 @@ def render_matching_tab():
     発言者と政治家のマッチングを行います。
     """)
 
+    # Get user info
+    user_info = google_sign_in.get_user_info()
+    if not user_info:
+        st.warning("ユーザー情報を取得できません。ログインしてください。")
+        return
+
+    # Display current user
+    user_name = user_info.get("name", "Unknown")
+    user_email = user_info.get("email", "Unknown")
+    st.info(f"実行ユーザー: {user_name} ({user_email})")
+
     if st.button("マッチング実行", type="primary"):
         with st.spinner("マッチング処理を実行中..."):
-            st.info("マッチング機能は実装中です")
+            try:
+                # Get container and use cases
+                container = Container()
+                auth_usecase = AuthenticateUserUseCase(
+                    user_repository=container.repositories.user_repository()
+                )
+                match_usecase = MatchSpeakersUseCase(
+                    speaker_repository=container.repositories.speaker_repository(),
+                    politician_repository=container.repositories.politician_repository(),
+                    conversation_repository=container.repositories.conversation_repository(),
+                    speaker_domain_service=container.services.speaker_domain_service(),
+                    llm_service=container.services.llm_service(),
+                )
+
+                # Authenticate user and get user_id
+                email = user_info.get("email", "")
+                name = user_info.get("name")
+                user = asyncio.run(auth_usecase.execute(email=email, name=name))
+
+                # Execute matching with user_id
+                results = asyncio.run(
+                    match_usecase.execute(
+                        use_llm=True,
+                        limit=10,  # Limit to 10 for testing
+                        user_id=user.user_id,
+                    )
+                )
+
+                # Display results
+                st.success(
+                    f"マッチング処理が完了しました。{len(results)}件の発言者を処理しました。"
+                )
+
+                # Show summary
+                matched_count = sum(1 for r in results if r.matched_politician_id)
+                st.metric("マッチング成功", f"{matched_count}/{len(results)}")
+
+                # Show details in expandable section
+                with st.expander("マッチング詳細"):
+                    for result in results:
+                        status = "✅" if result.matched_politician_id else "❌"
+                        politician_name = result.matched_politician_name or "マッチなし"
+                        st.write(
+                            f"{status} {result.speaker_name} → {politician_name} "
+                            f"({result.matching_method}, "
+                            f"信頼度: {result.confidence_score:.2f})"
+                        )
+
+            except Exception as e:
+                st.error(f"エラーが発生しました: {e}")
+                import traceback
+
+                st.code(traceback.format_exc())
 
 
 def render_statistics_tab():
