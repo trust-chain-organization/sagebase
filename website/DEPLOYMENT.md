@@ -38,10 +38,12 @@ Production branch: main
 
 **ビルド設定**:
 ```
-Build command: hugo --minify
+Build command: ./build.sh
 Build output directory: public
 Root directory (advanced): website
 ```
+
+> **💡 重要**: `build.sh`スクリプトを使用することで、プレビュー環境では自動的に正しいbaseURLが設定されます。これにより、プレビュー環境でのリンクが正しく動作します。
 
 **環境変数**:
 
@@ -180,6 +182,20 @@ git push origin feature/new-content
 1. **Settings** > **Builds & deployments** > **Branch deployments** を確認
 2. 「Enable preview deployments」が有効になっているか確認
 3. ブランチパターンに該当しているか確認
+
+### プレビュー環境でリンクが本番環境に遷移する
+
+**症状**: プレビュー環境でページ内のリンクをクリックすると、本番環境（sage-base.com）に遷移してしまう
+
+**原因**: ビルド時に固定のbaseURLが使用されている
+
+**解決策**:
+1. **Settings** > **Builds & deployments** > **Build configuration** で「Edit configuration」をクリック
+2. **Build command** を `./build.sh` に変更
+3. 「Save」をクリック
+4. 次回のデプロイから、プレビュー環境では正しいURLが使用されます
+
+`build.sh`スクリプトは、環境変数`CF_PAGES_URL`を使用してプレビュー環境のbaseURLを自動設定します。
 
 ## 📊 デプロイメントの監視
 
