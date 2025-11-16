@@ -1,13 +1,13 @@
 ---
-title: "Polibaseについて"
-date: 2025-11-08
+title: "Sagebaseについて"
+date: 2025-01-16
 draft: false
-description: "Polibaseは日本の政治活動を追跡・分析するアプリケーションです"
+description: "Sagebaseは日本の政治活動を追跡・分析するアプリケーションです"
 ---
 
-# Polibaseについて
+# Sagebaseについて
 
-Polibase（ポリベース）は、日本の政治活動を追跡・分析するためのアプリケーションです。
+Sagebase（セージベース）は、日本の政治活動を追跡・分析するためのアプリケーションです。
 
 ## 目的
 
@@ -24,7 +24,7 @@ Polibase（ポリベース）は、日本の政治活動を追跡・分析する
 
 ## アーキテクチャ
 
-Polibaseは**クリーンアーキテクチャ**の原則に従って設計されています：
+Sagebaseは**クリーンアーキテクチャ**の原則に従って設計されています：
 
 - **Domain Layer**: コアビジネスロジックとエンティティ
 - **Application Layer**: ユースケースとDTO
