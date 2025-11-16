@@ -1,0 +1,37 @@
+name: Cleanup Cloudflare Previews
+
+on:
+  pull_request:
+    types:
+      - closed # PRがマージまたはクローズされた時に実行
+
+# 同一PRでの重複実行を防ぐ
+concurrency:
+  group: pr_cleanup_${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  delete-cloudflare-preview:
+    name: Delete Cloudflare Preview Deployment
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Delete Cloudflare Pages Deployment
+        # deepresearch推奨のコミュニティActionを使用
+        # https://github.com/marketplace/actions/cloudflare-delete-deployments-action
+        uses: go-fjords/cloudflare-delete-deployments-action@main
+        with:
+          # GitHubシークレットからCloudflare APIトークンを読み込む
+          # Settings > Secrets and variables > Actions で設定が必要
+          token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+          # GitHubシークレットからCloudflareアカウントIDを読み込む
+          account: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+          # Cloudflare Pagesプロジェクト名
+          # プロジェクト名は「sagebase-k37」ではなく「sagebase」の可能性が高い
+          # Cloudflare Pagesダッシュボードで確認してください
+          project: "sagebase"
+
+          # クローズされたPRのブランチ名を動的に取得
+          branch: ${{ github.head_ref }}
