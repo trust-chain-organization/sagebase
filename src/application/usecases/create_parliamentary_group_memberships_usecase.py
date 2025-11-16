@@ -1,6 +1,7 @@
 """Use case for creating parliamentary group memberships from matched members."""
 
 from datetime import date
+from uuid import UUID
 
 from src.domain.repositories.extracted_parliamentary_group_member_repository import (
     ExtractedParliamentaryGroupMemberRepository,
@@ -52,6 +53,7 @@ class CreateParliamentaryGroupMembershipsUseCase:
         parliamentary_group_id: int | None = None,
         min_confidence: float = 0.7,
         start_date: date | None = None,
+        user_id: UUID | None = None,
     ) -> dict[str, int | list[dict[str, int | str | None]]]:
         """マッチング済みメンバーからメンバーシップを作成する
 
@@ -59,6 +61,7 @@ class CreateParliamentaryGroupMembershipsUseCase:
             parliamentary_group_id: 処理対象の議員団ID（Noneの場合は全matched）
             min_confidence: 最小信頼度（デフォルト: 0.7）
             start_date: メンバーシップ開始日（Noneの場合は今日）
+            user_id: 作成したユーザーのID（UUID）
 
         Returns:
             作成結果の辞書。以下を含む：
@@ -98,6 +101,7 @@ class CreateParliamentaryGroupMembershipsUseCase:
                     group_id=member.parliamentary_group_id,
                     start_date=start_date,
                     role=member.extracted_role,
+                    created_by_user_id=user_id,
                 )
 
                 created_memberships.append(

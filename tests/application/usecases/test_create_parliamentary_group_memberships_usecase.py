@@ -186,3 +186,139 @@ class TestCreateParliamentaryGroupMembershipsUseCase:
         # Assert
         assert result["created_count"] == 0
         assert result["skipped_count"] == 1
+
+    @pytest.mark.asyncio
+    async def test_execute_saves_user_id_on_membership_creation(
+        self, use_case, mock_member_repo, mock_membership_repo
+    ):
+        """Test that user_id is saved when creating memberships."""
+        from uuid import uuid4
+
+        from src.domain.entities.parliamentary_group_membership import (
+            ParliamentaryGroupMembership,
+        )
+
+        # Arrange
+        test_user_id = uuid4()
+        member = ExtractedParliamentaryGroupMember(
+            parliamentary_group_id=1,
+            extracted_name="田中太郎",
+            source_url="http://example.com",
+            matched_politician_id=100,
+            matching_confidence=0.9,
+            matching_status="matched",
+            id=1,
+        )
+
+        mock_member_repo.get_matched_members.return_value = [member]
+
+        # Mock to capture the call arguments
+        created_membership = ParliamentaryGroupMembership(
+            id=1,
+            politician_id=100,
+            parliamentary_group_id=1,
+            start_date=date.today(),
+            created_by_user_id=test_user_id,
+        )
+        mock_membership_repo.create_membership.return_value = created_membership
+
+        # Act
+        result = await use_case.execute(parliamentary_group_id=1, user_id=test_user_id)
+
+        # Assert
+        assert result["created_count"] == 1
+        call_args = mock_membership_repo.create_membership.call_args
+        assert call_args.kwargs["created_by_user_id"] == test_user_id
+
+    @pytest.mark.asyncio
+    async def test_execute_without_user_id(
+        self, use_case, mock_member_repo, mock_membership_repo
+    ):
+        """Test that membership creation works when user_id is None."""
+        from src.domain.entities.parliamentary_group_membership import (
+            ParliamentaryGroupMembership,
+        )
+
+        # Arrange
+        member = ExtractedParliamentaryGroupMember(
+            parliamentary_group_id=1,
+            extracted_name="田中太郎",
+            source_url="http://example.com",
+            matched_politician_id=100,
+            matching_confidence=0.9,
+            matching_status="matched",
+            id=1,
+        )
+
+        mock_member_repo.get_matched_members.return_value = [member]
+
+        created_membership = ParliamentaryGroupMembership(
+            id=1,
+            politician_id=100,
+            parliamentary_group_id=1,
+            start_date=date.today(),
+            created_by_user_id=None,
+        )
+        mock_membership_repo.create_membership.return_value = created_membership
+
+        # Act
+        result = await use_case.execute(
+            parliamentary_group_id=1,
+            user_id=None,  # Explicitly None
+        )
+
+        # Assert
+        assert result["created_count"] == 1
+        call_args = mock_membership_repo.create_membership.call_args
+        assert call_args.kwargs["created_by_user_id"] is None
+
+    @pytest.mark.asyncio
+    async def test_execute_propagates_user_id_through_all_memberships(
+        self, use_case, mock_member_repo, mock_membership_repo
+    ):
+        """Test that user_id is propagated to all created memberships."""
+        from uuid import uuid4
+
+        from src.domain.entities.parliamentary_group_membership import (
+            ParliamentaryGroupMembership,
+        )
+
+        # Arrange
+        test_user_id = uuid4()
+        members = [
+            ExtractedParliamentaryGroupMember(
+                parliamentary_group_id=1,
+                extracted_name=f"議員{i}",
+                source_url="http://example.com",
+                matched_politician_id=100 + i,
+                matching_confidence=0.9,
+                matching_status="matched",
+                id=i,
+            )
+            for i in range(1, 4)
+        ]
+
+        mock_member_repo.get_matched_members.return_value = members
+
+        # Mock multiple creations
+        mock_membership_repo.create_membership.side_effect = [
+            ParliamentaryGroupMembership(
+                id=i,
+                politician_id=100 + i,
+                parliamentary_group_id=1,
+                start_date=date.today(),
+                created_by_user_id=test_user_id,
+            )
+            for i in range(1, 4)
+        ]
+
+        # Act
+        result = await use_case.execute(parliamentary_group_id=1, user_id=test_user_id)
+
+        # Assert
+        assert result["created_count"] == 3
+        assert mock_membership_repo.create_membership.call_count == 3
+
+        # Verify all calls had user_id
+        for call in mock_membership_repo.create_membership.call_args_list:
+            assert call.kwargs["created_by_user_id"] == test_user_id

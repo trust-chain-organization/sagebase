@@ -6,8 +6,9 @@ repository pattern to use ORM features instead of raw SQL.
 """
 
 from datetime import date, datetime
+from uuid import UUID
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, Uuid
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -32,6 +33,9 @@ class ParliamentaryGroupMembershipModel(Base):
     start_date: Mapped[date] = mapped_column()
     end_date: Mapped[date | None] = mapped_column()
     role: Mapped[str | None] = mapped_column(String(100))
+    created_by_user_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("users.user_id", use_alter=True, name="fk_pgm_user")
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
     )
