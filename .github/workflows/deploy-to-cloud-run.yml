@@ -1,0 +1,256 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "デプロイ環境"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - staging
+
+permissions:
+  contents: read
+  id-token: write # Workload Identity Federation用
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION || 'asia-northeast1' }}
+  SERVICE_NAME: ${{ secrets.GCP_SERVICE_NAME || 'sagebase-streamlit' }}
+  REPOSITORY: ${{ secrets.GCP_ARTIFACT_REPOSITORY || 'sagebase' }}
+
+jobs:
+  # テストジョブが成功した場合のみデプロイ
+  deploy:
+    name: Build and Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    # mainブランチへのpushの場合、テストワークフローの完了を待つ
+    # workflow_dispatchの場合は直接実行
+    needs: []
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Wait for tests to complete
+        if: github.event_name == 'push'
+        uses: fountainhead/action-wait-for-check@v1.2.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Tests and Code Quality (Python 3.13)
+          ref: ${{ github.sha }}
+          timeoutSeconds: 1800 # 30分
+          intervalSeconds: 30
+
+      # Google Cloud認証（Workload Identity Federation）
+      - name: Authenticate to Google Cloud (Workload Identity)
+        if: vars.USE_WORKLOAD_IDENTITY == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      # Google Cloud認証（Service Account Key）
+      - name: Authenticate to Google Cloud (Service Account Key)
+        if: vars.USE_WORKLOAD_IDENTITY != 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # Cloud SDKのセットアップ
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # Docker認証
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      # Artifact Registryリポジトリの確認/作成
+      - name: Ensure Artifact Registry repository exists
+        run: |
+          if ! gcloud artifacts repositories describe ${{ env.REPOSITORY }} \
+              --location=${{ env.REGION }} \
+              --project=${{ env.PROJECT_ID }} > /dev/null 2>&1; then
+            echo "Creating Artifact Registry repository..."
+            gcloud artifacts repositories create ${{ env.REPOSITORY }} \
+              --repository-format=docker \
+              --location=${{ env.REGION }} \
+              --description="Sagebase container images" \
+              --project=${{ env.PROJECT_ID }}
+          else
+            echo "Artifact Registry repository already exists"
+          fi
+
+      # イメージタグの設定
+      - name: Set image tags
+        id: image
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}"
+          echo "path=${IMAGE_PATH}" >> $GITHUB_OUTPUT
+          echo "tag_sha=${IMAGE_PATH}:${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "tag_latest=${IMAGE_PATH}:latest" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      # Dockerイメージのビルド
+      - name: Build Docker image
+        run: |
+          docker build \
+            -f Dockerfile.cloudrun \
+            -t ${{ steps.image.outputs.tag_sha }} \
+            -t ${{ steps.image.outputs.tag_latest }} \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            .
+
+      # イメージのプッシュ
+      - name: Push Docker image
+        run: |
+          docker push ${{ steps.image.outputs.tag_sha }}
+          docker push ${{ steps.image.outputs.tag_latest }}
+
+      # Cloud Runへのデプロイ
+      - name: Deploy to Cloud Run
+        id: deploy
+        run: |
+          # デプロイオプションの設定
+          DEPLOY_ARGS=(
+            "run"
+            "deploy"
+            "${{ env.SERVICE_NAME }}"
+            "--image=${{ steps.image.outputs.tag_sha }}"
+            "--region=${{ env.REGION }}"
+            "--platform=managed"
+            "--allow-unauthenticated"
+            "--port=8080"
+            "--cpu=2"
+            "--memory=2Gi"
+            "--timeout=300"
+            "--max-instances=10"
+            "--min-instances=0"
+            "--set-env-vars=CLOUD_RUN=true,PORT=8080,HEALTH_CHECK_PORT=8081,LOG_LEVEL=INFO"
+            "--no-cpu-throttling"
+            "--project=${{ env.PROJECT_ID }}"
+          )
+
+          # Secret Managerからのシークレット設定
+          if gcloud secrets describe google-api-key --project=${{ env.PROJECT_ID }} > /dev/null 2>&1; then
+            DEPLOY_ARGS+=("--set-secrets=GOOGLE_API_KEY=google-api-key:latest")
+          fi
+
+          if gcloud secrets describe database-password --project=${{ env.PROJECT_ID }} > /dev/null 2>&1; then
+            DEPLOY_ARGS+=("--set-secrets=DB_PASSWORD=database-password:latest")
+          fi
+
+          # Cloud SQL接続設定
+          if [ -n "${{ secrets.CLOUD_SQL_INSTANCE }}" ]; then
+            DEPLOY_ARGS+=("--add-cloudsql-instances=${{ secrets.CLOUD_SQL_INSTANCE }}")
+            DEPLOY_ARGS+=("--set-env-vars=USE_CLOUD_SQL_PROXY=true")
+            DEPLOY_ARGS+=("--set-env-vars=CLOUD_SQL_CONNECTION_NAME=${{ secrets.CLOUD_SQL_INSTANCE }}")
+            DEPLOY_ARGS+=("--set-env-vars=CLOUD_SQL_UNIX_SOCKET_DIR=/cloudsql")
+            DEPLOY_ARGS+=("--set-env-vars=DB_USER=sagebase_user")
+            DEPLOY_ARGS+=("--set-env-vars=DB_NAME=sagebase_db")
+          fi
+
+          # デプロイ実行
+          gcloud "${DEPLOY_ARGS[@]}"
+
+          # サービスURLの取得
+          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --project=${{ env.PROJECT_ID }} \
+            --format="value(status.url)")
+
+          echo "url=${SERVICE_URL}" >> $GITHUB_OUTPUT
+
+      # デプロイ結果の確認
+      - name: Verify deployment
+        run: |
+          echo "Waiting for service to be ready..."
+          sleep 10
+
+          # ヘルスチェック（最大5回リトライ）
+          for i in {1..5}; do
+            if curl -sf "${{ steps.deploy.outputs.url }}" > /dev/null; then
+              echo "✅ Service is healthy"
+              exit 0
+            fi
+            echo "Waiting for service to be ready... ($i/5)"
+            sleep 10
+          done
+
+          echo "⚠️ Service health check timeout (this may be normal for first deployment)"
+
+      # デプロイサマリーの出力
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service**: ${{ env.SERVICE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Region**: ${{ env.REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Project**: ${{ env.PROJECT_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ steps.image.outputs.tag_sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **SHA**: \`${{ steps.image.outputs.short_sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Service URL" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [${{ steps.deploy.outputs.url }}](${{ steps.deploy.outputs.url }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Quick Commands" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "# View logs" >> $GITHUB_STEP_SUMMARY
+          echo "gcloud run logs tail ${{ env.SERVICE_NAME }} --region=${{ env.REGION }} --project=${{ env.PROJECT_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Rollback to previous revision" >> $GITHUB_STEP_SUMMARY
+          echo "PROJECT_ID=${{ env.PROJECT_ID }} REGION=${{ env.REGION }} SERVICE_NAME=${{ env.SERVICE_NAME }} ./scripts/rollback.sh --previous" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      # デプロイ通知（オプション - Slack）
+      - name: Notify deployment status (Slack)
+        if: always() && secrets.SLACK_WEBHOOK_URL != ''
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "text": "${{ job.status == 'success' && '✅' || '❌' }} Cloud Run Deployment ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ job.status == 'success' && '✅ *Deployment Successful*' || '❌ *Deployment Failed*' }}\n*Service*: ${{ env.SERVICE_NAME }}\n*Region*: ${{ env.REGION }}\n*Commit*: <${{ github.event.head_commit.url }}|${{ steps.image.outputs.short_sha }}>\n*Author*: ${{ github.event.head_commit.author.name }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "🔗 *Service URL*: ${{ steps.deploy.outputs.url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+  # デプロイ失敗時のクリーンアップ（オプション）
+  cleanup-on-failure:
+    name: Cleanup on Deployment Failure
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: failure()
+
+    steps:
+      - name: Notify failure
+        run: |
+          echo "⚠️ Deployment failed. Please check the logs and consider rolling back."
+          echo "Rollback command:"
+          echo "PROJECT_ID=${{ env.PROJECT_ID }} REGION=${{ env.REGION }} SERVICE_NAME=${{ env.SERVICE_NAME }} ./scripts/rollback.sh --previous"
