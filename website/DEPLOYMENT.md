@@ -223,6 +223,62 @@ git push origin feature/new-content
 2. 「Require authorization」を有効化
 3. アクセスを許可するメールアドレスを追加
 
+## 🧹 プレビュー環境の自動クリーンアップ
+
+### 背景
+
+Cloudflare Pagesでは、PRがマージまたはクローズされても、プレビュー環境（デプロイメント）は**自動的に削除されません**。これにより、以下の問題が発生します：
+
+- デプロイメント履歴が累積し、管理が煩雑化
+- 古いプレビュー環境が公開され続け、セキュリティリスクが発生
+- デプロイメント数が数千件に達すると、プロジェクト自体の削除が困難になる
+
+### 自動クリーンアップの設定
+
+このプロジェクトでは、GitHub Actionsを使用して、PRがクローズされた際に自動的にプレビュー環境を削除します。
+
+#### 必要な設定
+
+1. **Cloudflare APIトークンの生成**
+   - Cloudflareダッシュボードにログイン
+   - 「My Profile」→「API Tokens」→「Create Token」
+   - 「Custom token」を選択
+   - 権限を設定：
+     - Account: Cloudflare Pages = Edit
+   - トークンを生成し、安全に保管
+
+2. **Cloudflareアカウント IDの確認**
+   - Cloudflareダッシュボードの右サイドバーに表示されている「Account ID」をコピー
+
+3. **GitHubシークレットの設定**
+   - GitHubリポジトリの「Settings」→「Secrets and variables」→「Actions」
+   - 以下の2つのシークレットを追加：
+     - `CLOUDFLARE_API_TOKEN`: 手順1で生成したAPIトークン
+     - `CLOUDFLARE_ACCOUNT_ID`: 手順2で確認したアカウントID
+
+4. **プロジェクト名の確認**
+   - `.github/workflows/cleanup-cloudflare-previews.yml`の`project`パラメータが、Cloudflare Pagesのプロジェクト名と一致していることを確認
+   - プロジェクト名は、Cloudflare Pagesダッシュボードで確認できます（例：`sagebase`）
+
+#### 動作
+
+- PRがマージまたはクローズされると、GitHub Actionsが自動的に実行されます
+- 該当するブランチのプレビュー環境（デプロイメントとエイリアス）が削除されます
+- ログは「Actions」タブで確認できます
+
+#### トラブルシューティング
+
+**エラー: "Resource not found"**
+- `project`パラメータが正しいプロジェクト名になっているか確認してください
+
+**エラー: "Authentication failed"**
+- `CLOUDFLARE_API_TOKEN`が正しく設定されているか確認してください
+- APIトークンの権限が「Cloudflare Pages: Edit」になっているか確認してください
+
+**デプロイメントが削除されない**
+- GitHub Actionsのログを確認してください（「Actions」タブ）
+- ワークフローが正常に実行されているか確認してください
+
 ## 📚 参考リンク
 
 - [Cloudflare Pages公式ドキュメント](https://developers.cloudflare.com/pages/)
