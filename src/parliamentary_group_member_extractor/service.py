@@ -8,6 +8,7 @@ import json
 import re
 from datetime import date
 from typing import Any, TypedDict
+from uuid import UUID
 
 from langchain_core.prompts import PromptTemplate
 from sqlalchemy import text
@@ -361,6 +362,7 @@ JSONで回答してください。
         start_date: date | None = None,
         confidence_threshold: float = 0.7,
         dry_run: bool = False,
+        user_id: UUID | None = None,
     ) -> MembershipCreationResult:
         """マッチング結果からメンバーシップを作成
 
@@ -370,6 +372,7 @@ JSONで回答してください。
             start_date: 所属開始日（デフォルトは今日）
             confidence_threshold: 作成する最低信頼度
             dry_run: ドライラン（実際には作成しない）
+            user_id: 作成したユーザーのID（UUID）
 
         Returns:
             作成結果
@@ -419,6 +422,7 @@ JSONで回答してください。
                         parliamentary_group_id=parliamentary_group_id,
                         start_date=start_date,
                         role=match.extracted_member.role,
+                        created_by_user_id=user_id,
                     )
                     result.created_count += 1
                 except Exception as e:

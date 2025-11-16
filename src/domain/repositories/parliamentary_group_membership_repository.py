@@ -3,6 +3,7 @@
 from abc import abstractmethod
 from datetime import date
 from typing import Any
+from uuid import UUID
 
 from src.domain.entities.parliamentary_group_membership import (
     ParliamentaryGroupMembership,
@@ -63,6 +64,7 @@ class ParliamentaryGroupMembershipRepository(
         group_id: int,
         start_date: date,
         role: str | None = None,
+        created_by_user_id: UUID | None = None,
     ) -> ParliamentaryGroupMembership:
         """Create a new membership.
 
@@ -71,6 +73,7 @@ class ParliamentaryGroupMembershipRepository(
             group_id: Parliamentary group ID
             start_date: Membership start date
             role: Optional role in the group
+            created_by_user_id: User ID who created the membership
 
         Returns:
             Created membership entity

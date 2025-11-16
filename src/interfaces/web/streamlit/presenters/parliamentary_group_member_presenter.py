@@ -301,6 +301,7 @@ class ParliamentaryGroupMemberPresenter(
         parliamentary_group_id: int | None = None,
         min_confidence: float = 0.7,
         start_date: date | None = None,
+        user_id: Any = None,
     ) -> tuple[int, int, list[dict[str, Any]]]:
         """Create memberships from matched members.
 
@@ -308,6 +309,7 @@ class ParliamentaryGroupMemberPresenter(
             parliamentary_group_id: Parliamentary group ID (None for all)
             min_confidence: Minimum confidence threshold
             start_date: Membership start date
+            user_id: User ID who is creating the memberships
 
         Returns:
             Tuple of (created_count, skipped_count, created_memberships)
@@ -319,6 +321,7 @@ class ParliamentaryGroupMemberPresenter(
                     parliamentary_group_id=parliamentary_group_id,
                     min_confidence=min_confidence,
                     start_date=start_date,
+                    user_id=user_id,
                 )
             )
 
