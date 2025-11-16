@@ -7,6 +7,11 @@ on:
       - ".github/workflows/cloudflare-preview-comment.yml"
     types: [opened, synchronize, reopened]
 
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
 jobs:
   post-preview-url:
     runs-on: ubuntu-latest
