@@ -8,6 +8,7 @@
 - [Cloud SQL セットアップ](#cloud-sql-セットアップ)
 - [ローカル開発環境からのCloud SQL接続](#ローカル開発環境からのcloud-sql接続)
 - [データベース移行](#データベース移行)
+- [GitHub Actionsによる自動デプロイ](#github-actionsによる自動デプロイ)
 - [Cloud Run デプロイ](#cloud-run-デプロイ)
 - [Secret Manager 設定](#secret-manager-設定)
 - [バックアップと復元](#バックアップと復元)
@@ -368,7 +369,162 @@ SELECT COUNT(*) FROM politicians;
 
 ---
 
+## GitHub Actionsによる自動デプロイ
+
+**推奨**: 本番環境へのデプロイには、GitHub Actionsによる自動デプロイを使用してください。
+
+### 概要
+
+mainブランチへのマージで自動的にCloud Runにデプロイされます。
+
+- ✅ 自動テスト実行
+- ✅ コード品質チェック
+- ✅ Dockerイメージビルド
+- ✅ Cloud Runデプロイ
+- ✅ ヘルスチェック
+- ✅ ロールバック機能
+
+詳細は **[CI/CD Documentation](./CICD.md)** を参照してください。
+
+### セットアップ
+
+#### 1. GitHub Secretsの設定
+
+リポジトリの **Settings** → **Secrets and variables** → **Actions** で以下を設定：
+
+**必須Secrets**:
+- `GCP_PROJECT_ID`: GCPプロジェクトID
+- `GCP_SA_KEY`: サービスアカウントキー（JSON形式）
+
+**オプションSecrets**:
+- `GCP_REGION`: デプロイリージョン（デフォルト: asia-northeast1）
+- `GCP_SERVICE_NAME`: Cloud Runサービス名（デフォルト: sagebase-streamlit）
+- `CLOUD_SQL_INSTANCE`: Cloud SQLインスタンス名
+- `SLACK_WEBHOOK_URL`: Slack通知用WebhookURL
+
+#### 2. サービスアカウントの作成と権限設定
+
+```bash
+# サービスアカウント作成
+gcloud iam service-accounts create github-actions-deployer \
+  --display-name="GitHub Actions Deployer" \
+  --project=YOUR_PROJECT_ID
+
+# 必要な権限を付与
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:github-actions-deployer@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/run.admin"
+
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:github-actions-deployer@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/artifactregistry.writer"
+
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:github-actions-deployer@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountUser"
+
+# キーの作成とダウンロード
+gcloud iam service-accounts keys create github-actions-key.json \
+  --iam-account=github-actions-deployer@YOUR_PROJECT_ID.iam.gserviceaccount.com
+```
+
+#### 3. Secret Managerの設定
+
+GitHub Actionsでデプロイされるアプリケーションが使用するシークレット：
+
+```bash
+# Google API Key
+echo -n "YOUR_GOOGLE_API_KEY" | gcloud secrets create google-api-key \
+  --data-file=- \
+  --replication-policy=automatic \
+  --project=YOUR_PROJECT_ID
+
+# データベースパスワード
+echo -n "YOUR_DB_PASSWORD" | gcloud secrets create database-password \
+  --data-file=- \
+  --replication-policy=automatic \
+  --project=YOUR_PROJECT_ID
+
+# Cloud Runサービスアカウントに権限付与
+gcloud secrets add-iam-policy-binding google-api-key \
+  --member="serviceAccount:YOUR_PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor" \
+  --project=YOUR_PROJECT_ID
+
+gcloud secrets add-iam-policy-binding database-password \
+  --member="serviceAccount:YOUR_PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor" \
+  --project=YOUR_PROJECT_ID
+```
+
+### デプロイフロー
+
+#### 自動デプロイ（mainブランチへのマージ）
+
+```bash
+# 1. 開発ブランチで作業
+git checkout -b feature/new-feature
+
+# 2. コードの変更とコミット
+git add .
+git commit -m "feat: add new feature"
+git push origin feature/new-feature
+
+# 3. PRを作成
+gh pr create --title "feat: add new feature"
+
+# 4. レビューと承認後、mainにマージ
+gh pr merge --squash
+
+# 5. GitHub Actionsが自動実行
+#    - テスト実行
+#    - イメージビルド
+#    - Cloud Runデプロイ
+```
+
+#### 手動デプロイ
+
+GitHub UIから手動でトリガー：
+
+1. リポジトリの **Actions** タブを開く
+2. **Deploy to Cloud Run** ワークフローを選択
+3. **Run workflow** をクリック
+4. 環境を選択して実行
+
+### ロールバック
+
+デプロイに問題が発生した場合：
+
+```bash
+# 直前のリビジョンにロールバック
+export PROJECT_ID="your-project-id"
+export REGION="asia-northeast1"
+export SERVICE_NAME="sagebase-streamlit"
+
+./scripts/rollback.sh --previous
+```
+
+詳細は **[CI/CD Documentation](./CICD.md#ロールバック手順)** を参照してください。
+
+### モニタリング
+
+```bash
+# デプロイ状況の確認
+gcloud run services describe sagebase-streamlit \
+  --region=asia-northeast1 \
+  --project=YOUR_PROJECT_ID
+
+# ログの確認
+gcloud run logs tail sagebase-streamlit \
+  --region=asia-northeast1 \
+  --project=YOUR_PROJECT_ID
+```
+
+---
+
 ## Cloud Run デプロイ
+
+**注**: 以下は手動デプロイの手順です。本番環境へのデプロイには上記の「GitHub Actionsによる自動デプロイ」を推奨します。
 
 PolibaseのStreamlitアプリケーションをCloud Runにデプロイする方法を説明します。
 
