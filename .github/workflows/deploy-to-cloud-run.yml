@@ -21,9 +21,9 @@ permissions:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: ${{ secrets.GCP_REGION || 'asia-northeast1' }}
-  SERVICE_NAME: ${{ secrets.GCP_SERVICE_NAME || 'sagebase-streamlit' }}
-  REPOSITORY: ${{ secrets.GCP_ARTIFACT_REPOSITORY || 'sagebase' }}
+  REGION: ${{ secrets.GCP_REGION != '' && secrets.GCP_REGION || 'asia-northeast1' }}
+  SERVICE_NAME: ${{ secrets.GCP_SERVICE_NAME != '' && secrets.GCP_SERVICE_NAME || 'sagebase-streamlit' }}
+  REPOSITORY: ${{ secrets.GCP_ARTIFACT_REPOSITORY != '' && secrets.GCP_ARTIFACT_REPOSITORY || 'sagebase' }}
 
 jobs:
   # テストジョブが成功した場合のみデプロイ
