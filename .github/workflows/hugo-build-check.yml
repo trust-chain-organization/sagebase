@@ -31,7 +31,7 @@ jobs:
 
       - name: Build Hugo site
         working-directory: ./website
-        run: hugo --minify
+        run: ./build.sh
 
       - name: Check build output
         run: |

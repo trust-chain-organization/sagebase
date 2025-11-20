@@ -37,6 +37,7 @@ class MockSpeakerModel:
     position = MockColumn("position")
     is_politician = MockColumn("is_politician")
     politician_id = MockColumn("politician_id")
+    matched_by_user_id = MockColumn("matched_by_user_id")
 
     def __init__(
         self,
@@ -47,6 +48,7 @@ class MockSpeakerModel:
         position: str | None = None,
         is_politician: bool = False,
         politician_id: int | None = None,
+        matched_by_user_id: str | None = None,
     ):
         self.id = id
         self.name = name
@@ -55,6 +57,7 @@ class MockSpeakerModel:
         self.position = position
         self.is_politician = is_politician
         self.politician_id = politician_id
+        self.matched_by_user_id = matched_by_user_id
 
 
 class TestSpeakerRepositoryImpl:

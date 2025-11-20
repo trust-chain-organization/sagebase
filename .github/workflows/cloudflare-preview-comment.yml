@@ -1,0 +1,135 @@
+name: Post Cloudflare Pages Preview URL
+
+on:
+  pull_request:
+    paths:
+      - "website/**"
+      - ".github/workflows/cloudflare-preview-comment.yml"
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
+jobs:
+  post-preview-url:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request
+
+    steps:
+      - name: Wait for Cloudflare Pages deployment
+        run: |
+          echo "Cloudflare Pagesのデプロイメント完了を待機中..."
+          sleep 90
+
+      - name: Get Cloudflare Pages deployment info
+        id: get-deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: checks } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.payload.pull_request.head.sha
+            });
+
+            const cloudflareCheck = checks.check_runs.find(
+              check => check.name === 'Cloudflare Pages'
+            );
+
+            if (!cloudflareCheck) {
+              console.log('Cloudflare Pagesのチェックが見つかりませんでした');
+              return {};
+            }
+
+            console.log('Cloudflare Pages check:', cloudflareCheck);
+
+            const dashboardUrl = cloudflareCheck.details_url;
+            let deploymentId = '';
+            let previewUrl = '';
+
+            // URLからデプロイメントIDを抽出
+            const idMatch = dashboardUrl.match(/([0-9a-f]{8})-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/);
+            if (idMatch) {
+              deploymentId = idMatch[1];
+              previewUrl = `https://${deploymentId}.sagebase-k37.pages.dev`;
+            } else {
+              // フォールバック: ブランチ名から生成
+              const branchName = context.payload.pull_request.head.ref;
+              // スラッシュをハイフンに変換し、29文字に切り詰め
+              const aliasName = branchName.replace(/\//g, '-').substring(0, 29);
+              previewUrl = `https://${aliasName}.sagebase-k37.pages.dev`;
+              console.log(`⚠️ デプロイメントIDを抽出できませんでした。エイリアスURLを使用します: ${previewUrl}`);
+            }
+
+            core.setOutput('preview_url', previewUrl);
+            core.setOutput('dashboard_url', dashboardUrl);
+            core.setOutput('deployment_id', deploymentId);
+            core.setOutput('status', cloudflareCheck.conclusion || cloudflareCheck.status);
+
+            return {
+              previewUrl,
+              dashboardUrl,
+              deploymentId,
+              status: cloudflareCheck.conclusion || cloudflareCheck.status
+            };
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        if: steps.get-deployment.outputs.preview_url
+        with:
+          script: |
+            const previewUrl = '${{ steps.get-deployment.outputs.preview_url }}';
+            const dashboardUrl = '${{ steps.get-deployment.outputs.dashboard_url }}';
+            const deploymentId = '${{ steps.get-deployment.outputs.deployment_id }}';
+            const status = '${{ steps.get-deployment.outputs.status }}';
+
+            let comment = `## 🚀 Cloudflare Pages プレビュー環境\n\n`;
+
+            if (status === 'success') {
+              comment += `✅ **デプロイメント成功**\n\n`;
+              comment += `**プレビューURL**: ${previewUrl}\n\n`;
+              if (deploymentId) {
+                comment += `**デプロイメントID**: \`${deploymentId}\`\n\n`;
+              }
+              comment += `📊 [Cloudflare Pagesダッシュボードで詳細を確認](${dashboardUrl})\n\n`;
+              comment += `---\n\n`;
+              comment += `💡 **ヒント**: ブランチ名が長い場合、エイリアスURLは切り詰められる可能性があります。上記のURLが正確なプレビューURLです。`;
+            } else {
+              comment += `⏳ **デプロイメント進行中**: ${status}\n\n`;
+              comment += `デプロイメントが完了したら、プレビューURLが利用可能になります。\n\n`;
+              comment += `📊 [進捗を確認](${dashboardUrl})`;
+            }
+
+            // 既存のコメントを検索
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('🚀 Cloudflare Pages プレビュー環境')
+            );
+
+            if (botComment) {
+              // 既存のコメントを更新
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+              console.log('既存のコメントを更新しました');
+            } else {
+              // 新しいコメントを作成
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: comment
+              });
+              console.log('新しいコメントを作成しました');
+            }

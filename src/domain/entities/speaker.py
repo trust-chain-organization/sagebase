@@ -1,5 +1,7 @@
 """Speaker entity."""
 
+from uuid import UUID
+
 from src.domain.entities.base import BaseEntity
 
 
@@ -14,6 +16,7 @@ class Speaker(BaseEntity):
         position: str | None = None,
         is_politician: bool = False,
         politician_id: int | None = None,
+        matched_by_user_id: UUID | None = None,
         id: int | None = None,
     ) -> None:
         super().__init__(id)
@@ -23,6 +26,7 @@ class Speaker(BaseEntity):
         self.position = position
         self.is_politician = is_politician
         self.politician_id = politician_id
+        self.matched_by_user_id = matched_by_user_id
 
     def __str__(self) -> str:
         parts = [self.name]

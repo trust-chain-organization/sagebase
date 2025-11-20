@@ -1,12 +1,12 @@
-baseURL = 'https://polibase.example.org/'
+baseURL = 'https://sage-base.com/'
 languageCode = 'ja'
-title = 'Polibase - 政治活動追跡アプリケーション'
+title = 'Sagebase - 日本の政治活動を可視化する'
 theme = 'PaperMod'
 
 # PaperMod テーマの設定
 [params]
-  description = '日本の政治活動を追跡・分析するアプリケーション'
-  author = 'Polibase Team'
+  description = 'Sagebaseは、日本の政治活動を追跡・分析し、透明性を高めるためのオープンデータプラットフォームです。議事録分析、政治家データベース、発言追跡など、多彩な機能を提供します。'
+  author = 'Sagebase Team'
 
   # 表示設定
   ShowReadingTime = true
@@ -27,10 +27,10 @@ theme = 'PaperMod'
   # プロフィール設定
   [params.profileMode]
     enabled = true
-    title = 'Polibase'
-    subtitle = '政治活動追跡アプリケーション'
+    title = 'Sagebase'
+    subtitle = '日本の政治活動を可視化する - オープンデータで民主主義を支える'
     imageUrl = ''
-    imageTitle = 'Polibase Logo'
+    imageTitle = 'Sagebase Logo'
 
     [[params.profileMode.buttons]]
       name = '概要'

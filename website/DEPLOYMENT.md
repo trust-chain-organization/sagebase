@@ -38,10 +38,12 @@ Production branch: main
 
 **ビルド設定**:
 ```
-Build command: hugo --minify
+Build command: ./build.sh
 Build output directory: public
 Root directory (advanced): website
 ```
+
+> **💡 重要**: `build.sh`スクリプトを使用することで、プレビュー環境では自動的に正しいbaseURLが設定されます。これにより、プレビュー環境でのリンクが正しく動作します。
 
 **環境変数**:
 
@@ -181,6 +183,20 @@ git push origin feature/new-content
 2. 「Enable preview deployments」が有効になっているか確認
 3. ブランチパターンに該当しているか確認
 
+### プレビュー環境でリンクが本番環境に遷移する
+
+**症状**: プレビュー環境でページ内のリンクをクリックすると、本番環境（sage-base.com）に遷移してしまう
+
+**原因**: ビルド時に固定のbaseURLが使用されている
+
+**解決策**:
+1. **Settings** > **Builds & deployments** > **Build configuration** で「Edit configuration」をクリック
+2. **Build command** を `./build.sh` に変更
+3. 「Save」をクリック
+4. 次回のデプロイから、プレビュー環境では正しいURLが使用されます
+
+`build.sh`スクリプトは、環境変数`CF_PAGES_URL`を使用してプレビュー環境のbaseURLを自動設定します。
+
 ## 📊 デプロイメントの監視
 
 ### デプロイ履歴の確認
@@ -206,6 +222,62 @@ git push origin feature/new-content
 1. **Settings** > **Preview deployments access**
 2. 「Require authorization」を有効化
 3. アクセスを許可するメールアドレスを追加
+
+## 🧹 プレビュー環境の自動クリーンアップ
+
+### 背景
+
+Cloudflare Pagesでは、PRがマージまたはクローズされても、プレビュー環境（デプロイメント）は**自動的に削除されません**。これにより、以下の問題が発生します：
+
+- デプロイメント履歴が累積し、管理が煩雑化
+- 古いプレビュー環境が公開され続け、セキュリティリスクが発生
+- デプロイメント数が数千件に達すると、プロジェクト自体の削除が困難になる
+
+### 自動クリーンアップの設定
+
+このプロジェクトでは、GitHub Actionsを使用して、PRがクローズされた際に自動的にプレビュー環境を削除します。
+
+#### 必要な設定
+
+1. **Cloudflare APIトークンの生成**
+   - Cloudflareダッシュボードにログイン
+   - 「My Profile」→「API Tokens」→「Create Token」
+   - 「Custom token」を選択
+   - 権限を設定：
+     - Account: Cloudflare Pages = Edit
+   - トークンを生成し、安全に保管
+
+2. **Cloudflareアカウント IDの確認**
+   - Cloudflareダッシュボードの右サイドバーに表示されている「Account ID」をコピー
+
+3. **GitHubシークレットの設定**
+   - GitHubリポジトリの「Settings」→「Secrets and variables」→「Actions」
+   - 以下の2つのシークレットを追加：
+     - `CLOUDFLARE_API_TOKEN`: 手順1で生成したAPIトークン
+     - `CLOUDFLARE_ACCOUNT_ID`: 手順2で確認したアカウントID
+
+4. **プロジェクト名の確認**
+   - `.github/workflows/cleanup-cloudflare-previews.yml`の`project`パラメータが、Cloudflare Pagesのプロジェクト名と一致していることを確認
+   - プロジェクト名は、Cloudflare Pagesダッシュボードで確認できます（例：`sagebase`）
+
+#### 動作
+
+- PRがマージまたはクローズされると、GitHub Actionsが自動的に実行されます
+- 該当するブランチのプレビュー環境（デプロイメントとエイリアス）が削除されます
+- ログは「Actions」タブで確認できます
+
+#### トラブルシューティング
+
+**エラー: "Resource not found"**
+- `project`パラメータが正しいプロジェクト名になっているか確認してください
+
+**エラー: "Authentication failed"**
+- `CLOUDFLARE_API_TOKEN`が正しく設定されているか確認してください
+- APIトークンの権限が「Cloudflare Pages: Edit」になっているか確認してください
+
+**デプロイメントが削除されない**
+- GitHub Actionsのログを確認してください（「Actions」タブ）
+- ワークフローが正常に実行されているか確認してください
 
 ## 📚 参考リンク
 

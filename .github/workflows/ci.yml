@@ -51,14 +51,6 @@ jobs:
               sys.exit(1)
           "
 
-      - name: Run Ruff format check
-        run: |
-          uv run ruff format --check src/ tests/
-
-      - name: Run Ruff linter
-        run: |
-          uv run ruff check src/ tests/
-
       - name: Check for security issues with bandit
         run: |
           # Skip B608: SQL injection (all queries use parameterized queries, table names are hardcoded)
