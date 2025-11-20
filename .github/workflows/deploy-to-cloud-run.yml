@@ -215,7 +215,8 @@ jobs:
 
       # デプロイ通知（オプション - Slack）
       - name: Notify deployment status (Slack)
-        if: always() && secrets.SLACK_WEBHOOK_URL != ''
+        if: always()
+        continue-on-error: true
         uses: slackapi/slack-github-action@v1.25.0
         with:
           payload: |
