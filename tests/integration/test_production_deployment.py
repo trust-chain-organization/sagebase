@@ -188,7 +188,7 @@ class TestGCSConnectivity:
 class TestVertexAIAccess:
     """Vertex AI APIアクセスのテスト."""
 
-    def test_vertex_ai_import(self) -> None:
+    def test_vertex_ai_import(self, skip_if_not_production: None) -> None:
         """Vertex AI SDKをインポートできることを確認."""
         try:
             from google.cloud import aiplatform  # noqa: F401
