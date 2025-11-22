@@ -42,12 +42,17 @@ FROM system-packages AS final
 
 WORKDIR /app
 
-# uvとPython環境をコピー
-COPY --from=dependencies /root/.local /root/.local
+# 非rootユーザーを先に作成
+RUN useradd -m -u 1000 appuser
+
+# uvをシステム全体で利用可能にする
+COPY --from=dependencies /root/.local/bin/uv /usr/local/bin/uv
+COPY --from=dependencies /root/.local/bin/uvx /usr/local/bin/uvx
+
+# Python環境をコピーしてappuserの所有権に変更
 COPY --from=dependencies /app/.venv /app/.venv
 COPY --from=dependencies /app/pyproject.toml /app/uv.lock /app/README.md ./
 
-ENV PATH="/root/.local/bin:$PATH"
 ENV UV_PROJECT_ENVIRONMENT=/app/.venv
 
 # アプリケーションファイルをコピー
@@ -58,13 +63,10 @@ COPY database/ database/
 ENV CLOUD_RUN=true
 ENV PYTHONUNBUFFERED=1
 
-# Cloud RunのPORT環境変数を使用（デフォルト8080）
-ENV PORT=8080
-ENV HEALTH_CHECK_PORT=8081
+# appuserに所有権を変更
+RUN chown -R appuser:appuser /app
 
-# 非rootユーザーで実行（セキュリティベストプラクティス）
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
+# 非rootユーザーに切り替え
 USER appuser
 
 # Streamlitエントリーポイントを起動

@@ -11,7 +11,6 @@ import sys
 
 # ログ設定を初期化
 from src.common.logging import setup_logging
-from src.interfaces.web.streamlit.health import start_health_check_server
 
 # Cloud Run環境では構造化ログ（JSON形式）を使用
 is_cloud_run = os.getenv("CLOUD_RUN", "false").lower() == "true"
@@ -27,12 +26,10 @@ setup_logging(
 
 logger = logging.getLogger(__name__)
 
-health_check_port = int(os.getenv("HEALTH_CHECK_PORT", "8081"))
-start_health_check_server(health_check_port)
-
 logger.info("Starting Streamlit application for Cloud Run")
 logger.info(f"Cloud Run mode: {is_cloud_run}")
 logger.info(f"Log level: {log_level}")
+logger.info("Note: Streamlit provides health check at /_stcore/health endpoint")
 
 # StreamlitのPORTを取得（Cloud Runが自動設定）
 port = os.getenv("PORT", "8080")
@@ -40,8 +37,10 @@ port = os.getenv("PORT", "8080")
 # Streamlitアプリのパス
 app_path = "src/interfaces/web/streamlit/app.py"
 
-# Streamlitコマンドを構築
+# Streamlitコマンドを構築（uv経由で実行）
 streamlit_cmd = [
+    "uv",
+    "run",
     "streamlit",
     "run",
     app_path,

@@ -3,6 +3,12 @@ languageCode = 'ja'
 title = 'Sagebase - 日本の政治活動を可視化する'
 theme = 'PaperMod'
 
+# Markdown内のHTMLを許可
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+
 # PaperMod テーマの設定
 [params]
   description = 'Sagebaseは、日本の政治活動を追跡・分析し、透明性を高めるためのオープンデータプラットフォームです。議事録分析、政治家データベース、発言追跡など、多彩な機能を提供します。'
@@ -26,7 +32,7 @@ theme = 'PaperMod'
 
   # プロフィール設定
   [params.profileMode]
-    enabled = true
+    enabled = false
     title = 'Sagebase'
     subtitle = '日本の政治活動を可視化する - オープンデータで民主主義を支える'
     imageUrl = ''

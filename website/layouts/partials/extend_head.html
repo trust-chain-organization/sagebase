@@ -1,0 +1,67 @@
+{{- /* カスタムhead要素の拡張 */ -}}
+
+{{- /* ビューポート設定（レスポンシブデザイン） */ -}}
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+
+{{- /* SEOとアクセシビリティのためのメタタグ */ -}}
+<meta name="description" content="{{ .Site.Params.description }}">
+<meta name="author" content="{{ .Site.Params.author }}">
+<meta name="keywords" content="政治活動,議事録,政治家データベース,日本,オープンデータ,LLM,分析,透明性">
+
+{{- /* Open Graph Protocol (OGP) タグ */ -}}
+<meta property="og:title" content="{{ .Title }} - {{ .Site.Title }}">
+<meta property="og:description" content="{{ with .Description }}{{ . }}{{ else }}{{ .Site.Params.description }}{{ end }}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ .Permalink }}">
+<meta property="og:site_name" content="{{ .Site.Title }}">
+<meta property="og:locale" content="ja_JP">
+
+{{- /* Twitter Card */ -}}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ .Title }} - {{ .Site.Title }}">
+<meta name="twitter:description" content="{{ with .Description }}{{ . }}{{ else }}{{ .Site.Params.description }}{{ end }}">
+
+{{- /* アイコンとテーマカラー */ -}}
+<meta name="theme-color" content="#0066cc">
+<meta name="msapplication-TileColor" content="#0066cc">
+
+{{- /* カスタムCSSの読み込み */ -}}
+<link rel="stylesheet" href="{{ "css/custom.css" | absURL }}">
+
+{{- /* パフォーマンス最適化: プリコネクト */ -}}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="dns-prefetch" href="https://fonts.googleapis.com">
+
+{{- /* アクセシビリティ: スキップリンク */ -}}
+<style>
+  .skip-to-main {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #0066cc;
+    color: white;
+    padding: 8px;
+    text-decoration: none;
+    z-index: 100;
+  }
+
+  .skip-to-main:focus {
+    top: 0;
+  }
+</style>
+
+{{- /* 構造化データ (JSON-LD) */ -}}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "{{ .Site.Title }}",
+  "url": "{{ .Site.BaseURL }}",
+  "description": "{{ .Site.Params.description }}",
+  "inLanguage": "ja",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Sagebase Team"
+  }
+}
+</script>

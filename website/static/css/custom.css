@@ -1,0 +1,266 @@
+/*
+ * Sagebase カスタムスタイル
+ * レスポンシブデザインとアクセシビリティの改善
+ */
+
+/* ============================================
+   1. グローバルスタイル
+   ============================================ */
+
+:root {
+  /* カラー変数（WCAG AA準拠のコントラスト比） */
+  --primary-color: #0066cc;
+  --primary-hover: #0052a3;
+  --success-color: #28a745;
+  --success-hover: #218838;
+  --secondary-color: #6c757d;
+  --secondary-hover: #545b62;
+
+  /* フォーカススタイル */
+  --focus-color: #0066cc;
+  --focus-width: 3px;
+
+  /* スペーシング */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+
+  /* タッチターゲットサイズ（最小44x44px） */
+  --touch-target-min: 44px;
+}
+
+/* ============================================
+   2. フォーカスインジケータ（アクセシビリティ）
+   ============================================ */
+
+/* すべてのインタラクティブ要素に明確なフォーカススタイルを適用 */
+a:focus,
+button:focus,
+input:focus,
+select:focus,
+textarea:focus,
+[tabindex]:focus {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: 2px;
+}
+
+/* フォーカス時のスキップリンク表示 */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--primary-color);
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* ============================================
+   3. CTAボタンスタイル（_index.mdから移行）
+   ============================================ */
+
+.cta-button-container {
+  text-align: center;
+  margin: var(--spacing-xl) 0;
+}
+
+.cta-button {
+  display: inline-block;
+  padding: 12px 24px;
+  margin: 10px;
+  text-decoration: none;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 16px;
+
+  /* タッチターゲットサイズの確保 */
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+
+  /* トランジション */
+  transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+.cta-button:hover {
+  transform: translateY(-2px);
+}
+
+.cta-button:active {
+  transform: translateY(0);
+}
+
+/* Primary CTA */
+.cta-button-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.cta-button-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Success CTA */
+.cta-button-success {
+  background-color: var(--success-color);
+  color: white;
+}
+
+.cta-button-success:hover {
+  background-color: var(--success-hover);
+}
+
+/* Secondary CTA */
+.cta-button-secondary {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+.cta-button-secondary:hover {
+  background-color: var(--secondary-hover);
+}
+
+/* ============================================
+   4. レスポンシブ画像
+   ============================================ */
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* 遅延読み込み対応 */
+img[loading="lazy"] {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+img[loading="lazy"].loaded {
+  opacity: 1;
+}
+
+/* ============================================
+   5. レスポンシブテーブル
+   ============================================ */
+
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* ============================================
+   6. メディアクエリ（レスポンシブブレークポイント）
+   ============================================ */
+
+/* モバイル: <768px（デフォルトスタイル） */
+
+/* タブレット: 768px - 1024px */
+@media (min-width: 768px) {
+  .cta-button {
+    padding: 14px 28px;
+    font-size: 18px;
+  }
+
+  .cta-button-container {
+    margin: var(--spacing-xl) 0;
+  }
+}
+
+/* デスクトップ: >1024px */
+@media (min-width: 1024px) {
+  .cta-button {
+    padding: 16px 32px;
+    font-size: 18px;
+  }
+}
+
+/* モバイル専用スタイル */
+@media (max-width: 767px) {
+  /* CTAボタンをフルワイドに */
+  .cta-button {
+    display: block;
+    width: 100%;
+    max-width: 400px;
+    margin: 10px auto;
+  }
+
+  /* テキストサイズの調整 */
+  body {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  /* タッチターゲットの拡大 */
+  a, button {
+    min-height: var(--touch-target-min);
+    min-width: var(--touch-target-min);
+  }
+}
+
+/* ============================================
+   7. アクセシビリティ: プリント用スタイル
+   ============================================ */
+
+@media print {
+  .no-print {
+    display: none;
+  }
+
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+}
+
+/* ============================================
+   8. ダークモード対応（PaperModテーマの拡張）
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary-color: #3399ff;
+    --primary-hover: #66b3ff;
+    --success-color: #4caf50;
+    --success-hover: #66bb6a;
+    --secondary-color: #9e9e9e;
+    --secondary-hover: #bdbdbd;
+  }
+}
+
+/* ============================================
+   9. アニメーション削減（アクセシビリティ）
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   10. ハイコントラストモード対応
+   ============================================ */
+
+@media (prefers-contrast: high) {
+  .cta-button {
+    border: 2px solid currentColor;
+  }
+
+  a:focus,
+  button:focus {
+    outline-width: 4px;
+  }
+}

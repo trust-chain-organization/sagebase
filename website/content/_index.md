@@ -80,10 +80,10 @@ LLM（Google Gemini API）を活用し、議事録中の発言者を実際の政
 
 Sagebaseについてもっと知りたい方は、以下のページをご覧ください。
 
-<div style="text-align: center; margin: 40px 0;">
-  <a href="/about" style="display: inline-block; padding: 12px 24px; margin: 10px; background-color: #0066cc; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">📖 概要を見る</a>
-  <a href="/features" style="display: inline-block; padding: 12px 24px; margin: 10px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">⚡ 機能詳細を見る</a>
-  <a href="/contact" style="display: inline-block; padding: 12px 24px; margin: 10px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">✉️ お問い合わせ</a>
+<div class="cta-button-container">
+  <a href="/about" class="cta-button cta-button-primary" aria-label="Sagebaseの概要ページを見る">📖 概要を見る</a>
+  <a href="/features" class="cta-button cta-button-success" aria-label="Sagebaseの機能詳細ページを見る">⚡ 機能詳細を見る</a>
+  <a href="/contact" class="cta-button cta-button-secondary" aria-label="お問い合わせページへ移動">✉️ お問い合わせ</a>
 </div>
 
 ---
