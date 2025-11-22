@@ -1,28 +1,28 @@
 ---
 title: "お問い合わせ"
-date: 2025-11-08
+date: 2025-01-16
 draft: false
-description: "Polibaseに関するお問い合わせはこちらから"
+description: "Sagebaseに関するお問い合わせはこちらから"
 ---
 
 # お問い合わせ
 
-Polibaseに関するご質問、ご意見、ご提案がございましたら、お気軽にお問い合わせください。
+Sagebaseに関するご質問、ご意見、ご提案がございましたら、お気軽にお問い合わせください。
 
 ## GitHub Issues
 
 バグ報告や機能リクエストは、GitHubのIssueページからお願いします。
 
-- [GitHub Issues](https://github.com/trust-chain-organization/polibase/issues)
+- [GitHub Issues](https://github.com/trust-chain-organization/sagebase/issues)
 
 ## プロジェクト情報
 
-- **GitHubリポジトリ**: [trust-chain-organization/polibase](https://github.com/trust-chain-organization/polibase)
+- **GitHubリポジトリ**: [trust-chain-organization/sagebase](https://github.com/trust-chain-organization/sagebase)
 - **ライセンス**: [ライセンス情報]
 
 ## 開発チーム
 
-Polibaseは、政治の透明性を高めることを目指すチームによって開発されています。
+Sagebaseは、政治の透明性を高めることを目指すチームによって開発されています。
 
 ## コントリビューション
 
