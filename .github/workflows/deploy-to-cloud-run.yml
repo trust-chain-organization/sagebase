@@ -134,7 +134,7 @@ jobs:
             "--timeout=300"
             "--max-instances=10"
             "--min-instances=0"
-            "--set-env-vars=CLOUD_RUN=true,HEALTH_CHECK_PORT=8081,LOG_LEVEL=INFO"
+            "--set-env-vars=CLOUD_RUN=true,LOG_LEVEL=INFO"
             "--no-cpu-throttling"
             "--project=${{ env.PROJECT_ID }}"
           )

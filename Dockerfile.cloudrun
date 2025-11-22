@@ -57,7 +57,6 @@ COPY database/ database/
 # Cloud Run環境変数
 ENV CLOUD_RUN=true
 ENV PYTHONUNBUFFERED=1
-ENV HEALTH_CHECK_PORT=8081
 
 # 非rootユーザーで実行（セキュリティベストプラクティス）
 RUN useradd -m -u 1000 appuser && \
