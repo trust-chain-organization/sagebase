@@ -258,3 +258,40 @@ class ParliamentaryGroupMembershipRepositoryImpl(
         model.end_date = entity.end_date
         model.role = entity.role
         model.created_by_user_id = entity.created_by_user_id
+
+    async def find_by_created_user(
+        self, user_id: "UUID | None" = None
+    ) -> list[ParliamentaryGroupMembershipEntity]:
+        """指定されたユーザーIDによって作成された議員団メンバーシップを取得する
+
+        Args:
+            user_id: フィルタリング対象のユーザーID（Noneの場合は全ユーザー）
+
+        Returns:
+            作成された議員団メンバーシップのリスト
+        """
+        from sqlalchemy import select
+        from sqlalchemy.orm import joinedload
+
+        from src.infrastructure.persistence.sqlalchemy_models import (
+            ParliamentaryGroupMembershipModel,
+        )
+
+        query = (
+            select(ParliamentaryGroupMembershipModel)
+            .options(
+                joinedload(ParliamentaryGroupMembershipModel.parliamentary_group),
+                joinedload(ParliamentaryGroupMembershipModel.politician),
+            )
+            .filter(ParliamentaryGroupMembershipModel.created_by_user_id.is_not(None))
+        )
+
+        if user_id is not None:
+            query = query.filter(
+                ParliamentaryGroupMembershipModel.created_by_user_id == user_id
+            )
+
+        result = await self.session.execute(query)
+        models = result.scalars().unique().all()
+
+        return [self._to_entity(model) for model in models]

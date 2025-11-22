@@ -2,6 +2,7 @@
 
 from abc import abstractmethod
 from typing import Any
+from uuid import UUID
 
 from src.domain.dtos.speaker_dto import SpeakerWithConversationCountDTO
 from src.domain.entities.speaker import Speaker
@@ -88,5 +89,19 @@ class SpeakerRepository(BaseRepository[Speaker]):
 
         Returns:
             List of dicts with speaker and politician info
+        """
+        pass
+
+    @abstractmethod
+    async def find_by_matched_user(
+        self, user_id: "UUID | None" = None
+    ) -> list[Speaker]:
+        """指定されたユーザーIDによってマッチングされた発言者を取得する
+
+        Args:
+            user_id: フィルタリング対象のユーザーID（Noneの場合は全ユーザー）
+
+        Returns:
+            マッチングされた発言者のリスト
         """
         pass

@@ -487,3 +487,33 @@ class SpeakerRepositoryImpl(BaseRepositoryImpl[Speaker], SpeakerRepository):
             }
             for row in rows
         ]
+
+    async def find_by_matched_user(
+        self, user_id: "UUID | None" = None
+    ) -> list[Speaker]:
+        """指定されたユーザーIDによってマッチングされた発言者を取得する
+
+        Args:
+            user_id: フィルタリング対象のユーザーID（Noneの場合は全ユーザー）
+
+        Returns:
+            マッチングされた発言者のリスト
+        """
+        from sqlalchemy import select
+        from sqlalchemy.orm import joinedload
+
+        from src.infrastructure.persistence.sqlalchemy_models import SpeakerModel
+
+        query = (
+            select(SpeakerModel)
+            .options(joinedload(SpeakerModel.politician))
+            .filter(SpeakerModel.matched_by_user_id.is_not(None))
+        )
+
+        if user_id is not None:
+            query = query.filter(SpeakerModel.matched_by_user_id == user_id)
+
+        result = await self.session.execute(query)
+        models = result.scalars().unique().all()
+
+        return [self._to_entity(model) for model in models]

@@ -106,3 +106,17 @@ class ParliamentaryGroupMembershipRepository(
             List of dictionaries containing politician_id and other member info
         """
         pass
+
+    @abstractmethod
+    async def find_by_created_user(
+        self, user_id: "UUID | None" = None
+    ) -> list[ParliamentaryGroupMembership]:
+        """指定されたユーザーIDによって作成された議員団メンバーシップを取得する
+
+        Args:
+            user_id: フィルタリング対象のユーザーID（Noneの場合は全ユーザー）
+
+        Returns:
+            作成された議員団メンバーシップのリスト
+        """
+        pass
