@@ -21,9 +21,9 @@ permissions:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: ${{ secrets.GCP_REGION || 'asia-northeast1' }}
-  SERVICE_NAME: ${{ secrets.GCP_SERVICE_NAME || 'sagebase-streamlit' }}
-  REPOSITORY: ${{ secrets.GCP_ARTIFACT_REPOSITORY || 'sagebase' }}
+  REGION: ${{ secrets.GCP_REGION != '' && secrets.GCP_REGION || 'asia-northeast1' }}
+  SERVICE_NAME: ${{ secrets.GCP_SERVICE_NAME != '' && secrets.GCP_SERVICE_NAME || 'sagebase-streamlit' }}
+  REPOSITORY: ${{ secrets.GCP_ARTIFACT_REPOSITORY != '' && secrets.GCP_ARTIFACT_REPOSITORY || 'sagebase' }}
 
 jobs:
   # テストジョブが成功した場合のみデプロイ
@@ -134,7 +134,7 @@ jobs:
             "--timeout=300"
             "--max-instances=10"
             "--min-instances=0"
-            "--set-env-vars=CLOUD_RUN=true,PORT=8080,HEALTH_CHECK_PORT=8081,LOG_LEVEL=INFO"
+            "--set-env-vars=CLOUD_RUN=true,HEALTH_CHECK_PORT=8081,LOG_LEVEL=INFO"
             "--no-cpu-throttling"
             "--project=${{ env.PROJECT_ID }}"
           )
@@ -215,7 +215,8 @@ jobs:
 
       # デプロイ通知（オプション - Slack）
       - name: Notify deployment status (Slack)
-        if: always() && secrets.SLACK_WEBHOOK_URL != ''
+        if: always()
+        continue-on-error: true
         uses: slackapi/slack-github-action@v1.25.0
         with:
           payload: |

@@ -40,8 +40,10 @@ port = os.getenv("PORT", "8080")
 # Streamlitアプリのパス
 app_path = "src/interfaces/web/streamlit/app.py"
 
-# Streamlitコマンドを構築
+# Streamlitコマンドを構築（uv経由で実行）
 streamlit_cmd = [
+    "uv",
+    "run",
     "streamlit",
     "run",
     app_path,
