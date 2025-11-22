@@ -499,21 +499,56 @@ class SpeakerRepositoryImpl(BaseRepositoryImpl[Speaker], SpeakerRepository):
         Returns:
             マッチングされた発言者のリスト
         """
-        from sqlalchemy import select
-        from sqlalchemy.orm import joinedload
+        # Build SQL query with optional user_id filter
+        query_text = """
+            SELECT
+                s.id,
+                s.name,
+                s.type,
+                s.political_party_name,
+                s.position,
+                s.is_politician,
+                s.politician_id,
+                s.matched_by_user_id,
+                s.updated_at,
+                p.id as politician_id_from_join,
+                p.name as politician_name
+            FROM speakers s
+            LEFT JOIN politicians p ON s.politician_id = p.id
+            WHERE s.matched_by_user_id IS NOT NULL
+        """
 
-        from src.infrastructure.persistence.sqlalchemy_models import SpeakerModel
-
-        query = (
-            select(SpeakerModel)
-            .options(joinedload(SpeakerModel.politician))
-            .filter(SpeakerModel.matched_by_user_id.is_not(None))
-        )
-
+        params = {}
         if user_id is not None:
-            query = query.filter(SpeakerModel.matched_by_user_id == user_id)
+            query_text += " AND s.matched_by_user_id = :user_id"
+            params["user_id"] = user_id
 
-        result = await self.session.execute(query)
-        models = result.scalars().unique().all()
+        query = text(query_text)
+        result = await self.session.execute(query, params)
+        rows = result.fetchall()
 
-        return [self._to_entity(model) for model in models]
+        # Convert rows to Speaker entities
+        speakers = []
+        for row in rows:
+            speaker = Speaker(
+                id=row.id,
+                name=row.name,
+                type=row.type,
+                political_party_name=row.political_party_name,
+                position=row.position,
+                is_politician=row.is_politician,
+                politician_id=row.politician_id,
+                matched_by_user_id=row.matched_by_user_id,
+                updated_at=row.updated_at,
+            )
+            # Add politician relationship if exists
+            if row.politician_id_from_join:
+                from src.domain.entities.politician import Politician
+
+                speaker.politician = Politician(
+                    id=row.politician_id_from_join,
+                    name=row.politician_name,
+                )
+            speakers.append(speaker)
+
+        return speakers

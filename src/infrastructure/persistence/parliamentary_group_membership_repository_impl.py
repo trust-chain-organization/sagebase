@@ -270,28 +270,67 @@ class ParliamentaryGroupMembershipRepositoryImpl(
         Returns:
             作成された議員団メンバーシップのリスト
         """
-        from sqlalchemy import select
-        from sqlalchemy.orm import joinedload
+        from sqlalchemy import text
 
-        from src.infrastructure.persistence.sqlalchemy_models import (
-            ParliamentaryGroupMembershipModel,
-        )
+        # Build SQL query with optional user_id filter
+        query_text = """
+            SELECT
+                pgm.id,
+                pgm.politician_id,
+                pgm.parliamentary_group_id,
+                pgm.start_date,
+                pgm.end_date,
+                pgm.role,
+                pgm.created_by_user_id,
+                pgm.created_at,
+                pgm.updated_at,
+                pg.name as parliamentary_group_name,
+                p.name as politician_name
+            FROM parliamentary_group_memberships pgm
+            LEFT JOIN parliamentary_groups pg ON pgm.parliamentary_group_id = pg.id
+            LEFT JOIN politicians p ON pgm.politician_id = p.id
+            WHERE pgm.created_by_user_id IS NOT NULL
+        """
 
-        query = (
-            select(ParliamentaryGroupMembershipModel)
-            .options(
-                joinedload(ParliamentaryGroupMembershipModel.parliamentary_group),
-                joinedload(ParliamentaryGroupMembershipModel.politician),
-            )
-            .filter(ParliamentaryGroupMembershipModel.created_by_user_id.is_not(None))
-        )
-
+        params = {}
         if user_id is not None:
-            query = query.filter(
-                ParliamentaryGroupMembershipModel.created_by_user_id == user_id
+            query_text += " AND pgm.created_by_user_id = :user_id"
+            params["user_id"] = user_id
+
+        query = text(query_text)
+        result = await self.session.execute(query, params)
+        rows = result.fetchall()
+
+        # Convert rows to ParliamentaryGroupMembership entities
+        memberships = []
+        for row in rows:
+            membership = ParliamentaryGroupMembershipEntity(
+                id=row.id,
+                politician_id=row.politician_id,
+                parliamentary_group_id=row.parliamentary_group_id,
+                start_date=row.start_date,
+                end_date=row.end_date,
+                role=row.role,
+                created_by_user_id=row.created_by_user_id,
+                created_at=row.created_at,
+                updated_at=row.updated_at,
             )
+            # Add relationships if they exist
+            if row.parliamentary_group_name:
+                from src.domain.entities.parliamentary_group import ParliamentaryGroup
 
-        result = await self.session.execute(query)
-        models = result.scalars().unique().all()
+                membership.parliamentary_group = ParliamentaryGroup(
+                    id=row.parliamentary_group_id,
+                    name=row.parliamentary_group_name,
+                    conference_id=0,  # Will be loaded if needed
+                )
+            if row.politician_name:
+                from src.domain.entities.politician import Politician
 
-        return [self._to_entity(model) for model in models]
+                membership.politician = Politician(
+                    id=row.politician_id,
+                    name=row.politician_name,
+                )
+            memberships.append(membership)
+
+        return memberships

@@ -153,7 +153,7 @@ class GetWorkHistoryUseCase:
 
             # 対象データの説明を作成
             politician_name = (
-                speaker.politician.name if speaker.politician else "不明な政治家"  # type: ignore[attr-defined]
+                speaker.politician.name if speaker.politician else "不明な政治家"
             )
             target_data = f"{speaker.name} → {politician_name}"
 
@@ -216,12 +216,12 @@ class GetWorkHistoryUseCase:
 
             # 対象データの説明を作成
             group_name = (
-                membership.parliamentary_group.name  # type: ignore[attr-defined]
+                membership.parliamentary_group.name
                 if membership.parliamentary_group
                 else "不明な議員団"
             )
             politician_name = (
-                membership.politician.name if membership.politician else "不明な政治家"  # type: ignore[attr-defined]
+                membership.politician.name if membership.politician else "不明な政治家"
             )
             role = membership.role if membership.role else "メンバー"
             target_data = f"{group_name}: {politician_name} ({role})"
