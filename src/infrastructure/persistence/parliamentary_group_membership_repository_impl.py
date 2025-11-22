@@ -7,9 +7,14 @@ from uuid import UUID
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.domain.dtos.parliamentary_group_membership_dto import (
+    ParliamentaryGroupMembershipWithRelationsDTO,
+)
+from src.domain.entities.parliamentary_group import ParliamentaryGroup
 from src.domain.entities.parliamentary_group_membership import (
     ParliamentaryGroupMembership as ParliamentaryGroupMembershipEntity,
 )
+from src.domain.entities.politician import Politician
 from src.domain.repositories.parliamentary_group_membership_repository import (
     ParliamentaryGroupMembershipRepository,
 )
@@ -258,3 +263,87 @@ class ParliamentaryGroupMembershipRepositoryImpl(
         model.end_date = entity.end_date
         model.role = entity.role
         model.created_by_user_id = entity.created_by_user_id
+
+    async def find_by_created_user(
+        self, user_id: "UUID | None" = None
+    ) -> list[ParliamentaryGroupMembershipWithRelationsDTO]:
+        """指定されたユーザーIDによって作成された議員団メンバーシップと関連情報を取得する
+
+        Args:
+            user_id: フィルタリング対象のユーザーID（Noneの場合は全ユーザー）
+
+        Returns:
+            議員団メンバーシップと関連エンティティ（政治家、議員団）を含むDTOのリスト
+        """
+        from sqlalchemy import text
+
+        # Build SQL query with optional user_id filter
+        query_text = """
+            SELECT
+                pgm.id,
+                pgm.politician_id,
+                pgm.parliamentary_group_id,
+                pgm.start_date,
+                pgm.end_date,
+                pgm.role,
+                pgm.created_by_user_id,
+                pgm.created_at,
+                pgm.updated_at,
+                pg.name as parliamentary_group_name,
+                p.name as politician_name
+            FROM parliamentary_group_memberships pgm
+            LEFT JOIN parliamentary_groups pg ON pgm.parliamentary_group_id = pg.id
+            LEFT JOIN politicians p ON pgm.politician_id = p.id
+            WHERE pgm.created_by_user_id IS NOT NULL
+        """
+
+        params = {}
+        if user_id is not None:
+            query_text += " AND pgm.created_by_user_id = :user_id"
+            params["user_id"] = user_id
+
+        query = text(query_text)
+        result = await self.session.execute(query, params)
+        rows = result.fetchall()
+
+        # Convert rows to DTOs
+        results = []
+        for row in rows:
+            membership = ParliamentaryGroupMembershipEntity(
+                id=row.id,
+                politician_id=row.politician_id,
+                parliamentary_group_id=row.parliamentary_group_id,
+                start_date=row.start_date,
+                end_date=row.end_date,
+                role=row.role,
+                created_by_user_id=row.created_by_user_id,
+                created_at=row.created_at,
+                updated_at=row.updated_at,
+            )
+
+            # Create related entities if they exist
+            parliamentary_group = None
+            if row.parliamentary_group_name:
+                parliamentary_group = ParliamentaryGroup(
+                    id=row.parliamentary_group_id,
+                    name=row.parliamentary_group_name,
+                    conference_id=0,  # Will be loaded if needed
+                )
+
+            politician = None
+            if row.politician_name:
+                politician = Politician(
+                    id=row.politician_id,
+                    name=row.politician_name,
+                )
+
+            # Create DTO with membership and related entities
+            results.append(
+                ParliamentaryGroupMembershipWithRelationsDTO(
+                    membership=membership,
+                    politician=politician,
+                    parliamentary_group=parliamentary_group,
+                )
+            )
+
+        return results

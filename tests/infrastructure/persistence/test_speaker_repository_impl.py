@@ -1,6 +1,8 @@
 """Tests for SpeakerRepositoryImpl."""
 
+from datetime import datetime
 from unittest.mock import MagicMock, patch
+from uuid import UUID
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -419,3 +421,133 @@ class TestSpeakerRepositoryImpl:
         assert model.political_party_name == "新党"
         assert model.position == "新役職"
         assert model.is_politician is True
+
+    @pytest.mark.asyncio
+    async def test_find_by_matched_user_with_specific_user(
+        self, repository, mock_session
+    ):
+        """Test find_by_matched_user with specific user_id."""
+        # Setup
+        test_user_id = UUID("11111111-1111-1111-1111-111111111111")
+        mock_rows = [
+            MagicMock(),
+            MagicMock(),
+        ]
+
+        # First speaker with politician join
+        mock_rows[0]._mapping = {
+            "id": 1,
+            "name": "山田太郎",
+            "type": "議員",
+            "political_party_name": "自民党",
+            "position": "議長",
+            "is_politician": True,
+            "politician_id": 100,
+            "matched_by_user_id": test_user_id,
+            "updated_at": datetime(2024, 1, 15, 10, 30),
+            "politician_id_from_join": 100,
+            "politician_name": "山田太郎政治家",
+        }
+        for key, value in mock_rows[0]._mapping.items():
+            setattr(mock_rows[0], key, value)
+
+        # Second speaker without politician join
+        mock_rows[1]._mapping = {
+            "id": 2,
+            "name": "鈴木花子",
+            "type": "議員",
+            "political_party_name": "民主党",
+            "position": None,
+            "is_politician": False,
+            "politician_id": None,
+            "matched_by_user_id": test_user_id,
+            "updated_at": datetime(2024, 1, 16, 14, 20),
+            "politician_id_from_join": None,
+            "politician_name": None,
+        }
+        for key, value in mock_rows[1]._mapping.items():
+            setattr(mock_rows[1], key, value)
+
+        mock_result = MagicMock()
+        mock_result.fetchall.return_value = mock_rows
+
+        async def async_execute(query, params=None):
+            return mock_result
+
+        mock_session.execute = async_execute
+
+        # Execute
+        result = await repository.find_by_matched_user(test_user_id)
+
+        # Verify
+        assert len(result) == 2
+        assert result[0].speaker.name == "山田太郎"
+        assert result[0].speaker.matched_by_user_id == test_user_id
+        assert result[0].speaker.updated_at == datetime(2024, 1, 15, 10, 30)
+        assert result[0].politician is not None
+        assert result[0].politician.name == "山田太郎政治家"
+        assert result[1].speaker.name == "鈴木花子"
+        assert result[1].politician is None
+
+    @pytest.mark.asyncio
+    async def test_find_by_matched_user_all_users(self, repository, mock_session):
+        """Test find_by_matched_user with user_id=None (all users)."""
+        # Setup
+        mock_rows = [
+            MagicMock(),
+        ]
+
+        mock_rows[0]._mapping = {
+            "id": 1,
+            "name": "山田太郎",
+            "type": "議員",
+            "political_party_name": "自民党",
+            "position": "議長",
+            "is_politician": True,
+            "politician_id": 100,
+            "matched_by_user_id": UUID("11111111-1111-1111-1111-111111111111"),
+            "updated_at": datetime(2024, 1, 15, 10, 30),
+            "politician_id_from_join": 100,
+            "politician_name": "山田太郎政治家",
+        }
+        for key, value in mock_rows[0]._mapping.items():
+            setattr(mock_rows[0], key, value)
+
+        mock_result = MagicMock()
+        mock_result.fetchall.return_value = mock_rows
+
+        async def async_execute(query, params=None):
+            return mock_result
+
+        mock_session.execute = async_execute
+
+        # Execute - user_id=None should return all matched speakers
+        result = await repository.find_by_matched_user(None)
+
+        # Verify
+        assert len(result) == 1
+        assert result[0].speaker.name == "山田太郎"
+        assert result[0].speaker.matched_by_user_id == UUID(
+            "11111111-1111-1111-1111-111111111111"
+        )
+
+    @pytest.mark.asyncio
+    async def test_find_by_matched_user_no_results(self, repository, mock_session):
+        """Test find_by_matched_user with no matching results."""
+        # Setup
+        mock_result = MagicMock()
+        mock_result.fetchall.return_value = []
+
+        async def async_execute(query, params=None):
+            return mock_result
+
+        mock_session.execute = async_execute
+
+        # Execute
+        result = await repository.find_by_matched_user(
+            UUID("99999999-9999-9999-9999-999999999999")
+        )
+
+        # Verify
+        assert len(result) == 0
+        assert result == []

@@ -11,6 +11,9 @@ CURRENT_DIR=$(pwd)
 # Get the git worktree directory name (last part of path)
 WORKTREE_NAME=$(basename "$CURRENT_DIR")
 
+# Get the main worktree directory
+MAIN_WORKTREE=$(git worktree list | head -n 1 | awk '{print $1}')
+
 # Function to calculate port offset from worktree name (same as setup-worktree-ports.sh)
 calculate_port_offset() {
     local name="$1"
@@ -34,6 +37,36 @@ STREAMLIT_PORT=$(( BASE_STREAMLIT_PORT + OFFSET ))
 # Create .streamlit directory if it doesn't exist
 mkdir -p .streamlit
 
+# Check if main worktree has secrets.toml and copy it if this worktree doesn't have one
+if [ ! -f .streamlit/secrets.toml ] && [ -f "$MAIN_WORKTREE/.streamlit/secrets.toml" ]; then
+    echo "📋 Copying .streamlit/secrets.toml from main worktree..."
+    cp "$MAIN_WORKTREE/.streamlit/secrets.toml" .streamlit/secrets.toml
+
+    # Update the port number in the copied file
+    if [ "$(uname)" = "Darwin" ]; then
+        # macOS
+        sed -i '' "s|http://localhost:[0-9]*/oauth2callback|http://localhost:$STREAMLIT_PORT/oauth2callback|g" .streamlit/secrets.toml
+    else
+        # Linux
+        sed -i "s|http://localhost:[0-9]*/oauth2callback|http://localhost:$STREAMLIT_PORT/oauth2callback|g" .streamlit/secrets.toml
+    fi
+
+    echo "✅ Copied and updated .streamlit/secrets.toml with port $STREAMLIT_PORT"
+    echo "   Redirect URI: http://localhost:$STREAMLIT_PORT/oauth2callback"
+
+    # Also update config.toml if it exists
+    if [ -f .streamlit/config.toml ]; then
+        if [ "$(uname)" = "Darwin" ]; then
+            sed -i '' "s/serverPort = [0-9]*/serverPort = $STREAMLIT_PORT/g" .streamlit/config.toml
+        else
+            sed -i "s/serverPort = [0-9]*/serverPort = $STREAMLIT_PORT/g" .streamlit/config.toml
+        fi
+        echo "   Updated .streamlit/config.toml with port $STREAMLIT_PORT"
+    fi
+
+    exit 0
+fi
+
 # Check if secrets.toml already exists
 if [ -f .streamlit/secrets.toml ]; then
     echo "⚠️  .streamlit/secrets.toml already exists."
@@ -43,8 +76,28 @@ if [ -f .streamlit/secrets.toml ]; then
         echo "   Detected placeholder values. Recreating with environment variables..."
         rm .streamlit/secrets.toml
     else
-        echo "   Recreating with ASCII-only content and port $STREAMLIT_PORT..."
-        rm .streamlit/secrets.toml
+        echo "   Updating port to $STREAMLIT_PORT..."
+        # Update only the port number in existing file
+        if [ "$(uname)" = "Darwin" ]; then
+            # macOS
+            sed -i '' "s|http://localhost:[0-9]*/oauth2callback|http://localhost:$STREAMLIT_PORT/oauth2callback|g" .streamlit/secrets.toml
+        else
+            # Linux
+            sed -i "s|http://localhost:[0-9]*/oauth2callback|http://localhost:$STREAMLIT_PORT/oauth2callback|g" .streamlit/secrets.toml
+        fi
+        echo "   ✅ Updated redirect URI to: http://localhost:$STREAMLIT_PORT/oauth2callback"
+
+        # Also update config.toml if it exists
+        if [ -f .streamlit/config.toml ]; then
+            if [ "$(uname)" = "Darwin" ]; then
+                sed -i '' "s/serverPort = [0-9]*/serverPort = $STREAMLIT_PORT/g" .streamlit/config.toml
+            else
+                sed -i "s/serverPort = [0-9]*/serverPort = $STREAMLIT_PORT/g" .streamlit/config.toml
+            fi
+            echo "   ✅ Updated .streamlit/config.toml with port $STREAMLIT_PORT"
+        fi
+
+        exit 0
     fi
 fi
 
@@ -99,6 +152,30 @@ EOF
     echo "✅ Created .streamlit/secrets.toml"
     echo "   Port: $STREAMLIT_PORT"
     echo "   Redirect URI: http://localhost:$STREAMLIT_PORT/oauth2callback"
+
+    # Create or update config.toml
+    cat > .streamlit/config.toml << EOF
+[server]
+# Enable CORS for OAuth2 callback
+enableCORS = false
+enableXsrfProtection = false
+
+# Headless mode (for Docker)
+headless = true
+
+# Server address
+address = "0.0.0.0"
+port = 8501
+
+# Allow websocket origins for OAuth2 callback
+enableWebsocketCompression = false
+
+[browser]
+serverAddress = "localhost"
+serverPort = $STREAMLIT_PORT
+EOF
+    echo "   Created .streamlit/config.toml"
+
     echo ""
     echo "⚠️  Next steps:"
     echo "   1. Set environment variables in .env:"
