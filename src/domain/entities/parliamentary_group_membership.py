@@ -1,6 +1,6 @@
 """Parliamentary group membership domain entity"""
 
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 
 from .base import BaseEntity
@@ -21,6 +21,8 @@ class ParliamentaryGroupMembership(BaseEntity):
         end_date: date | None = None,
         role: str | None = None,
         created_by_user_id: UUID | None = None,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
         id: int | None = None,
     ) -> None:
         super().__init__(id)
@@ -30,6 +32,8 @@ class ParliamentaryGroupMembership(BaseEntity):
         self.end_date = end_date
         self.role = role
         self.created_by_user_id = created_by_user_id
+        self.created_at = created_at
+        self.updated_at = updated_at
 
     def is_active(self, as_of_date: date | None = None) -> bool:
         """Check if membership is active as of a specific date"""

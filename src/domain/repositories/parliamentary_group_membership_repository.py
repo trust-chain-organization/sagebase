@@ -5,6 +5,9 @@ from datetime import date
 from typing import Any
 from uuid import UUID
 
+from src.domain.dtos.parliamentary_group_membership_dto import (
+    ParliamentaryGroupMembershipWithRelationsDTO,
+)
 from src.domain.entities.parliamentary_group_membership import (
     ParliamentaryGroupMembership,
 )
@@ -104,5 +107,19 @@ class ParliamentaryGroupMembershipRepository(
 
         Returns:
             List of dictionaries containing politician_id and other member info
+        """
+        pass
+
+    @abstractmethod
+    async def find_by_created_user(
+        self, user_id: "UUID | None" = None
+    ) -> list[ParliamentaryGroupMembershipWithRelationsDTO]:
+        """指定されたユーザーIDによって作成された議員団メンバーシップと関連情報を取得する
+
+        Args:
+            user_id: フィルタリング対象のユーザーID（Noneの場合は全ユーザー）
+
+        Returns:
+            議員団メンバーシップと関連エンティティ（政治家、議員団）を含むDTOのリスト
         """
         pass

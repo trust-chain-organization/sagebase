@@ -149,6 +149,7 @@ from src.infrastructure.persistence.proposal_repository_impl import (
 )
 from src.infrastructure.persistence.speaker_repository_impl import SpeakerRepositoryImpl
 from src.infrastructure.persistence.unit_of_work_impl import UnitOfWorkImpl
+from src.infrastructure.persistence.user_repository_impl import UserRepositoryImpl
 
 
 # Mock SQLAlchemy model classes for repositories that don't have them yet
@@ -377,6 +378,11 @@ class RepositoryContainer(containers.DeclarativeContainer):
 
     data_coverage_repository = providers.Factory(
         DataCoverageRepositoryImpl,
+        session=database.async_session,
+    )
+
+    user_repository = providers.Factory(
+        UserRepositoryImpl,
         session=database.async_session,
     )
 

@@ -38,6 +38,9 @@ from src.interfaces.web.streamlit.views.political_parties_view import (
 from src.interfaces.web.streamlit.views.politicians_view import render_politicians_page
 from src.interfaces.web.streamlit.views.processes_view import render_processes_page
 from src.interfaces.web.streamlit.views.proposals_view import render_proposals_page
+from src.interfaces.web.streamlit.views.work_history_view import (
+    render_work_history_page,
+)
 
 
 def main():
@@ -117,6 +120,12 @@ def main():
         ),
         st.Page(
             render_llm_history_page, title="LLM履歴", icon="🤖", url_path="llm_history"
+        ),
+        st.Page(
+            render_work_history_page,
+            title="作業履歴",
+            icon="📋",
+            url_path="work_history",
         ),
     ]
 

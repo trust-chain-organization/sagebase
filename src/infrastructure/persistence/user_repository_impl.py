@@ -25,10 +25,7 @@ class UserRepositoryImpl(IUserRepository):
         Args:
             session: AsyncSession or ISessionAdapter for database operations
         """
-        if isinstance(session, ISessionAdapter):
-            self.session = session.session
-        else:
-            self.session = session
+        self.session = session
 
     def _row_to_entity(self, row: Any) -> User:
         """Convert database row to User entity.
