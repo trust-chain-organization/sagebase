@@ -170,6 +170,26 @@ jobs:
 
           echo "url=${SERVICE_URL}" >> $GITHUB_OUTPUT
 
+      # カスタムドメインマッピングの設定
+      - name: Configure custom domain mapping
+        run: |
+          CUSTOM_DOMAIN="app.sage-base.com"
+
+          echo "Checking if domain mapping already exists..."
+          if gcloud beta run domain-mappings describe ${CUSTOM_DOMAIN} \
+              --region=${{ env.REGION }} \
+              --project=${{ env.PROJECT_ID }} > /dev/null 2>&1; then
+            echo "✅ Domain mapping for ${CUSTOM_DOMAIN} already exists"
+          else
+            echo "Creating domain mapping for ${CUSTOM_DOMAIN}..."
+            gcloud beta run domain-mappings create \
+              --service=${{ env.SERVICE_NAME }} \
+              --domain=${CUSTOM_DOMAIN} \
+              --region=${{ env.REGION }} \
+              --project=${{ env.PROJECT_ID }}
+            echo "✅ Domain mapping created successfully"
+          fi
+
       # デプロイ結果の確認
       - name: Verify deployment
         run: |
@@ -201,8 +221,9 @@ jobs:
           echo "- **Image**: ${{ steps.image.outputs.tag_sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **SHA**: \`${{ steps.image.outputs.short_sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Service URL" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [${{ steps.deploy.outputs.url }}](${{ steps.deploy.outputs.url }})" >> $GITHUB_STEP_SUMMARY
+          echo "### Service URLs" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 Cloud Run URL: [${{ steps.deploy.outputs.url }}](${{ steps.deploy.outputs.url }})" >> $GITHUB_STEP_SUMMARY
+          echo "🌐 Custom Domain: [https://app.sage-base.com](https://app.sage-base.com)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Quick Commands" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
