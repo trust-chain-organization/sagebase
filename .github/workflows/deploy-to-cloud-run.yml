@@ -170,6 +170,11 @@ jobs:
 
           echo "url=${SERVICE_URL}" >> $GITHUB_OUTPUT
 
+      # gcloud betaコンポーネントのインストール
+      - name: Install gcloud beta components
+        run: |
+          gcloud components install beta --quiet
+
       # カスタムドメインマッピングの設定
       - name: Configure custom domain mapping
         run: |
