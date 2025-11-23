@@ -24,6 +24,16 @@ from src.infrastructure.persistence.sqlalchemy_models import (
     ParliamentaryGroupMembershipModel,
 )
 
+# Time interval functions for timeline statistics
+INTERVAL_FUNCTIONS = {
+    "day": "DATE(created_at)",
+    "week": "DATE_TRUNC('week', created_at)::date",
+    "month": "DATE_TRUNC('month', created_at)::date",
+}
+
+# Placeholder for lazy-loaded conference_id in partial entity construction
+PLACEHOLDER_CONFERENCE_ID = 0
+
 
 class ParliamentaryGroupMembershipRepositoryImpl(
     BaseRepositoryImpl[ParliamentaryGroupMembershipEntity],
@@ -327,7 +337,7 @@ class ParliamentaryGroupMembershipRepositoryImpl(
                 parliamentary_group = ParliamentaryGroup(
                     id=row.parliamentary_group_id,
                     name=row.parliamentary_group_name,
-                    conference_id=0,  # Will be loaded if needed
+                    conference_id=PLACEHOLDER_CONFERENCE_ID,
                 )
 
             politician = None
@@ -428,13 +438,8 @@ class ParliamentaryGroupMembershipRepositoryImpl(
         from sqlalchemy import text
 
         # Determine date truncation function based on interval
-        if interval == "day":
-            date_trunc = "DATE(created_at)"
-        elif interval == "week":
-            date_trunc = "DATE_TRUNC('week', created_at)::date"
-        elif interval == "month":
-            date_trunc = "DATE_TRUNC('month', created_at)::date"
-        else:
+        date_trunc = INTERVAL_FUNCTIONS.get(interval)
+        if date_trunc is None:
             raise ValueError(f"Invalid interval: {interval}")
 
         # Build SQL query

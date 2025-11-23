@@ -1,7 +1,7 @@
 """Repository interface for parliamentary group memberships."""
 
 from abc import abstractmethod
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
@@ -128,8 +128,8 @@ class ParliamentaryGroupMembershipRepository(
     async def get_membership_creation_statistics_by_user(
         self,
         user_id: "UUID | None" = None,
-        start_date: Any | None = None,
-        end_date: Any | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
     ) -> dict[UUID, int]:
         """ユーザー別の議員団メンバー作成件数を集計する（データベースレベルで集計）
 
@@ -147,8 +147,8 @@ class ParliamentaryGroupMembershipRepository(
     async def get_membership_creation_timeline_statistics(
         self,
         user_id: "UUID | None" = None,
-        start_date: Any | None = None,
-        end_date: Any | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         interval: str = "day",
     ) -> list[dict[str, Any]]:
         """時系列の議員団メンバー作成件数を集計する（データベースレベルで集計）

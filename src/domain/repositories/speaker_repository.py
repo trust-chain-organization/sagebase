@@ -1,6 +1,7 @@
 """Speaker repository interface."""
 
 from abc import abstractmethod
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -113,8 +114,8 @@ class SpeakerRepository(BaseRepository[Speaker]):
     async def get_speaker_matching_statistics_by_user(
         self,
         user_id: "UUID | None" = None,
-        start_date: Any | None = None,
-        end_date: Any | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
     ) -> dict[UUID, int]:
         """ユーザー別の発言者紐付け件数を集計する（データベースレベルで集計）
 
@@ -132,8 +133,8 @@ class SpeakerRepository(BaseRepository[Speaker]):
     async def get_speaker_matching_timeline_statistics(
         self,
         user_id: "UUID | None" = None,
-        start_date: Any | None = None,
-        end_date: Any | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         interval: str = "day",
     ) -> list[dict[str, Any]]:
         """時系列の発言者紐付け件数を集計する（データベースレベルで集計）

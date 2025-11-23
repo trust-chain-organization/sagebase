@@ -16,6 +16,13 @@ from src.domain.repositories.session_adapter import ISessionAdapter
 from src.domain.repositories.speaker_repository import SpeakerRepository
 from src.infrastructure.persistence.base_repository_impl import BaseRepositoryImpl
 
+# Time interval functions for timeline statistics
+INTERVAL_FUNCTIONS = {
+    "day": "DATE(updated_at)",
+    "week": "DATE_TRUNC('week', updated_at)::date",
+    "month": "DATE_TRUNC('month', updated_at)::date",
+}
+
 
 class SpeakerModel:
     """Speaker database model (dynamic)."""
@@ -637,13 +644,8 @@ class SpeakerRepositoryImpl(BaseRepositoryImpl[Speaker], SpeakerRepository):
             時系列データのリスト（例: [{"date": "2024-01-01", "count": 5}, ...]）
         """
         # Determine date truncation function based on interval
-        if interval == "day":
-            date_trunc = "DATE(updated_at)"
-        elif interval == "week":
-            date_trunc = "DATE_TRUNC('week', updated_at)::date"
-        elif interval == "month":
-            date_trunc = "DATE_TRUNC('month', updated_at)::date"
-        else:
+        date_trunc = INTERVAL_FUNCTIONS.get(interval)
+        if date_trunc is None:
             raise ValueError(f"Invalid interval: {interval}")
 
         # Build SQL query
