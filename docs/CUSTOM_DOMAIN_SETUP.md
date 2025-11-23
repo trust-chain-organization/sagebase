@@ -1,12 +1,12 @@
 # カスタムドメイン設定ガイド（Cloud Run + Cloudflare構成）
 
-このドキュメントでは、Sagebase (sage-base.com) のカスタムドメイン設定手順を説明します。
+このドキュメントでは、Sagebase (app.sage-base.com) のカスタムドメイン設定手順を説明します。
 
 **インフラ構成**: Google Cloud Run + Cloudflare（CDN & セキュリティ）
 
 ## 📋 前提条件
 
-- [x] Cloudflareでsage-base.comドメインを購入済み
+- [x] Cloudflareでapp.sage-base.comドメインを購入済み
 - [ ] Cloud RunにSagebaseアプリがデプロイ済み
 - [ ] Google Cloud Projectへのアクセス権限
 - [ ] Google Analytics 4 プロパティを作成済み（アナリティクス使用時）
@@ -19,7 +19,7 @@
 ```
 ユーザー
   ↓
-Cloudflare DNS (sage-base.com)
+Cloudflare DNS (app.sage-base.com)
   ↓
 Cloudflare CDN + Workers（セキュリティヘッダー、キャッシング）
   ↓
@@ -78,7 +78,7 @@ curl -I $CLOUD_RUN_URL
 ### 2.1 Cloudflareダッシュボードにアクセス
 
 1. [Cloudflare Dashboard](https://dash.cloudflare.com/)にログイン
-2. **sage-base.com** ドメインを選択
+2. **app.sage-base.com** ドメインを選択
 3. 左サイドバーから **DNS** > **Records** を選択
 
 ### 2.2 DNSレコードの追加
@@ -89,36 +89,16 @@ Cloud RunのURLをCloudflareでプロキシします。
 
 ```
 Type: CNAME
-Name: @ (またはsage-base.com)
+Name: app
 Target: sagebase-streamlit-xxxxx-an.a.run.app
   （Cloud RunのURLからhttps://を除いた部分）
 TTL: Auto
 Proxy status: Proxied (オレンジ色のクラウドアイコンをON)
 ```
 
+**注意**: sage-base.comはコーポレートサイト用に使用されているため、サブドメイン `app` を使用します。
+
 **重要**: Proxy statusは必ず **Proxied（オレンジ色）** にしてください。これにより、Cloudflare経由でアクセスされます。
-
-#### wwwサブドメインの設定（オプション）
-
-www.sage-base.comからのアクセスをリダイレクトする場合：
-
-```
-Type: CNAME
-Name: www
-Target: sage-base.com
-TTL: Auto
-Proxy status: Proxied
-```
-
-### 2.3 Cloudflare Page Rulesでwwwリダイレクト（オプション）
-
-1. Cloudflareダッシュボード > **Rules** > **Page Rules** を選択
-2. **Create Page Rule** をクリック
-3. 以下を設定：
-   - URL: `www.sage-base.com/*`
-   - Setting: **Forwarding URL** (301 - Permanent Redirect)
-   - Destination URL: `https://sage-base.com/$1`
-4. **Save and Deploy** をクリック
 
 ---
 
@@ -211,7 +191,7 @@ async function handleRequest(request) {
     "img-src 'self' data: https: blob:",
     "connect-src 'self' https://www.google-analytics.com " +
       "https://www.googletagmanager.com " +
-      "wss://*.run.app wss://sage-base.com",
+      "wss://*.run.app wss://app.sage-base.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -232,11 +212,11 @@ async function handleRequest(request) {
 4. **Triggers** タブを開く
 5. **Add route** をクリック
 6. 以下を設定：
-   - Route: `sage-base.com/*`
-   - Zone: `sage-base.com`
+   - Route: `app.sage-base.com/*`
+   - Zone: `app.sage-base.com`
 7. **Add route** をクリック
 
-**確認**: `https://sage-base.com/*` へのすべてのリクエストがこのWorkerを経由するようになります。
+**確認**: `https://app.sage-base.com/*` へのすべてのリクエストがこのWorkerを経由するようになります。
 
 ---
 
@@ -257,7 +237,7 @@ gcloud run services update $SERVICE_NAME \
 gcloud run services update $SERVICE_NAME \
   --region=$REGION \
   --project=$PROJECT_ID \
-  --update-env-vars="GOOGLE_OAUTH_REDIRECT_URI=https://sage-base.com/"
+  --update-env-vars="GOOGLE_OAUTH_REDIRECT_URI=https://app.sage-base.com/"
 
 # 本番環境フラグ
 gcloud run services update $SERVICE_NAME \
@@ -290,7 +270,7 @@ gcloud run services describe $SERVICE_NAME \
 ### 6.2 データストリームの設定
 
 1. **Data Streams** > **Add stream** > **Web** を選択
-2. Website URL: `https://sage-base.com`
+2. Website URL: `https://app.sage-base.com`
 3. Stream name: `Sagebase Production`
 4. **Create stream** をクリック
 
@@ -327,20 +307,20 @@ gcloud run services update $SERVICE_NAME \
 - `sitemap.xml`
 
 Cloud Runにデプロイされると、自動的に以下のURLでアクセス可能になります：
-- https://sage-base.com/robots.txt
-- https://sage-base.com/sitemap.xml
+- https://app.sage-base.com/robots.txt
+- https://app.sage-base.com/sitemap.xml
 
 ### 7.2 Google Search Consoleへの登録
 
 1. [Google Search Console](https://search.google.com/search-console)にアクセス
 2. **Add property** をクリック
 3. プロパティタイプ: **Domain**
-4. ドメイン名: `sage-base.com` を入力
+4. ドメイン名: `app.sage-base.com` を入力
 5. DNS認証用のTXTレコードをCloudflare DNSに追加：
 
 ```
 Type: TXT
-Name: @ (またはsage-base.com)
+Name: app
 Content: google-site-verification=xxxxxxxxxxxxxxxxxxxxx
 TTL: Auto
 Proxy status: DNS only (グレー色)
@@ -351,7 +331,7 @@ Proxy status: DNS only (グレー色)
 ### 7.3 サイトマップの送信
 
 1. Google Search Consoleの **Sitemaps** セクションに移動
-2. サイトマップURL: `https://sage-base.com/sitemap.xml` を入力
+2. サイトマップURL: `https://app.sage-base.com/sitemap.xml` を入力
 3. **Submit** をクリック
 
 ---
@@ -362,19 +342,19 @@ Proxy status: DNS only (グレー色)
 
 ```bash
 # nslookupでDNS設定を確認
-nslookup sage-base.com
+nslookup app.sage-base.com
 
 # digコマンドで詳細確認
-dig sage-base.com
+dig app.sage-base.com
 
 # Cloudflareを経由しているか確認
-dig sage-base.com +short
+dig app.sage-base.com +short
 # CloudflareのIPアドレス（104.xx.xx.xx など）が返ってくるはず
 ```
 
 ### 8.2 SSL証明書の確認
 
-ブラウザでhttps://sage-base.comにアクセスし、アドレスバーの鍵アイコンをクリック：
+ブラウザでhttps://app.sage-base.comにアクセスし、アドレスバーの鍵アイコンをクリック：
 - 証明書が有効か確認
 - 発行者: Cloudflare（またはGoogle Trust Services）
 
@@ -382,14 +362,14 @@ dig sage-base.com +short
 
 ```bash
 # SSL証明書の確認
-openssl s_client -connect sage-base.com:443 -servername sage-base.com < /dev/null 2>/dev/null | \
+openssl s_client -connect app.sage-base.com:443 -servername app.sage-base.com < /dev/null 2>/dev/null | \
   openssl x509 -noout -text | grep -A2 "Issuer"
 ```
 
 ### 8.3 セキュリティヘッダーの確認
 
 開発者ツールを開いて確認：
-1. ブラウザで https://sage-base.com を開く
+1. ブラウザで https://app.sage-base.com を開く
 2. 開発者ツール（F12）> **Network** タブ
 3. ページをリロード
 4. レスポンスヘッダーに以下が含まれているか確認：
@@ -399,37 +379,37 @@ openssl s_client -connect sage-base.com:443 -servername sage-base.com < /dev/nul
    - `Strict-Transport-Security: ...`
 
 オンラインツールでも確認可能：
-- [Security Headers](https://securityheaders.com/?q=sage-base.com)
+- [Security Headers](https://securityheaders.com/?q=app.sage-base.com)
 - 期待されるグレード: **A** または **A+**
 
 ### 8.4 HTTPSリダイレクトの確認
 
 ```bash
 # HTTPアクセスがHTTPSにリダイレクトされるか確認
-curl -I http://sage-base.com
+curl -I http://app.sage-base.com
 
 # 期待される結果:
 # HTTP/1.1 301 Moved Permanently
-# Location: https://sage-base.com/
+# Location: https://app.sage-base.com/
 ```
 
 ### 8.5 Google Analyticsの確認
 
 1. Google Analytics > **Realtime** レポートを開く
-2. https://sage-base.com にアクセス
+2. https://app.sage-base.com にアクセス
 3. リアルタイムレポートにアクセスが表示されることを確認
 
 ### 8.6 全ページの動作確認
 
 以下のページが正しく動作するか確認：
-- [ ] https://sage-base.com/ (ホーム)
-- [ ] https://sage-base.com/meetings (会議管理)
-- [ ] https://sage-base.com/political_parties (政党管理)
-- [ ] https://sage-base.com/politicians (政治家管理)
-- [ ] https://sage-base.com/conversations (発言レコード)
-- [ ] https://sage-base.com/processes (処理実行)
-- [ ] https://sage-base.com/llm_history (LLM履歴)
-- [ ] https://sage-base.com/work_history (作業履歴)
+- [ ] https://app.sage-base.com/ (ホーム)
+- [ ] https://app.sage-base.com/meetings (会議管理)
+- [ ] https://app.sage-base.com/political_parties (政党管理)
+- [ ] https://app.sage-base.com/politicians (政治家管理)
+- [ ] https://app.sage-base.com/conversations (発言レコード)
+- [ ] https://app.sage-base.com/processes (処理実行)
+- [ ] https://app.sage-base.com/llm_history (LLM履歴)
+- [ ] https://app.sage-base.com/work_history (作業履歴)
 
 ---
 
@@ -442,7 +422,7 @@ curl -I http://sage-base.com
 **解決策**:
 - 最大48時間待つ（通常は数分〜数時間で完了）
 - Cloudflare DNSのTTLを確認
-- `dig sage-base.com` で現在の設定を確認
+- `dig app.sage-base.com` で現在の設定を確認
 - Cloudflareダッシュボードで **Purge Cache** を実行
 
 ### SSL証明書エラー
@@ -460,7 +440,7 @@ curl -I http://sage-base.com
 
 **解決策**:
 - Workers & Pages > Triggers でルート設定を確認
-- `sage-base.com/*` が正しく設定されているか確認
+- `app.sage-base.com/*` が正しく設定されているか確認
 - Cloudflare ProxyがON（オレンジ色）になっているか確認
 - Workerのログを確認（Workers & Pages > 該当Worker > Logs）
 
@@ -501,7 +481,7 @@ gcloud run services update $SERVICE_NAME \
 
 1. Cloudflareダッシュボード > **Rules** > **Page Rules**
 2. **Create Page Rule** をクリック
-3. URL: `sage-base.com/static/*`
+3. URL: `app.sage-base.com/static/*`
 4. Settings:
    - **Cache Level**: Cache Everything
    - **Edge Cache TTL**: 1 month
@@ -527,7 +507,7 @@ DDoS攻撃やボット対策：
 2. **Rate limiting rules** タブを選択
 3. **Create rule** をクリック
 4. 例: 10秒間に10リクエスト以上で制限
-   - Match: `sage-base.com/*`
+   - Match: `app.sage-base.com/*`
    - Requests: 10 requests
    - Period: 10 seconds
    - Action: Block
@@ -547,7 +527,7 @@ DDoS攻撃やボット対策：
 
 ## ✨ 完了後の確認項目
 
-- [ ] https://sage-base.com でアプリにアクセスできる
+- [ ] https://app.sage-base.com でアプリにアクセスできる
 - [ ] SSL証明書が有効（鍵アイコンが表示される）
 - [ ] HTTPからHTTPSへ自動リダイレクトされる
 - [ ] セキュリティヘッダーが正しく設定されている（A+グレード）

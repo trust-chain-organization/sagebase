@@ -6,7 +6,7 @@
 
   <!-- ホームページ -->
   <url>
-    <loc>https://sage-base.com/</loc>
+    <loc>https://app.sage-base.com/</loc>
     <lastmod>2025-01-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
@@ -14,7 +14,7 @@
 
   <!-- 会議管理 -->
   <url>
-    <loc>https://sage-base.com/meetings</loc>
+    <loc>https://app.sage-base.com/meetings</loc>
     <lastmod>2025-01-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -22,7 +22,7 @@
 
   <!-- 政党管理 -->
   <url>
-    <loc>https://sage-base.com/political_parties</loc>
+    <loc>https://app.sage-base.com/political_parties</loc>
     <lastmod>2025-01-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -30,7 +30,7 @@
 
   <!-- 会議体管理 -->
   <url>
-    <loc>https://sage-base.com/conferences</loc>
+    <loc>https://app.sage-base.com/conferences</loc>
     <lastmod>2025-01-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -38,7 +38,7 @@
 
   <!-- 開催主体管理 -->
   <url>
-    <loc>https://sage-base.com/governing_bodies</loc>
+    <loc>https://app.sage-base.com/governing_bodies</loc>
     <lastmod>2025-01-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -46,7 +46,7 @@
 
   <!-- 政治家管理 -->
   <url>
-    <loc>https://sage-base.com/politicians</loc>
+    <loc>https://app.sage-base.com/politicians</loc>
     <lastmod>2025-01-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -54,7 +54,7 @@
 
   <!-- 政治家レビュー -->
   <url>
-    <loc>https://sage-base.com/extracted_politicians</loc>
+    <loc>https://app.sage-base.com/extracted_politicians</loc>
     <lastmod>2025-01-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -62,7 +62,7 @@
 
   <!-- 議員団管理 -->
   <url>
-    <loc>https://sage-base.com/parliamentary_groups</loc>
+    <loc>https://app.sage-base.com/parliamentary_groups</loc>
     <lastmod>2025-01-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -70,7 +70,7 @@
 
   <!-- 議案管理 -->
   <url>
-    <loc>https://sage-base.com/proposals</loc>
+    <loc>https://app.sage-base.com/proposals</loc>
     <lastmod>2025-01-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -78,7 +78,7 @@
 
   <!-- 発言レコード一覧 -->
   <url>
-    <loc>https://sage-base.com/conversations</loc>
+    <loc>https://app.sage-base.com/conversations</loc>
     <lastmod>2025-01-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -86,7 +86,7 @@
 
   <!-- 発言・発言者管理 -->
   <url>
-    <loc>https://sage-base.com/conversations_speakers</loc>
+    <loc>https://app.sage-base.com/conversations_speakers</loc>
     <lastmod>2025-01-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
@@ -94,7 +94,7 @@
 
   <!-- 処理実行 -->
   <url>
-    <loc>https://sage-base.com/processes</loc>
+    <loc>https://app.sage-base.com/processes</loc>
     <lastmod>2025-01-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -102,7 +102,7 @@
 
   <!-- LLM履歴 -->
   <url>
-    <loc>https://sage-base.com/llm_history</loc>
+    <loc>https://app.sage-base.com/llm_history</loc>
     <lastmod>2025-01-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.5</priority>
@@ -110,7 +110,7 @@
 
   <!-- 作業履歴 -->
   <url>
-    <loc>https://sage-base.com/work_history</loc>
+    <loc>https://app.sage-base.com/work_history</loc>
     <lastmod>2025-01-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.5</priority>

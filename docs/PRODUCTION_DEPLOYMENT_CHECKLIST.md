@@ -1,6 +1,6 @@
 # 本番環境デプロイチェックリスト
 
-このチェックリストは、sage-base.comドメインでSagebaseを本番環境にデプロイする際の
+このチェックリストは、app.sage-base.comドメインでSagebaseを本番環境にデプロイする際の
 確認項目をまとめたものです。
 
 **Issue**: #726 - [PBI-007] カスタムドメインの設定と本番環境への公開
@@ -10,10 +10,10 @@
 ## 📋 デプロイ前の準備
 
 ### ドメイン・DNS設定
-- [ ] Cloudflareでsage-base.comドメインを購入済み
+- [ ] Cloudflareでapp.sage-base.comドメインを購入済み
 - [ ] Cloudflare DNSでCNAMEまたはAレコードを設定
 - [ ] wwwサブドメインのリダイレクト設定（オプション）
-- [ ] DNS伝播の確認（`nslookup sage-base.com`）
+- [ ] DNS伝播の確認（`nslookup app.sage-base.com`）
 - [ ] Cloudflare Proxyが有効化されている（オレンジ色のアイコン）
 
 ### Cloud Run設定
@@ -21,7 +21,7 @@
 - [ ] Cloud Runサービス名が `sagebase-streamlit` であることを確認
 - [ ] Cloud Runサービスが正常に動作（ヘルスチェック成功）
 - [ ] 環境変数を本番環境用に更新
-  - [ ] `GOOGLE_OAUTH_REDIRECT_URI=https://sage-base.com/`
+  - [ ] `GOOGLE_OAUTH_REDIRECT_URI=https://app.sage-base.com/`
   - [ ] `GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX`（Secret Manager推奨）
   - [ ] `ENVIRONMENT=production`
   - [ ] `CLOUD_RUN=true`
@@ -30,7 +30,7 @@
 
 ### Google Analytics設定
 - [ ] Google Analytics 4プロパティを作成
-- [ ] データストリーム（Web）を追加（URL: https://sage-base.com）
+- [ ] データストリーム（Web）を追加（URL: https://app.sage-base.com）
 - [ ] 測定ID（G-XXXXXXXXXX）をコピー
 - [ ] Secret Managerに `google-analytics-id` シークレットを作成
 - [ ] Cloud Runの環境変数またはシークレット参照として設定
@@ -42,7 +42,7 @@
 ### Cloudflare Workers
 - [ ] セキュリティヘッダー用のWorkerを作成
 - [ ] Workerスクリプトをデプロイ
-- [ ] `sage-base.com/*` にルートを追加
+- [ ] `app.sage-base.com/*` にルートを追加
 - [ ] 以下のヘッダーが設定されているか確認：
   - [ ] `X-Frame-Options: DENY`
   - [ ] `X-Content-Type-Options: nosniff`
@@ -60,7 +60,7 @@
 
 ### 認証設定
 - [ ] Google OAuthクライアントIDとシークレットが設定済み
-- [ ] リダイレクトURIに `https://sage-base.com/` が登録済み
+- [ ] リダイレクトURIに `https://app.sage-base.com/` が登録済み
 - [ ] 許可されたメールアドレスリストが設定済み（必要に応じて）
 - [ ] OAuth認証フローが本番ドメインで動作
 
@@ -71,14 +71,14 @@
 ### robots.txtとsitemap.xml
 - [ ] `robots.txt` がプロジェクトルートに存在
 - [ ] `sitemap.xml` がプロジェクトルートに存在
-- [ ] https://sage-base.com/robots.txt にアクセス可能
-- [ ] https://sage-base.com/sitemap.xml にアクセス可能
+- [ ] https://app.sage-base.com/robots.txt にアクセス可能
+- [ ] https://app.sage-base.com/sitemap.xml にアクセス可能
 - [ ] robots.txtに正しいサイトマップURLが記載されている
 
 ### Google Search Console
 - [ ] Google Search Consoleにプロパティを追加
 - [ ] DNSベースの所有権確認を完了
-- [ ] サイトマップ（https://sage-base.com/sitemap.xml）を送信
+- [ ] サイトマップ（https://app.sage-base.com/sitemap.xml）を送信
 - [ ] インデックス登録のリクエストを送信（初回のみ）
 
 ### メタタグ・OGP設定
@@ -91,7 +91,7 @@
 ## ✅ 機能テスト
 
 ### 基本動作確認
-- [ ] https://sage-base.com/ (ホームページ) にアクセス可能
+- [ ] https://app.sage-base.com/ (ホームページ) にアクセス可能
 - [ ] ログインページが表示される（OAuth無効時はスキップ）
 - [ ] Google OAuthでログインできる
 - [ ] ログアウトが正常に動作
