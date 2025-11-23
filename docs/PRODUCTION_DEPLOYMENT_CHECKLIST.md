@@ -16,21 +16,24 @@
 - [ ] DNS伝播の確認（`nslookup sage-base.com`）
 - [ ] Cloudflare Proxyが有効化されている（オレンジ色のアイコン）
 
-### Streamlit Cloud設定
-- [ ] Streamlit Cloudにアプリがデプロイ済み
-- [ ] カスタムドメイン（sage-base.com）を追加
-- [ ] SSL証明書のステータスが **Active** になっている
-- [ ] 環境変数（Secrets）を本番環境用に更新
+### Cloud Run設定
+- [ ] Cloud RunにアプリがデプロイされてStable状態
+- [ ] Cloud Runサービス名が `sagebase-streamlit` であることを確認
+- [ ] Cloud Runサービスが正常に動作（ヘルスチェック成功）
+- [ ] 環境変数を本番環境用に更新
   - [ ] `GOOGLE_OAUTH_REDIRECT_URI=https://sage-base.com/`
-  - [ ] `GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX`
+  - [ ] `GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX`（Secret Manager推奨）
   - [ ] `ENVIRONMENT=production`
-  - [ ] `DEBUG=false`
+  - [ ] `CLOUD_RUN=true`
+- [ ] Cloud SQLへの接続が正常に動作
+- [ ] Secret Managerから機密情報が正しく注入されている
 
 ### Google Analytics設定
 - [ ] Google Analytics 4プロパティを作成
 - [ ] データストリーム（Web）を追加（URL: https://sage-base.com）
 - [ ] 測定ID（G-XXXXXXXXXX）をコピー
-- [ ] Streamlit Cloud Secretsに `GOOGLE_ANALYTICS_ID` を設定
+- [ ] Secret Managerに `google-analytics-id` シークレットを作成
+- [ ] Cloud Runの環境変数またはシークレット参照として設定
 
 ---
 
@@ -48,10 +51,12 @@
   - [ ] `Referrer-Policy`
 
 ### SSL/TLS設定
-- [ ] SSL証明書が有効（Let's Encrypt）
+- [ ] CloudflareのSSL/TLS暗号化モードが **Full (strict)** に設定
+- [ ] Cloudflare Universal SSL証明書が発行済み
 - [ ] HTTPSアクセスが正常に動作
-- [ ] HTTPからHTTPSへの自動リダイレクトが動作
-- [ ] 証明書の有効期限が十分に長い（自動更新される）
+- [ ] HTTPからHTTPSへの自動リダイレクトが動作（Cloudflare Workers）
+- [ ] **Always Use HTTPS** が有効
+- [ ] **Minimum TLS Version** が TLS 1.2 以上に設定
 
 ### 認証設定
 - [ ] Google OAuthクライアントIDとシークレットが設定済み
@@ -167,15 +172,27 @@
 
 ## 🔧 インフラ・バックアップ
 
-### データベース
-- [ ] 本番環境用のデータベースが設定されている
+### Cloud Run
+- [ ] Cloud Runサービスのリソース設定が適切（CPU: 2, Memory: 2Gi）
+- [ ] 最小インスタンス数の設定（コールドスタート対策）
+- [ ] 最大インスタンス数の設定（コスト制御）
+- [ ] タイムアウト設定が適切（300秒）
+- [ ] Cloud Monitoringでメトリクスを監視
+
+### データベース (Cloud SQL)
+- [ ] 本番環境用のCloud SQLインスタンスが稼働中
+- [ ] Cloud SQL Proxyが正しく設定されている
 - [ ] データベース接続が安定している
-- [ ] バックアップが定期的に取得されている
+- [ ] 自動バックアップが有効（7日間保持）
+- [ ] Point-in-Time Recoveryが有効
 - [ ] リストア手順が文書化されている
 
-### 環境変数
+### 環境変数とシークレット
 - [ ] すべての必須環境変数が設定されている
-- [ ] APIキーが正しく設定されている
+- [ ] Secret Managerにすべてのシークレットが保存されている
+  - [ ] `google-api-key` (Gemini API)
+  - [ ] `database-password`
+  - [ ] `google-analytics-id`
 - [ ] 機密情報がGitにコミットされていない
 - [ ] `.env.example` が最新の状態
 
@@ -206,10 +223,12 @@
 - [ ] チーム全体に本番デプロイを通知
 
 ### デプロイ実施
-- [ ] Streamlit Cloudでアプリを再デプロイ
-- [ ] デプロイログにエラーがないか確認
+- [ ] GitHub Actionsによる自動デプロイ（mainブランチへのマージ）
+  - または手動デプロイ：`gcloud run deploy` コマンド実行
+- [ ] Cloud Buildログにエラーがないか確認
+- [ ] Cloud Runリビジョンが正常にデプロイされた
 - [ ] アプリケーションが正常に起動
-- [ ] ヘルスチェックエンドポイントが正常
+- [ ] ヘルスチェックが成功（Cloud Runの内部ヘルスチェック）
 
 ### デプロイ後の確認
 - [ ] 本番環境でスモークテストを実施
@@ -245,17 +264,66 @@
 
 何か問題が発生した場合のロールバック手順：
 
-1. Streamlit Cloudでアプリを一時停止
-2. 環境変数を以前の設定に戻す
-3. 必要に応じてDNS設定を一時的に変更
-4. 問題を修正
-5. ステージング環境で再テスト
-6. 再デプロイ
+### 即座のロールバック（前のリビジョンに戻す）
+
+```bash
+# 環境変数を設定
+export PROJECT_ID="your-project-id"
+export REGION="asia-northeast1"
+export SERVICE_NAME="sagebase-streamlit"
+
+# 直前のリビジョンにロールバック
+gcloud run services update-traffic $SERVICE_NAME \
+  --to-revisions=PREVIOUS=100 \
+  --region=$REGION \
+  --project=$PROJECT_ID
+```
+
+### 特定のリビジョンにロールバック
+
+```bash
+# 利用可能なリビジョンを確認
+gcloud run revisions list \
+  --service=$SERVICE_NAME \
+  --region=$REGION \
+  --project=$PROJECT_ID
+
+# 特定のリビジョンにロールバック
+gcloud run services update-traffic $SERVICE_NAME \
+  --to-revisions=REVISION_NAME=100 \
+  --region=$REGION \
+  --project=$PROJECT_ID
+```
+
+### 詳細なロールバック手順
+
+1. **問題の特定と影響範囲の確認**
+   ```bash
+   # ログを確認
+   gcloud run logs tail $SERVICE_NAME \
+     --region=$REGION \
+     --project=$PROJECT_ID
+   ```
+
+2. **トラフィックを前のリビジョンに切り替え**
+   - 上記のコマンドを実行
+
+3. **問題の根本原因を調査**
+   - Cloud Loggingで詳細ログを確認
+   - Cloud Monitoringでメトリクスを確認
+
+4. **修正とテスト**
+   - 問題を修正
+   - ローカルまたはステージング環境でテスト
+
+5. **再デプロイ**
+   - GitHub Actionsで再デプロイ
+   - または手動デプロイ
 
 **緊急連絡先**:
 - チームリーダー: [連絡先]
 - インフラ担当: [連絡先]
-- Streamlit Cloud サポート: https://docs.streamlit.io/streamlit-community-cloud/get-help
+- GCP サポート: https://cloud.google.com/support
 
 ---
 
