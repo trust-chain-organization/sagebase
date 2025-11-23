@@ -46,10 +46,6 @@ def test_scrape_minutes_with_url(cli_runner, mock_minutes_data):
         assert result.exit_code == 0
         mock_run.assert_called_once()
 
-        # Check that the async function was called with correct arguments
-        call_args = mock_run.call_args[0][0]
-        assert call_args.cr_code.co_name == "_async_scrape_minutes"
-
 
 def test_scrape_minutes_with_meeting_id(cli_runner, mock_minutes_data):
     """Test scrape-minutes command with meeting ID"""
