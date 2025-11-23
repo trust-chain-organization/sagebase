@@ -92,7 +92,7 @@ class WorkHistoryPresenter:
         start_date: datetime | None = None,
         end_date: datetime | None = None,
     ) -> dict[str, int | dict[str, int]]:
-        """作業履歴の統計情報を取得する
+        """作業履歴の統計情報を取得する（データベースレベルで集計）
 
         Args:
             user_id: フィルタリング対象のユーザーID
@@ -104,38 +104,40 @@ class WorkHistoryPresenter:
             統計情報の辞書
         """
         try:
-            # すべての履歴を取得（limitを大きく設定）
-            histories = asyncio.run(
-                self.work_history_usecase.execute(
+            # データベースレベルで集計された統計情報を取得
+            type_stats = asyncio.run(
+                self.work_history_usecase.get_work_statistics_by_type(
                     user_id=user_id,
-                    work_types=work_types,
                     start_date=start_date,
                     end_date=end_date,
-                    limit=10000,  # 統計用に大量取得
                 )
             )
 
-            # 統計情報の集計
-            total_count = len(histories)
-            work_type_counts = {}
+            # 合計カウントを計算
+            total_count = sum(type_stats.values())
+
+            # ユーザー別カウントを整形（ユーザー情報を含む）
             user_counts = {}
-
-            for history in histories:
-                # 作業タイプごとのカウント
-                work_type = history.work_type.value
-                work_type_counts[work_type] = work_type_counts.get(work_type, 0) + 1
-
-                # ユーザーごとのカウント
-                user_key = (
-                    f"{history.user_name} ({history.user_email})"
-                    if history.user_name
-                    else str(history.user_id)
+            top_contributors = asyncio.run(
+                self.work_history_usecase.get_top_contributors(
+                    work_types=work_types,
+                    start_date=start_date,
+                    end_date=end_date,
+                    limit=100,  # 上位100名まで取得
                 )
-                user_counts[user_key] = user_counts.get(user_key, 0) + 1
+            )
+
+            for contributor in top_contributors:
+                user_key = (
+                    f"{contributor['user_name']} ({contributor['user_email']})"
+                    if contributor["user_name"]
+                    else str(contributor["user_id"])
+                )
+                user_counts[user_key] = contributor["total_count"]
 
             return {
                 "total_count": total_count,
-                "work_type_counts": work_type_counts,
+                "work_type_counts": type_stats,
                 "user_counts": user_counts,
             }
         except Exception as e:
