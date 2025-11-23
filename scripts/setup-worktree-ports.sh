@@ -32,12 +32,14 @@ OFFSET=$(calculate_port_offset "$WORKTREE_NAME")
 BASE_SAGEBASE_PORT=8000
 BASE_STREAMLIT_PORT=8501
 BASE_MONITORING_PORT=8502
+BASE_BI_DASHBOARD_PORT=8050
 BASE_POSTGRES_PORT=5432
 
 # Calculate actual ports
 SAGEBASE_PORT=$(( BASE_SAGEBASE_PORT + OFFSET ))
 STREAMLIT_PORT=$(( BASE_STREAMLIT_PORT + OFFSET ))
 MONITORING_PORT=$(( BASE_MONITORING_PORT + OFFSET ))
+BI_DASHBOARD_PORT=$(( BASE_BI_DASHBOARD_PORT + OFFSET ))
 POSTGRES_PORT=$(( BASE_POSTGRES_PORT + OFFSET ))
 
 # Create docker-compose.override.yml
@@ -56,6 +58,10 @@ services:
     ports: !override
       - "$MONITORING_PORT:8502"
 
+  bi-dashboard:
+    ports: !override
+      - "$BI_DASHBOARD_PORT:8050"
+
   postgres:
     ports: !override
       - "$POSTGRES_PORT:5432"
@@ -66,6 +72,7 @@ echo "   Port configuration:"
 echo "     - Sagebase API: $SAGEBASE_PORT"
 echo "     - Streamlit UI: $STREAMLIT_PORT"
 echo "     - Monitoring: $MONITORING_PORT"
+echo "     - BI Dashboard: $BI_DASHBOARD_PORT"
 echo "     - PostgreSQL: $POSTGRES_PORT"
 echo "   Port offset: $OFFSET"
 echo ""
