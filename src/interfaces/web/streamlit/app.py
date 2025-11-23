@@ -9,7 +9,12 @@ import os
 import streamlit as st
 
 from src.interfaces.web.streamlit.auth import google_sign_in
+from src.interfaces.web.streamlit.components.analytics import inject_google_analytics
 from src.interfaces.web.streamlit.components.header import render_header
+from src.interfaces.web.streamlit.middleware.security_headers import (
+    inject_https_redirect,
+    inject_security_headers,
+)
 
 # Import new Clean Architecture views
 from src.interfaces.web.streamlit.views.conferences_view import (
@@ -54,6 +59,13 @@ def main():
         layout="wide",
         initial_sidebar_state="expanded",
     )
+
+    # セキュリティヘッダーとHTTPSリダイレクトを挿入
+    inject_security_headers()
+    inject_https_redirect()
+
+    # Google Analytics トラッキングコードを挿入
+    inject_google_analytics()
 
     # 認証チェック
     auth_disabled = os.getenv("GOOGLE_OAUTH_DISABLED", "false").lower() == "true"
