@@ -981,7 +981,7 @@ def render_create_memberships_subtab(presenter: ParliamentaryGroupMemberPresente
     )
 
     # Get user info from session (from Google Sign-In)
-    user_info = google_sign_in()
+    user_info = google_sign_in.get_user_info()
     if not user_info:
         st.warning("ユーザー情報を取得できません。ログインしてください。")
         return
