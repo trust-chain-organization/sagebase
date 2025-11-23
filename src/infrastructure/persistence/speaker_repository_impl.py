@@ -560,3 +560,127 @@ class SpeakerRepositoryImpl(BaseRepositoryImpl[Speaker], SpeakerRepository):
             )
 
         return results
+
+    async def get_speaker_matching_statistics_by_user(
+        self,
+        user_id: "UUID | None" = None,
+        start_date: Any | None = None,
+        end_date: Any | None = None,
+    ) -> dict[UUID, int]:
+        """ユーザー別の発言者紐付け件数を集計する（データベースレベルで集計）
+
+        Args:
+            user_id: フィルタリング対象のユーザーID（Noneの場合は全ユーザー）
+            start_date: 開始日時（この日時以降の作業を集計）
+            end_date: 終了日時（この日時以前の作業を集計）
+
+        Returns:
+            ユーザーIDと件数のマッピング（例: {UUID('...'): 10, UUID('...'): 5}）
+        """
+        # Build SQL query with GROUP BY
+        query_text = """
+            SELECT
+                matched_by_user_id,
+                COUNT(*) as count
+            FROM speakers
+            WHERE matched_by_user_id IS NOT NULL
+        """
+
+        params: dict[str, Any] = {}
+
+        # Add user filter if specified
+        if user_id is not None:
+            query_text += " AND matched_by_user_id = :user_id"
+            params["user_id"] = user_id
+
+        # Add date filters if specified
+        if start_date is not None:
+            query_text += " AND updated_at >= :start_date"
+            params["start_date"] = start_date
+
+        if end_date is not None:
+            query_text += " AND updated_at <= :end_date"
+            params["end_date"] = end_date
+
+        query_text += " GROUP BY matched_by_user_id"
+
+        query = text(query_text)
+        result = await self.session.execute(query, params)
+        rows = result.fetchall()
+
+        # Convert to dictionary
+        statistics: dict[UUID, int] = {}
+        for row in rows:
+            # Use cast to ensure type safety
+            from typing import cast
+
+            statistics[cast(UUID, row.matched_by_user_id)] = cast(int, row.count)
+
+        return statistics
+
+    async def get_speaker_matching_timeline_statistics(
+        self,
+        user_id: "UUID | None" = None,
+        start_date: Any | None = None,
+        end_date: Any | None = None,
+        interval: str = "day",
+    ) -> list[dict[str, Any]]:
+        """時系列の発言者紐付け件数を集計する（データベースレベルで集計）
+
+        Args:
+            user_id: フィルタリング対象のユーザーID（Noneの場合は全ユーザー）
+            start_date: 開始日時
+            end_date: 終了日時
+            interval: 集計間隔（"day", "week", "month"）
+
+        Returns:
+            時系列データのリスト（例: [{"date": "2024-01-01", "count": 5}, ...]）
+        """
+        # Determine date truncation function based on interval
+        if interval == "day":
+            date_trunc = "DATE(updated_at)"
+        elif interval == "week":
+            date_trunc = "DATE_TRUNC('week', updated_at)::date"
+        elif interval == "month":
+            date_trunc = "DATE_TRUNC('month', updated_at)::date"
+        else:
+            raise ValueError(f"Invalid interval: {interval}")
+
+        # Build SQL query
+        query_text = f"""
+            SELECT
+                {date_trunc} as date,
+                COUNT(*) as count
+            FROM speakers
+            WHERE matched_by_user_id IS NOT NULL
+              AND updated_at IS NOT NULL
+        """
+
+        params: dict[str, Any] = {}
+
+        # Add user filter if specified
+        if user_id is not None:
+            query_text += " AND matched_by_user_id = :user_id"
+            params["user_id"] = user_id
+
+        # Add date filters if specified
+        if start_date is not None:
+            query_text += " AND updated_at >= :start_date"
+            params["start_date"] = start_date
+
+        if end_date is not None:
+            query_text += " AND updated_at <= :end_date"
+            params["end_date"] = end_date
+
+        query_text += f" GROUP BY {date_trunc} ORDER BY date"
+
+        query = text(query_text)
+        result = await self.session.execute(query, params)
+        rows = result.fetchall()
+
+        # Convert to list of dictionaries
+        timeline = []
+        for row in rows:
+            timeline.append({"date": str(row.date), "count": row.count})
+
+        return timeline

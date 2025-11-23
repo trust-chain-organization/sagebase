@@ -5,6 +5,7 @@
 
 import logging
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from src.application.dtos.work_history_dto import WorkHistoryDTO, WorkType
@@ -239,3 +240,236 @@ class GetWorkHistoryUseCase:
             )
 
         return histories
+
+    async def get_work_statistics_by_user(
+        self,
+        user_id: UUID | None = None,
+        work_types: list[WorkType] | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> dict[UUID, dict[str, int]]:
+        """ユーザー別の作業件数を集計する（データベースレベルで集計）
+
+        Args:
+            user_id: フィルタリング対象のユーザーID（Noneの場合は全ユーザー）
+            work_types: フィルタリング対象の作業タイプリスト（Noneの場合は全タイプ）
+            start_date: 開始日時
+            end_date: 終了日時
+
+        Returns:
+            ユーザーIDごとの作業タイプ別件数
+            例: {UUID('...'): {'SPEAKER_POLITICIAN_MATCHING': 10,
+                             'PARLIAMENTARY_GROUP_MEMBERSHIP_CREATION': 5}}
+        """
+        # Determine which statistics to collect
+        include_speaker_matching = work_types is None or (
+            WorkType.SPEAKER_POLITICIAN_MATCHING in work_types
+        )
+        include_membership_creation = work_types is None or (
+            WorkType.PARLIAMENTARY_GROUP_MEMBERSHIP_CREATION in work_types
+        )
+
+        # Collect statistics from repositories
+        user_statistics: dict[UUID, dict[str, int]] = {}
+
+        if include_speaker_matching:
+            speaker_stats = (
+                await self.speaker_repo.get_speaker_matching_statistics_by_user(
+                    user_id=user_id,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+            )
+            for uid, count in speaker_stats.items():
+                if uid not in user_statistics:
+                    user_statistics[uid] = {}
+                user_statistics[uid]["SPEAKER_POLITICIAN_MATCHING"] = count
+
+        if include_membership_creation:
+            membership_stats = (
+                await self.membership_repo.get_membership_creation_statistics_by_user(
+                    user_id=user_id,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+            )
+            for uid, count in membership_stats.items():
+                if uid not in user_statistics:
+                    user_statistics[uid] = {}
+                user_statistics[uid]["PARLIAMENTARY_GROUP_MEMBERSHIP_CREATION"] = count
+
+        return user_statistics
+
+    async def get_work_statistics_by_type(
+        self,
+        user_id: UUID | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> dict[str, int]:
+        """作業タイプ別の件数を集計する（データベースレベルで集計）
+
+        Args:
+            user_id: フィルタリング対象のユーザーID（Noneの場合は全ユーザー）
+            start_date: 開始日時
+            end_date: 終了日時
+
+        Returns:
+            作業タイプ別の件数
+            例: {'SPEAKER_POLITICIAN_MATCHING': 100,
+               'PARLIAMENTARY_GROUP_MEMBERSHIP_CREATION': 50}
+        """
+        type_statistics: dict[str, int] = {}
+
+        # Get speaker matching statistics
+        speaker_stats = await self.speaker_repo.get_speaker_matching_statistics_by_user(
+            user_id=user_id,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        total_speaker_matching = sum(speaker_stats.values())
+        type_statistics["SPEAKER_POLITICIAN_MATCHING"] = total_speaker_matching
+
+        # Get membership creation statistics
+        membership_stats = (
+            await self.membership_repo.get_membership_creation_statistics_by_user(
+                user_id=user_id,
+                start_date=start_date,
+                end_date=end_date,
+            )
+        )
+        total_membership_creation = sum(membership_stats.values())
+        type_statistics["PARLIAMENTARY_GROUP_MEMBERSHIP_CREATION"] = (
+            total_membership_creation
+        )
+
+        return type_statistics
+
+    async def get_timeline_statistics(
+        self,
+        user_id: UUID | None = None,
+        work_types: list[WorkType] | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        interval: str = "day",
+    ) -> list[dict[str, Any]]:
+        """時系列の作業件数を集計する（データベースレベルで集計）
+
+        Args:
+            user_id: フィルタリング対象のユーザーID（Noneの場合は全ユーザー）
+            work_types: フィルタリング対象の作業タイプリスト（Noneの場合は全タイプ）
+            start_date: 開始日時
+            end_date: 終了日時
+            interval: 集計間隔（"day", "week", "month"）
+
+        Returns:
+            時系列データのリスト
+            例: [{"date": "2024-01-01",
+                "SPEAKER_POLITICIAN_MATCHING": 5,
+                "PARLIAMENTARY_GROUP_MEMBERSHIP_CREATION": 3}, ...]
+        """
+        from collections import defaultdict
+
+        # Determine which statistics to collect
+        include_speaker_matching = work_types is None or (
+            WorkType.SPEAKER_POLITICIAN_MATCHING in work_types
+        )
+        include_membership_creation = work_types is None or (
+            WorkType.PARLIAMENTARY_GROUP_MEMBERSHIP_CREATION in work_types
+        )
+
+        # Collect timeline data from repositories
+        date_statistics: dict[str, dict[str, int]] = defaultdict(dict)
+
+        if include_speaker_matching:
+            speaker_timeline = (
+                await self.speaker_repo.get_speaker_matching_timeline_statistics(
+                    user_id=user_id,
+                    start_date=start_date,
+                    end_date=end_date,
+                    interval=interval,
+                )
+            )
+            for entry in speaker_timeline:
+                date_statistics[entry["date"]]["SPEAKER_POLITICIAN_MATCHING"] = entry[
+                    "count"
+                ]
+
+        if include_membership_creation:
+            membership_timeline = (
+                await self.membership_repo.get_membership_creation_timeline_statistics(
+                    user_id=user_id,
+                    start_date=start_date,
+                    end_date=end_date,
+                    interval=interval,
+                )
+            )
+            for entry in membership_timeline:
+                date_statistics[entry["date"]][
+                    "PARLIAMENTARY_GROUP_MEMBERSHIP_CREATION"
+                ] = entry["count"]
+
+        # Convert to list of dictionaries sorted by date
+        timeline: list[dict[str, Any]] = []
+        for date_str in sorted(date_statistics.keys()):
+            entry: dict[str, Any] = {"date": date_str}
+            entry.update(date_statistics[date_str])
+            timeline.append(entry)
+
+        return timeline
+
+    async def get_top_contributors(
+        self,
+        work_types: list[WorkType] | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        limit: int = 10,
+    ) -> list[dict[str, Any]]:
+        """上位貢献者を取得する（データベースレベルで集計）
+
+        Args:
+            work_types: フィルタリング対象の作業タイプリスト（Noneの場合は全タイプ）
+            start_date: 開始日時
+            end_date: 終了日時
+            limit: 取得する上位貢献者数
+
+        Returns:
+            上位貢献者のリスト
+            例: [{"user_id": UUID('...'), "user_name": "...",
+                "total_count": 15, "by_type": {...}}, ...]
+        """
+        # Get user statistics
+        user_stats = await self.get_work_statistics_by_user(
+            user_id=None,
+            work_types=work_types,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+        # Calculate total count for each user
+        user_totals: list[tuple[UUID, int, dict[str, int]]] = []
+        for uid, type_counts in user_stats.items():
+            total = sum(type_counts.values())
+            user_totals.append((uid, total, type_counts))
+
+        # Sort by total count descending
+        user_totals.sort(key=lambda x: x[1], reverse=True)
+
+        # Get user information and build result
+        top_contributors = []
+        for uid, total, type_counts in user_totals[:limit]:
+            # Get user info
+            user = await self.user_repo.get_by_id(uid)
+            user_name = user.name if user else None
+            user_email = user.email if user else None
+
+            top_contributors.append(
+                {
+                    "user_id": uid,
+                    "user_name": user_name,
+                    "user_email": user_email,
+                    "total_count": total,
+                    "by_type": type_counts,
+                }
+            )
+
+        return top_contributors
