@@ -57,6 +57,12 @@ export default {
     try {
       const response = await fetch(newRequest);
 
+      // WebSocketのアップグレードレスポンス（status: 101）の場合はそのまま返す
+      // レスポンスを変更するとWebSocket接続が失敗する
+      if (response.status === 101) {
+        return response;
+      }
+
       // 7. レスポンスヘッダーの処理（キャッシュ最適化）
       const newResponseHeaders = new Headers(response.headers);
       newResponseHeaders.set('X-Worker-Proxy', 'Active');
