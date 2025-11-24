@@ -201,8 +201,9 @@ jobs:
           echo "- **Image**: ${{ steps.image.outputs.tag_sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **SHA**: \`${{ steps.image.outputs.short_sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Service URL" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [${{ steps.deploy.outputs.url }}](${{ steps.deploy.outputs.url }})" >> $GITHUB_STEP_SUMMARY
+          echo "### Service URLs" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 Cloud Run URL: [${{ steps.deploy.outputs.url }}](${{ steps.deploy.outputs.url }})" >> $GITHUB_STEP_SUMMARY
+          echo "🌐 Custom Domain: [https://app.sage-base.com](https://app.sage-base.com)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Quick Commands" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
