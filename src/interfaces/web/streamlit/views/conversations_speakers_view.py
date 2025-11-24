@@ -10,7 +10,7 @@ from src.infrastructure.di.container import Container
 from src.interfaces.web.streamlit.auth import google_sign_in
 
 
-def render_conversations_speakers_page():
+def render_conversations_speakers_page() -> None:
     """Render the conversations and speakers management page."""
     st.header("発言・発言者管理")
     st.markdown("発言記録と発言者の情報を管理します")
@@ -28,7 +28,7 @@ def render_conversations_speakers_page():
         render_statistics_tab()
 
 
-def render_speakers_list_tab():
+def render_speakers_list_tab() -> None:
     """Render the speakers list tab."""
     st.subheader("発言者一覧")
 
@@ -44,7 +44,7 @@ def render_speakers_list_tab():
     """)
 
 
-def render_matching_tab():
+def render_matching_tab() -> None:
     """Render the matching tab."""
     st.subheader("発言マッチング")
 
@@ -55,7 +55,7 @@ def render_matching_tab():
     """)
 
     # Get user info
-    user_info = google_sign_in.get_user_info()
+    user_info: dict[str, str] | None = google_sign_in.get_user_info()
     if not user_info:
         st.warning("ユーザー情報を取得できません。ログインしてください。")
         return
@@ -122,7 +122,7 @@ def render_matching_tab():
                 st.code(traceback.format_exc())
 
 
-def render_statistics_tab():
+def render_statistics_tab() -> None:
     """Render the statistics tab."""
     st.subheader("統計情報")
 
@@ -146,7 +146,7 @@ def render_statistics_tab():
     """)
 
 
-def main():
+def main() -> None:
     """Main function for testing."""
     render_conversations_speakers_page()
 

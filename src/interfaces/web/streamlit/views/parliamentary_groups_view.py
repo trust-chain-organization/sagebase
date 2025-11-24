@@ -18,7 +18,7 @@ from src.interfaces.web.streamlit.presenters.parliamentary_group_presenter impor
 )
 
 
-def render_parliamentary_groups_page():
+def render_parliamentary_groups_page() -> None:
     """Render the parliamentary groups management page."""
     st.header("議員団管理")
     st.markdown("議員団（会派）の情報を管理します")
@@ -56,7 +56,9 @@ def render_parliamentary_groups_page():
         render_memberships_list_tab(presenter)
 
 
-def render_parliamentary_groups_list_tab(presenter: ParliamentaryGroupPresenter):
+def render_parliamentary_groups_list_tab(
+    presenter: ParliamentaryGroupPresenter,
+) -> None:
     """Render the parliamentary groups list tab."""
     st.subheader("議員団一覧")
 
@@ -131,7 +133,7 @@ def render_parliamentary_groups_list_tab(presenter: ParliamentaryGroupPresenter)
         st.info("議員団が登録されていません")
 
 
-def render_new_parliamentary_group_tab(presenter: ParliamentaryGroupPresenter):
+def render_new_parliamentary_group_tab(presenter: ParliamentaryGroupPresenter) -> None:
     """Render the new parliamentary group registration tab."""
     st.subheader("議員団の新規登録")
 
@@ -216,7 +218,7 @@ def render_new_parliamentary_group_tab(presenter: ParliamentaryGroupPresenter):
                         st.rerun()
 
 
-def render_edit_delete_tab(presenter: ParliamentaryGroupPresenter):
+def render_edit_delete_tab(presenter: ParliamentaryGroupPresenter) -> None:
     """Render the edit/delete tab."""
     st.subheader("議員団の編集・削除")
 
@@ -295,7 +297,7 @@ def render_edit_delete_tab(presenter: ParliamentaryGroupPresenter):
                     st.error(f"削除に失敗しました: {error}")
 
 
-def render_member_extraction_tab(presenter: ParliamentaryGroupPresenter):
+def render_member_extraction_tab(presenter: ParliamentaryGroupPresenter) -> None:
     """Render the member extraction tab."""
     st.subheader("議員団メンバーの抽出")
     st.markdown("議員団のURLから所属議員を自動的に抽出し、メンバーシップを作成します")
@@ -500,7 +502,7 @@ def render_member_extraction_tab(presenter: ParliamentaryGroupPresenter):
                 st.error(f"抽出エラー: {error}")
 
 
-def render_member_review_tab():
+def render_member_review_tab() -> None:
     """Render the member review tab."""
     st.subheader("議員団メンバーレビュー")
     st.markdown("抽出された議員団メンバーをレビューして、メンバーシップを作成します")
@@ -523,7 +525,7 @@ def render_member_review_tab():
         render_duplicate_management_subtab(presenter)
 
 
-def render_member_review_subtab(presenter: ParliamentaryGroupMemberPresenter):
+def render_member_review_subtab(presenter: ParliamentaryGroupMemberPresenter) -> None:
     """Render the member review sub-tab."""
     st.markdown("### 抽出メンバーレビュー")
 
@@ -930,7 +932,9 @@ def render_member_review_subtab(presenter: ParliamentaryGroupMemberPresenter):
                                         st.rerun()
 
 
-def render_member_statistics_subtab(presenter: ParliamentaryGroupMemberPresenter):
+def render_member_statistics_subtab(
+    presenter: ParliamentaryGroupMemberPresenter,
+) -> None:
     """Render the member statistics sub-tab."""
     st.markdown("### 統計情報")
 
@@ -972,7 +976,9 @@ def render_member_statistics_subtab(presenter: ParliamentaryGroupMemberPresenter
                             )
 
 
-def render_create_memberships_subtab(presenter: ParliamentaryGroupMemberPresenter):
+def render_create_memberships_subtab(
+    presenter: ParliamentaryGroupMemberPresenter,
+) -> None:
     """Render the create memberships sub-tab."""
     st.markdown("### メンバーシップ作成")
     st.markdown(
@@ -981,7 +987,7 @@ def render_create_memberships_subtab(presenter: ParliamentaryGroupMemberPresente
     )
 
     # Get user info from session (from Google Sign-In)
-    user_info = google_sign_in.get_user_info()
+    user_info: dict[str, str] | None = google_sign_in.get_user_info()
     if not user_info:
         st.warning("ユーザー情報を取得できません。ログインしてください。")
         return
@@ -1096,7 +1102,7 @@ def render_create_memberships_subtab(presenter: ParliamentaryGroupMemberPresente
                     st.dataframe(df_memberships, use_container_width=True)
 
 
-def render_memberships_list_tab(presenter: ParliamentaryGroupPresenter):
+def render_memberships_list_tab(presenter: ParliamentaryGroupPresenter) -> None:
     """Render the memberships list tab."""
     st.subheader("メンバーシップ一覧")
 
@@ -1239,7 +1245,9 @@ def render_memberships_list_tab(presenter: ParliamentaryGroupPresenter):
         st.error(f"メンバーシップの取得中にエラーが発生しました: {e}")
 
 
-def render_duplicate_management_subtab(presenter: ParliamentaryGroupMemberPresenter):
+def render_duplicate_management_subtab(
+    presenter: ParliamentaryGroupMemberPresenter,
+) -> None:
     """Render the duplicate management sub-tab."""
     st.markdown("### 重複メンバー管理")
     st.markdown("同じ議員団内で同じ名前の抽出メンバーを検出し、重複を解消します。")
@@ -1392,7 +1400,7 @@ def render_duplicate_management_subtab(presenter: ParliamentaryGroupMemberPresen
         st.code(traceback.format_exc())
 
 
-def main():
+def main() -> None:
     """Main function for testing."""
     render_parliamentary_groups_page()
 

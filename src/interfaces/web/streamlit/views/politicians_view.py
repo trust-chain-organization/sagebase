@@ -8,7 +8,7 @@ from src.interfaces.web.streamlit.presenters.politician_presenter import (
 from src.seed_generator import SeedGenerator
 
 
-def render_politicians_page():
+def render_politicians_page() -> None:
     """Render the politicians management page."""
     st.header("政治家管理")
     st.markdown("政治家の情報を管理します")
@@ -31,7 +31,7 @@ def render_politicians_page():
         render_merge_tab(presenter)
 
 
-def render_politicians_list_tab(presenter: PoliticianPresenter):
+def render_politicians_list_tab(presenter: PoliticianPresenter) -> None:
     """Render the politicians list tab."""
     st.subheader("政治家一覧")
 
@@ -122,7 +122,7 @@ def render_politicians_list_tab(presenter: PoliticianPresenter):
         st.info("政治家が登録されていません")
 
 
-def render_new_politician_tab(presenter: PoliticianPresenter):
+def render_new_politician_tab(presenter: PoliticianPresenter) -> None:
     """Render the new politician registration tab."""
     st.subheader("新規政治家登録")
 
@@ -169,7 +169,7 @@ def render_new_politician_tab(presenter: PoliticianPresenter):
                     st.error(f"登録に失敗しました: {error}")
 
 
-def render_edit_delete_tab(presenter: PoliticianPresenter):
+def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
     """Render the edit/delete tab."""
     st.subheader("政治家の編集・削除")
 
@@ -256,7 +256,7 @@ def render_edit_delete_tab(presenter: PoliticianPresenter):
                 st.error(f"削除に失敗しました: {error}")
 
 
-def render_merge_tab(presenter: PoliticianPresenter):
+def render_merge_tab(presenter: PoliticianPresenter) -> None:
     """Render the merge tab."""
     st.subheader("重複統合")
     st.markdown("重複している政治家を統合します")
@@ -293,7 +293,7 @@ def render_merge_tab(presenter: PoliticianPresenter):
                 st.error(f"統合に失敗しました: {error}")
 
 
-def main():
+def main() -> None:
     """Main function for testing."""
     render_politicians_page()
 
