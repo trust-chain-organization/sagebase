@@ -7,7 +7,7 @@ from src.interfaces.web.streamlit.presenters.process_presenter import (
 )
 
 
-def render_processes_page():
+def render_processes_page() -> None:
     """Render the process execution page."""
     st.header("処理実行")
     st.markdown("各種バッチ処理を実行します")
@@ -30,7 +30,7 @@ def render_processes_page():
 
 def render_process_category(
     presenter: ProcessPresenter, category: str, process_list: list[dict[str, str]]
-):
+) -> None:
     """Render a process category tab."""
     st.subheader(category)
 
@@ -93,7 +93,7 @@ def render_process_category(
                         st.code(stderr, language="bash")
 
 
-def main():
+def main() -> None:
     """Main function for testing."""
     render_processes_page()
 

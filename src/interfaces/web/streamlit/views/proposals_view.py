@@ -15,7 +15,7 @@ from src.interfaces.web.streamlit.presenters.proposal_presenter import (
 from src.interfaces.web.streamlit.utils.error_handler import handle_ui_error
 
 
-def render_proposals_page():
+def render_proposals_page() -> None:
     """Render the proposals management page."""
     st.title("議案管理")
     st.markdown("議案の情報を自動収集・管理します。")
@@ -39,7 +39,7 @@ def render_proposals_page():
 # ========== Tab 1: Proposal Management ==========
 
 
-def render_proposals_tab(presenter: ProposalPresenter):
+def render_proposals_tab(presenter: ProposalPresenter) -> None:
     """Render the proposals management tab."""
     # Filter section
     col1, col2, col3 = st.columns([2, 1, 1])
@@ -97,7 +97,7 @@ def render_proposals_tab(presenter: ProposalPresenter):
         handle_ui_error(e, "議案一覧の読み込み")
 
 
-def render_new_proposal_form(presenter: ProposalPresenter):
+def render_new_proposal_form(presenter: ProposalPresenter) -> None:
     """Render new proposal creation form."""
     with st.expander("📝 新規議案登録"):
         with st.form("new_proposal_form"):
@@ -147,7 +147,7 @@ def render_new_proposal_form(presenter: ProposalPresenter):
                         handle_ui_error(e, "議案の登録")
 
 
-def render_scrape_proposal_section(presenter: ProposalPresenter):
+def render_scrape_proposal_section(presenter: ProposalPresenter) -> None:
     """Render proposal scraping section."""
     with st.expander("🔍 議案情報の自動抽出"):
         st.markdown("URLから議案情報を自動的に抽出してデータベースに保存します。")
@@ -188,7 +188,7 @@ def render_scrape_proposal_section(presenter: ProposalPresenter):
                             handle_ui_error(e, "議案の抽出")
 
 
-def render_proposal_row(presenter: ProposalPresenter, proposal: Proposal):
+def render_proposal_row(presenter: ProposalPresenter, proposal: Proposal) -> None:
     """Render a single proposal row."""
     with st.container():
         col1, col2 = st.columns([4, 1])
@@ -245,7 +245,7 @@ def render_proposal_row(presenter: ProposalPresenter, proposal: Proposal):
 # ========== Tab 2: Extracted Judges ==========
 
 
-def render_extracted_judges_tab(presenter: ProposalPresenter):
+def render_extracted_judges_tab(presenter: ProposalPresenter) -> None:
     """Render the extracted judges tab."""
     st.subheader("LLM抽出結果")
     st.markdown("議案の賛否情報を自動抽出し、レビューします。")
@@ -290,7 +290,7 @@ def render_extracted_judges_tab(presenter: ProposalPresenter):
         handle_ui_error(e, "抽出結果の読み込み")
 
 
-def render_extract_judges_section(presenter: ProposalPresenter):
+def render_extract_judges_section(presenter: ProposalPresenter) -> None:
     """Render judge extraction section."""
     with st.expander("🔍 賛否情報の自動抽出"):
         st.markdown("議案の状態URLから賛否情報を自動的に抽出します。")
@@ -327,7 +327,7 @@ def render_extract_judges_section(presenter: ProposalPresenter):
 
 def render_batch_operations(
     presenter: ProposalPresenter, judges: list[ExtractedProposalJudge]
-):
+) -> None:
     """Render batch operations for extracted judges."""
     st.markdown("### 一括操作")
 
@@ -375,7 +375,7 @@ def render_batch_operations(
 
 def render_extracted_judge_row(
     presenter: ProposalPresenter, judge: ExtractedProposalJudge
-):
+) -> None:
     """Render a single extracted judge row."""
     with st.container():
         col1, col2 = st.columns([4, 1])
@@ -434,7 +434,7 @@ def render_extracted_judge_row(
 # ========== Tab 3: Final Judges ==========
 
 
-def render_final_judges_tab(presenter: ProposalPresenter):
+def render_final_judges_tab(presenter: ProposalPresenter) -> None:
     """Render the final judges tab."""
     st.subheader("確定賛否情報")
     st.markdown("承認済みの最終的な賛否情報を管理します。")
@@ -474,7 +474,7 @@ def render_final_judges_tab(presenter: ProposalPresenter):
         handle_ui_error(e, "確定賛否情報の読み込み")
 
 
-def render_judge_statistics(judges: list[ProposalJudge]):
+def render_judge_statistics(judges: list[ProposalJudge]) -> None:
     """Render statistics for proposal judges."""
     # Count by vote
     vote_counts = {}
@@ -490,7 +490,7 @@ def render_judge_statistics(judges: list[ProposalJudge]):
             st.metric(vote, count)
 
 
-def render_final_judge_row(presenter: ProposalPresenter, judge: ProposalJudge):
+def render_final_judge_row(presenter: ProposalPresenter, judge: ProposalJudge) -> None:
     """Render a single final judge row."""
     with st.container():
         col1, col2 = st.columns([4, 1])
@@ -514,7 +514,7 @@ def render_final_judge_row(presenter: ProposalPresenter, judge: ProposalJudge):
         st.divider()
 
 
-def main():
+def main() -> None:
     """Main entry point for the proposals page."""
     render_proposals_page()
 

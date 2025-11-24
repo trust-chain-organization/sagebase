@@ -14,7 +14,7 @@ from src.interfaces.web.streamlit.presenters.political_party_presenter import (
 from src.interfaces.web.streamlit.utils.error_handler import handle_ui_error
 
 
-def render_political_parties_page():
+def render_political_parties_page() -> None:
     """Render the political parties management page."""
     st.title("政党管理")
     st.markdown("政党の議員一覧URLを管理します。")
@@ -32,7 +32,7 @@ def render_political_parties_page():
         render_seed_generation_tab(presenter)
 
 
-def render_parties_list_tab(presenter: PoliticalPartyPresenter):
+def render_parties_list_tab(presenter: PoliticalPartyPresenter) -> None:
     """Render the parties list tab.
 
     Args:
@@ -285,7 +285,7 @@ def render_extraction_statistics(
         pass
 
 
-def render_seed_generation_tab(presenter: PoliticalPartyPresenter):
+def render_seed_generation_tab(presenter: PoliticalPartyPresenter) -> None:
     """Render the seed file generation tab.
 
     Args:
@@ -325,7 +325,7 @@ def render_seed_generation_tab(presenter: PoliticalPartyPresenter):
 
 
 # For backward compatibility with existing app.py
-def main():
+def main() -> None:
     """Main entry point for the political parties page."""
     render_political_parties_page()
 

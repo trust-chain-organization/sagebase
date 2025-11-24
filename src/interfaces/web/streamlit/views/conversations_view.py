@@ -3,7 +3,7 @@
 import streamlit as st
 
 
-def render_conversations_page():
+def render_conversations_page() -> None:
     """Render the conversations list page."""
     st.header("発言レコード一覧")
     st.markdown("会議での発言記録を管理・閲覧します")
@@ -21,7 +21,7 @@ def render_conversations_page():
         render_export_tab()
 
 
-def render_conversations_list_tab():
+def render_conversations_list_tab() -> None:
     """Render the conversations list tab."""
     st.subheader("発言一覧")
 
@@ -52,7 +52,7 @@ def render_conversations_list_tab():
     """)
 
 
-def render_search_filter_tab():
+def render_search_filter_tab() -> None:
     """Render the search and filter tab."""
     st.subheader("検索・フィルタ")
 
@@ -80,7 +80,7 @@ def render_search_filter_tab():
             st.info("検索機能は実装中です")
 
 
-def render_export_tab():
+def render_export_tab() -> None:
     """Render the export tab."""
     st.subheader("エクスポート")
 
@@ -104,7 +104,7 @@ def render_export_tab():
         st.info(f"{export_format}形式でのエクスポート機能は実装中です")
 
 
-def main():
+def main() -> None:
     """Main function for testing."""
     render_conversations_page()
 
