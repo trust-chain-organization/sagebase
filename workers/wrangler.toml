@@ -1,0 +1,13 @@
+name = "sagebase-proxy"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# ルーティング設定
+# app.sage-base.comへのすべてのリクエストがWorkerによって処理されます
+[[routes]]
+pattern = "app.sage-base.com/*"
+zone_name = "sage-base.com"
+
+# 環境変数の設定
+[vars]
+ENVIRONMENT = "production"

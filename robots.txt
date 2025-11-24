@@ -1,0 +1,17 @@
+# robots.txt for Sagebase (app.sage-base.com)
+# Political Activity Tracking Application
+
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Block crawling of authentication and API endpoints
+Disallow: /auth/
+Disallow: /api/
+Disallow: /_stcore/
+
+# Sitemap location
+Sitemap: https://app.sage-base.com/sitemap.xml
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1

@@ -1,0 +1,69 @@
+name: Deploy Cloudflare Worker
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "workers/**"
+      - ".github/workflows/deploy-worker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy Worker to Cloudflare
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: "workers"
+          command: deploy
+          secrets: |
+            CF_SECRET
+        env:
+          CF_SECRET: ${{ secrets.CLOUDFLARE_WORKER_SECRET }}
+
+      - name: Verify deployment
+        run: |
+          echo "Waiting for deployment to propagate..."
+          sleep 10
+
+          # ヘルスチェック
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" https://app.sage-base.com/)
+
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Deployment successful! Status: $STATUS"
+          else
+            echo "❌ Deployment verification failed. Status: $STATUS"
+            exit 1
+          fi
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "## 🚀 Worker Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Worker**: sagebase-proxy" >> $GITHUB_STEP_SUMMARY
+          echo "- **Route**: app.sage-base.com/*" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target**: sagebase-streamlit-469990531240.asia-northeast1.run.app" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Service URLs" >> $GITHUB_STEP_SUMMARY
+          echo "🌐 Custom Domain: [https://app.sage-base.com](https://app.sage-base.com)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Quick Commands" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "# Test deployment" >> $GITHUB_STEP_SUMMARY
+          echo "curl -I https://app.sage-base.com/" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# View Worker logs" >> $GITHUB_STEP_SUMMARY
+          echo "wrangler tail sagebase-proxy" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
