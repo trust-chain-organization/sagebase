@@ -36,6 +36,17 @@ export default {
     // バックエンドアプリが「ユーザーが実際にアクセスしたドメイン」を知るために必要です。
     newRequest.headers.set('X-Forwarded-Host', 'app.sage-base.com');
 
+    // WebSocket接続のための追加ヘッダー
+    // StreamlitがHTTPS経由のWebSocket (wss://) を使用することを保証
+    newRequest.headers.set('X-Forwarded-Proto', 'https');
+
+    // クライアントの実IPアドレスを転送（Cloudflareが自動設定）
+    const clientIp = request.headers.get('CF-Connecting-IP');
+    if (clientIp) {
+      newRequest.headers.set('X-Real-IP', clientIp);
+      newRequest.headers.set('X-Forwarded-For', clientIp);
+    }
+
     // オリジン間認証のためのシークレットトークン
     // env.CF_SECRET が設定されている場合のみヘッダーを追加
     if (env.CF_SECRET) {
@@ -68,6 +79,12 @@ export default {
     } catch (e) {
       // 8. エラーハンドリング
       // オリジンへの接続失敗時などに、ユーザーフレンドリーなエラーまたは502 Bad Gatewayを返します。
+      console.error('Edge Proxy Error:', {
+        error: e.message,
+        url: url.toString(),
+        method: request.method,
+        isWebSocket: request.headers.get('Upgrade') === 'websocket',
+      });
       return new Response(`Edge Proxy Error: ${e.message}`, { status: 502 });
     }
   }
