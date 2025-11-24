@@ -7,7 +7,7 @@ from src.interfaces.web.streamlit.presenters.governing_body_presenter import (
 )
 
 
-def render_governing_bodies_page():
+def render_governing_bodies_page() -> None:
     """Render the governing bodies management page."""
     st.header("開催主体管理")
     st.markdown("開催主体（国、都道府県、市町村）の情報を管理します")
@@ -27,7 +27,7 @@ def render_governing_bodies_page():
         render_edit_delete_tab(presenter)
 
 
-def render_governing_bodies_list_tab(presenter: GoverningBodyPresenter):
+def render_governing_bodies_list_tab(presenter: GoverningBodyPresenter) -> None:
     """Render the governing bodies list tab."""
     st.subheader("開催主体一覧")
 
@@ -110,7 +110,7 @@ def render_governing_bodies_list_tab(presenter: GoverningBodyPresenter):
         st.info("開催主体が登録されていません")
 
 
-def render_new_governing_body_tab(presenter: GoverningBodyPresenter):
+def render_new_governing_body_tab(presenter: GoverningBodyPresenter) -> None:
     """Render the new governing body registration tab."""
     st.subheader("新規開催主体登録")
 
@@ -144,7 +144,7 @@ def render_new_governing_body_tab(presenter: GoverningBodyPresenter):
                     st.error(f"登録に失敗しました: {id_or_error}")
 
 
-def render_edit_delete_tab(presenter: GoverningBodyPresenter):
+def render_edit_delete_tab(presenter: GoverningBodyPresenter) -> None:
     """Render the edit/delete tab."""
     st.subheader("開催主体の編集・削除")
 
@@ -249,7 +249,7 @@ def render_edit_delete_tab(presenter: GoverningBodyPresenter):
         st.info("編集する開催主体がありません")
 
 
-def main():
+def main() -> None:
     """Main function for testing."""
     render_governing_bodies_page()
 

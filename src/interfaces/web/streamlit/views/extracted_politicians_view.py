@@ -9,7 +9,7 @@ from src.interfaces.web.streamlit.presenters.extracted_politician_presenter impo
 )
 
 
-def render_extracted_politicians_page():
+def render_extracted_politicians_page() -> None:
     """Render the extracted politicians review page."""
     st.header("政治家レビュー")
     st.markdown("LLMが抽出した政治家データをレビューして承認・却下を行います")
@@ -29,7 +29,7 @@ def render_extracted_politicians_page():
         render_conversion_tab(presenter)
 
 
-def render_review_tab(presenter: ExtractedPoliticianPresenter):
+def render_review_tab(presenter: ExtractedPoliticianPresenter) -> None:
     """Render the review tab."""
     st.subheader("抽出済み政治家レビュー")
 
@@ -345,7 +345,7 @@ def render_review_tab(presenter: ExtractedPoliticianPresenter):
                                     st.rerun()
 
 
-def render_statistics_tab(presenter: ExtractedPoliticianPresenter):
+def render_statistics_tab(presenter: ExtractedPoliticianPresenter) -> None:
     """Render the statistics tab."""
     st.subheader("統計情報")
 
@@ -385,7 +385,7 @@ def render_statistics_tab(presenter: ExtractedPoliticianPresenter):
                     st.metric("変換済み", f"{party_stats.get('converted', 0)}件")
 
 
-def render_conversion_tab(presenter: ExtractedPoliticianPresenter):
+def render_conversion_tab(presenter: ExtractedPoliticianPresenter) -> None:
     """Render the conversion tab."""
     st.subheader("一括変換")
     st.markdown(
