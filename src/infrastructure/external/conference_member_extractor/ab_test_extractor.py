@@ -32,40 +32,71 @@ class ABTestMemberExtractor(IMemberExtractorService):
     async def extract_members(
         self, html_content: str, conference_name: str
     ) -> list[dict[str, Any]]:
-        """両実装を実行して比較
+        """両実装を実行して比較（エラーハンドリング付き）
 
         Args:
             html_content: HTMLコンテンツ
             conference_name: 会議体名
 
         Returns:
-            抽出されたメンバー情報のリスト（Pydantic実装の結果）
+            抽出されたメンバー情報のリスト（優先順位: Pydantic > BAML）
+
+        Note:
+            両方の実装が失敗した場合は空リストを返します。
+            片方が失敗した場合は成功した方の結果を返します。
         """
         logger.info("=== A/B Test Mode Enabled ===")
 
         # Pydantic実装
-        logger.info("Executing Pydantic implementation...")
-        pydantic_result = await self.pydantic_extractor.extract_members(
-            html_content, conference_name
-        )
+        pydantic_result: list[dict[str, Any]] = []
+        pydantic_error: Exception | None = None
+        try:
+            logger.info("Executing Pydantic implementation...")
+            pydantic_result = await self.pydantic_extractor.extract_members(
+                html_content, conference_name
+            )
+        except Exception as e:
+            logger.error(f"Pydantic implementation failed: {e}", exc_info=True)
+            pydantic_error = e
 
         # BAML実装
-        logger.info("Executing BAML implementation...")
-        baml_result = await self.baml_extractor.extract_members(
-            html_content, conference_name
-        )
+        baml_result: list[dict[str, Any]] = []
+        baml_error: Exception | None = None
+        try:
+            logger.info("Executing BAML implementation...")
+            baml_result = await self.baml_extractor.extract_members(
+                html_content, conference_name
+            )
+        except Exception as e:
+            logger.error(f"BAML implementation failed: {e}", exc_info=True)
+            baml_error = e
 
         # 比較ログ
         logger.info("=== Comparison Results ===")
-        logger.info(f"Pydantic: {len(pydantic_result)} members")
-        logger.info(f"BAML: {len(baml_result)} members")
+        logger.info(
+            f"Pydantic: {len(pydantic_result)} members "
+            f"(error: {pydantic_error is not None})"
+        )
+        logger.info(
+            f"BAML: {len(baml_result)} members (error: {baml_error is not None})"
+        )
 
-        # 詳細な差分記録
-        self._log_comparison_details(pydantic_result, baml_result)
+        # エラー処理
+        if pydantic_error and baml_error:
+            logger.error("Both implementations failed!")
+            return []  # 両方失敗したら空リスト
 
-        # デフォルトはPydantic結果を返す（安全側）
-        logger.info("Returning Pydantic results (default in A/B test mode)")
-        return pydantic_result
+        # 詳細な差分記録（少なくとも片方が成功している場合）
+        if pydantic_result or baml_result:
+            self._log_comparison_details(pydantic_result, baml_result)
+
+        # 優先順位: Pydantic > BAML（安全側）
+        if pydantic_result:
+            logger.info("Returning Pydantic results (default in A/B test mode)")
+            return pydantic_result
+        else:
+            logger.warning("Pydantic failed, falling back to BAML results")
+            return baml_result
 
     def _log_comparison_details(
         self, pydantic_result: list[dict[str, Any]], baml_result: list[dict[str, Any]]

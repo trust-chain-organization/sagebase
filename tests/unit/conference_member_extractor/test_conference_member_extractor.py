@@ -40,7 +40,8 @@ class TestConferenceMemberExtractor:
             ):
                 return ConferenceMemberExtractor()
 
-    def test_extract_members_with_llm_success(self, extractor, mock_llm_service):
+    @pytest.mark.asyncio
+    async def test_extract_members_with_llm_success(self, extractor, mock_llm_service):
         """Test successful extraction of members with LLM"""
         # Mock HTML content
         html_content = """
@@ -66,9 +67,12 @@ class TestConferenceMemberExtractor:
         ]
 
         # Directly mock the method
-        with patch.object(extractor, "extract_members_with_llm", return_value=members):
+        with patch.object(
+            extractor, "extract_members_with_llm", new_callable=AsyncMock
+        ) as mock_extract:
+            mock_extract.return_value = members
             # Execute
-            result = extractor.extract_members_with_llm(html_content, "本会議")
+            result = await extractor.extract_members_with_llm(html_content, "本会議")
 
             # Assert
             assert len(result) == 3
@@ -76,17 +80,22 @@ class TestConferenceMemberExtractor:
             assert result[0].role == "委員長"
             assert result[0].party_name == "自民党"
 
-    def test_extract_members_with_llm_empty(self, extractor, mock_llm_service):
+    @pytest.mark.asyncio
+    async def test_extract_members_with_llm_empty(self, extractor, mock_llm_service):
         """Test extraction with empty result"""
         # Directly mock the extractor's _extractor
-        with patch.object(extractor, "extract_members_with_llm", return_value=[]):
+        with patch.object(
+            extractor, "extract_members_with_llm", new_callable=AsyncMock
+        ) as mock_extract:
+            mock_extract.return_value = []
             # Execute
-            result = extractor.extract_members_with_llm("<html></html>", "本会議")
+            result = await extractor.extract_members_with_llm("<html></html>", "本会議")
 
             # Assert
             assert len(result) == 0
 
-    def test_extract_members_with_multiple_conferences(
+    @pytest.mark.asyncio
+    async def test_extract_members_with_multiple_conferences(
         self, extractor, mock_llm_service
     ):
         """Test extraction when HTML contains multiple conferences"""
@@ -122,9 +131,14 @@ class TestConferenceMemberExtractor:
         ]
 
         # Directly mock the method
-        with patch.object(extractor, "extract_members_with_llm", return_value=members):
+        with patch.object(
+            extractor, "extract_members_with_llm", new_callable=AsyncMock
+        ) as mock_extract:
+            mock_extract.return_value = members
             # Execute - request specifically for 環境福祉委員会
-            result = extractor.extract_members_with_llm(html_content, "環境福祉委員会")
+            result = await extractor.extract_members_with_llm(
+                html_content, "環境福祉委員会"
+            )
 
             # Assert - should only get members from the requested committee
             assert len(result) == 2
@@ -133,12 +147,16 @@ class TestConferenceMemberExtractor:
             assert result[1].name == "鈴木三郎"
             assert result[1].role == "副委員長"
 
-    def test_extract_members_with_llm_error(self, extractor, mock_llm_service):
+    @pytest.mark.asyncio
+    async def test_extract_members_with_llm_error(self, extractor, mock_llm_service):
         """Test extraction error handling"""
         # Directly mock the method to simulate error behavior
-        with patch.object(extractor, "extract_members_with_llm", return_value=[]):
+        with patch.object(
+            extractor, "extract_members_with_llm", new_callable=AsyncMock
+        ) as mock_extract:
+            mock_extract.return_value = []
             # Execute
-            result = extractor.extract_members_with_llm("<html></html>", "本会議")
+            result = await extractor.extract_members_with_llm("<html></html>", "本会議")
 
             # Assert - should return empty list on error
             assert result == []

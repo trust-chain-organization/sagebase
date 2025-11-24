@@ -1,6 +1,5 @@
 """Conference member extractor that saves to staging table"""
 
-import asyncio
 import logging
 from typing import Any
 
@@ -42,7 +41,7 @@ class ConferenceMemberExtractor:
             finally:
                 await browser.close()
 
-    def extract_members_with_llm(
+    async def extract_members_with_llm(
         self, html_content: str, conference_name: str
     ) -> list[ExtractedMemberDTO]:
         """LLMを使用してHTMLから議員情報を抽出
@@ -56,10 +55,13 @@ class ConferenceMemberExtractor:
 
         Returns:
             抽出されたメンバーのリスト
+
+        Note:
+            この関数は非同期です。awaitして呼び出してください。
         """
-        # ファクトリーから取得したextractorを使用
-        result_dicts = asyncio.run(
-            self._extractor.extract_members(html_content, conference_name)
+        # ファクトリーから取得したextractorを使用（非同期）
+        result_dicts = await self._extractor.extract_members(
+            html_content, conference_name
         )
         # 辞書のリストをDTOのリストに変換
         return [ExtractedMemberDTO(**data) for data in result_dicts]
@@ -75,7 +77,7 @@ class ConferenceMemberExtractor:
             html_content = await self.fetch_html(url)
 
             # LLMで議員情報を抽出
-            members = self.extract_members_with_llm(html_content, conference_name)
+            members = await self.extract_members_with_llm(html_content, conference_name)
 
             # ステージングテーブルに保存
             saved_count = 0
