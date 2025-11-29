@@ -5,7 +5,6 @@
 """
 
 import logging
-from typing import Any
 
 from baml_client import b
 from src.domain.dtos.conference_member_dto import ExtractedMemberDTO
@@ -24,7 +23,7 @@ class BAMLMemberExtractor(IMemberExtractorService):
 
     async def extract_members(
         self, html_content: str, conference_name: str
-    ) -> list[dict[str, Any]]:
+    ) -> list[ExtractedMemberDTO]:
         """Extract members using BAML
 
         Args:
@@ -32,7 +31,7 @@ class BAMLMemberExtractor(IMemberExtractorService):
             conference_name: 会議体名
 
         Returns:
-            抽出されたメンバー情報のリスト（辞書形式）
+            抽出されたメンバー情報のリスト（ExtractedMemberDTO）
 
         Note:
             - HTMLが長すぎる場合は自動的に切り詰めます（50000文字）
@@ -53,14 +52,14 @@ class BAMLMemberExtractor(IMemberExtractorService):
             logger.info(f"Calling BAML ExtractMembers for '{conference_name}'")
             result = await b.ExtractMembers(html_content, conference_name)
 
-            # DTOに変換して辞書として返す
+            # DTOに変換して直接返す（型安全性向上）
             members = [
                 ExtractedMemberDTO(
                     name=m.name,
                     role=m.role,
                     party_name=m.party_name,
                     additional_info=m.additional_info,
-                ).model_dump()
+                )
                 for m in result
             ]
 

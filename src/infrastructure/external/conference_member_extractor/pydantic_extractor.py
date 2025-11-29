@@ -28,7 +28,7 @@ class PydanticMemberExtractor(IMemberExtractorService):
 
     async def extract_members(
         self, html_content: str, conference_name: str
-    ) -> list[dict[str, Any]]:
+    ) -> list[ExtractedMemberDTO]:
         """Extract members using Pydantic + LangChain
 
         Args:
@@ -36,7 +36,7 @@ class PydanticMemberExtractor(IMemberExtractorService):
             conference_name: 会議体名
 
         Returns:
-            抽出されたメンバー情報のリスト（辞書形式）
+            抽出されたメンバー情報のリスト（ExtractedMemberDTO）
         """
 
         # リストを扱うためのラッパークラス
@@ -99,8 +99,8 @@ HTMLコンテンツ:
                 {"html_content": html_content, "conference_name": conference_name}
             )
 
-            # DTOリストを辞書リストに変換
-            members = [member.model_dump() for member in cast(Any, result).members]
+            # DTOリストを直接返す（型安全性向上）
+            members = cast(Any, result).members
             logger.info(f"Pydantic extracted {len(members)} members")
             return members
 

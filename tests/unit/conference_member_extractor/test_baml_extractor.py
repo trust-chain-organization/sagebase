@@ -46,12 +46,11 @@ class TestBAMLMemberExtractor:
 
             # Assert
             assert len(result) == 3
-            assert isinstance(result[0], dict)
-            assert result[0]["name"] == "山田太郎"
-            assert result[0]["role"] == "委員長"
-            assert result[0]["party_name"] == "自民党"
-            assert result[1]["name"] == "田中花子"
-            assert result[2]["name"] == "佐藤次郎"
+            assert result[0].name == "山田太郎"
+            assert result[0].role == "委員長"
+            assert result[0].party_name == "自民党"
+            assert result[1].name == "田中花子"
+            assert result[2].name == "佐藤次郎"
 
             # Verify BAML was called with correct arguments
             mock_baml.assert_called_once_with("<html></html>", "本会議")
@@ -145,9 +144,9 @@ class TestBAMLMemberExtractor:
 
             # Assert
             assert len(result) == 2
-            assert result[0]["name"] == "山田太郎"
-            assert result[0]["role"] is None
-            assert result[0]["party_name"] is None
-            assert result[0]["additional_info"] == "備考あり"
-            assert result[1]["name"] == "田中花子"
-            assert result[1]["role"] == "委員長"
+            assert result[0].name == "山田太郎"
+            assert result[0].role is None
+            assert result[0].party_name is None
+            assert result[0].additional_info == "備考あり"
+            assert result[1].name == "田中花子"
+            assert result[1].role == "委員長"

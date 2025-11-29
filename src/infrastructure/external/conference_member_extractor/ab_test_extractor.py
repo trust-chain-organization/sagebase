@@ -4,7 +4,6 @@ PydanticとBAMLの両実装を実行して比較するextractor。
 """
 
 import logging
-from typing import Any
 
 from src.domain.dtos.conference_member_dto import ExtractedMemberDTO
 from src.domain.interfaces.member_extractor_service import IMemberExtractorService
@@ -31,7 +30,7 @@ class ABTestMemberExtractor(IMemberExtractorService):
 
     async def extract_members(
         self, html_content: str, conference_name: str
-    ) -> list[dict[str, Any]]:
+    ) -> list[ExtractedMemberDTO]:
         """両実装を実行して比較（エラーハンドリング付き）
 
         Args:
@@ -39,7 +38,8 @@ class ABTestMemberExtractor(IMemberExtractorService):
             conference_name: 会議体名
 
         Returns:
-            抽出されたメンバー情報のリスト（優先順位: Pydantic > BAML）
+            抽出されたメンバー情報のリスト（ExtractedMemberDTO）
+            優先順位: Pydantic > BAML
 
         Note:
             両方の実装が失敗した場合は空リストを返します。
@@ -48,7 +48,7 @@ class ABTestMemberExtractor(IMemberExtractorService):
         logger.info("=== A/B Test Mode Enabled ===")
 
         # Pydantic実装
-        pydantic_result: list[dict[str, Any]] = []
+        pydantic_result: list[ExtractedMemberDTO] = []
         pydantic_error: Exception | None = None
         try:
             logger.info("Executing Pydantic implementation...")
@@ -60,7 +60,7 @@ class ABTestMemberExtractor(IMemberExtractorService):
             pydantic_error = e
 
         # BAML実装
-        baml_result: list[dict[str, Any]] = []
+        baml_result: list[ExtractedMemberDTO] = []
         baml_error: Exception | None = None
         try:
             logger.info("Executing BAML implementation...")
@@ -99,33 +99,38 @@ class ABTestMemberExtractor(IMemberExtractorService):
             return baml_result
 
     def _log_comparison_details(
-        self, pydantic_result: list[dict[str, Any]], baml_result: list[dict[str, Any]]
+        self,
+        pydantic_result: list[ExtractedMemberDTO],
+        baml_result: list[ExtractedMemberDTO],
     ) -> None:
-        """比較の詳細をログに記録
+        """比較の詳細をログに記録（エラーセーフ）
 
         Args:
             pydantic_result: Pydantic実装の結果
             baml_result: BAML実装の結果
         """
-        # 辞書をDTOに変換して名前を取得
-        pydantic_names = [
-            ExtractedMemberDTO(**m).name for m in pydantic_result if "name" in m
-        ]
-        baml_names = [ExtractedMemberDTO(**m).name for m in baml_result if "name" in m]
+        try:
+            # DTOから名前を安全に抽出
+            pydantic_names = [m.name for m in pydantic_result]
+            baml_names = [m.name for m in baml_result]
 
-        logger.info("Pydantic names: " + ", ".join(pydantic_names))
-        logger.info("BAML names: " + ", ".join(baml_names))
+            logger.info("Pydantic names: " + ", ".join(pydantic_names))
+            logger.info("BAML names: " + ", ".join(baml_names))
 
-        # 名前の差分を検出
-        pydantic_name_set = set(pydantic_names)
-        baml_name_set = set(baml_names)
+            # 名前の差分を検出
+            pydantic_name_set = set(pydantic_names)
+            baml_name_set = set(baml_names)
 
-        only_in_pydantic = pydantic_name_set - baml_name_set
-        only_in_baml = baml_name_set - pydantic_name_set
+            only_in_pydantic = pydantic_name_set - baml_name_set
+            only_in_baml = baml_name_set - pydantic_name_set
 
-        if only_in_pydantic:
-            logger.info(f"Only in Pydantic: {only_in_pydantic}")
-        if only_in_baml:
-            logger.info(f"Only in BAML: {only_in_baml}")
+            if only_in_pydantic:
+                logger.info(f"Only in Pydantic: {only_in_pydantic}")
+            if only_in_baml:
+                logger.info(f"Only in BAML: {only_in_baml}")
 
-        # TODO: トークン数、レイテンシなどのメトリクスを追加
+            # TODO: トークン数、レイテンシなどのメトリクスを追加
+
+        except Exception as e:
+            logger.error(f"Failed to log comparison details: {e}", exc_info=True)
+            # ログ失敗でもA/Bテストは続行

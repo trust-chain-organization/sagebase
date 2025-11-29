@@ -109,8 +109,17 @@ class ConferenceMemberExtractor:
 
             return cleaned_html
 
+        except MemoryError:
+            # メモリ不足の場合は強制的に切り詰める
+            logger.error("Memory error while cleaning HTML, truncating to 50000 chars")
+            return html_content[:50000] + "..."
+
         except Exception as e:
-            logger.warning(f"Failed to clean HTML: {e}, using original content")
+            # その他のエラーは元のHTMLを返す（デグレード）
+            logger.warning(
+                f"Failed to clean HTML: {type(e).__name__}: {e}, "
+                f"using original content (size: {len(html_content)})"
+            )
             return html_content
 
     async def extract_members_with_llm(
@@ -135,11 +144,8 @@ class ConferenceMemberExtractor:
         cleaned_html = self.clean_html(html_content)
 
         # ファクトリーから取得したextractorを使用（非同期）
-        result_dicts = await self._extractor.extract_members(
-            cleaned_html, conference_name
-        )
-        # 辞書のリストをDTOのリストに変換
-        return [ExtractedMemberDTO(**data) for data in result_dicts]
+        # 戻り値は既にExtractedMemberDTOのリスト（型安全性向上）
+        return await self._extractor.extract_members(cleaned_html, conference_name)
 
     async def extract_and_save_members(
         self, conference_id: int, conference_name: str, url: str

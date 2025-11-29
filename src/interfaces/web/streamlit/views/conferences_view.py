@@ -1,7 +1,8 @@
 """View for conference management."""
 
 import asyncio
-from typing import Any, cast
+import logging
+from typing import cast
 
 import pandas as pd
 import streamlit as st
@@ -23,6 +24,8 @@ from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
 from src.interfaces.web.streamlit.presenters.conference_presenter import (
     ConferencePresenter,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def render_conferences_page():
@@ -402,10 +405,16 @@ def extract_members_from_conferences(selected_rows: pd.DataFrame):
 
     try:
         for idx, (_, row) in enumerate(rows_with_url.iterrows()):
-            row_data = cast(dict[str, Any], row)
-            conference_id = int(row_data["ID"])
-            conference_name = str(row_data["会議体名"])
-            url = str(row_data["議員紹介URL"])
+            # DataFrameの行データを安全に取得（KeyError, ValueErrorに対処）
+            try:
+                conference_id = int(row["ID"])
+                conference_name = str(row["会議体名"])
+                url = str(row["議員紹介URL"])
+            except (KeyError, ValueError, TypeError) as e:
+                logger.error(
+                    f"Invalid row data at index {idx}: {e}, skipping this conference"
+                )
+                continue
 
             status_text.text(
                 f"処理中: {conference_name} ({idx + 1}/{len(rows_with_url)})"

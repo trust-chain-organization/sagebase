@@ -5,7 +5,8 @@ Clean Architectureの原則に従い、ドメイン層で定義されていま�
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
+
+from src.domain.dtos.conference_member_dto import ExtractedMemberDTO
 
 
 class IMemberExtractorService(ABC):
@@ -18,7 +19,7 @@ class IMemberExtractorService(ABC):
     @abstractmethod
     async def extract_members(
         self, html_content: str, conference_name: str
-    ) -> list[dict[str, Any]]:
+    ) -> list[ExtractedMemberDTO]:
         """HTMLコンテンツからメンバー情報を抽出
 
         Args:
@@ -26,12 +27,7 @@ class IMemberExtractorService(ABC):
             conference_name: 会議体名（抽出の精度向上に使用）
 
         Returns:
-            抽出されたメンバー情報のリスト（辞書形式）
-            各辞書は以下のキーを持つ：
-            - name: 議員名
-            - role: 役職（optional）
-            - party_name: 政党名（optional）
-            - additional_info: 追加情報（optional）
+            抽出されたメンバー情報のリスト（ExtractedMemberDTO）
 
         Note:
             - 実装は非同期で動作する必要があります
