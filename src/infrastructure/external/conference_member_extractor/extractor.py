@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 
 from src.domain.dtos.conference_member_dto import ExtractedMemberDTO
+from src.domain.entities.extracted_conference_member import ExtractedConferenceMember
 from src.infrastructure.external.conference_member_extractor.factory import (
     MemberExtractorFactory,
 )
@@ -165,24 +166,32 @@ class ConferenceMemberExtractor:
             failed_count = 0
 
             for member in members:
-                member_id = self.repo.create_extracted_member(
-                    conference_id=conference_id,
-                    extracted_name=member.name,
-                    source_url=url,
-                    extracted_role=member.role,
-                    extracted_party_name=member.party_name,
-                    additional_info=member.additional_info,
-                )
-
-                if member_id:
-                    saved_count += 1
-                    logger.info(
-                        f"Saved extracted member: {member.name} "
-                        f"(role: {member.role}, party: {member.party_name})"
+                try:
+                    # DTOからエンティティを作成
+                    entity = ExtractedConferenceMember(
+                        conference_id=conference_id,
+                        extracted_name=member.name,
+                        source_url=url,
+                        extracted_role=member.role,
+                        extracted_party_name=member.party_name,
+                        additional_data=member.additional_info,
                     )
-                else:
+
+                    # リポジトリのcreate()メソッドを使用
+                    created_entity = self.repo.create(entity)
+
+                    if created_entity:
+                        saved_count += 1
+                        logger.info(
+                            f"Saved extracted member: {member.name} "
+                            f"(role: {member.role}, party: {member.party_name})"
+                        )
+                    else:
+                        failed_count += 1
+                        logger.error(f"Failed to save member: {member.name}")
+                except Exception as e:
                     failed_count += 1
-                    logger.error(f"Failed to save member: {member.name}")
+                    logger.error(f"Error saving member {member.name}: {e}")
 
             result: dict[str, Any] = {
                 "conference_id": conference_id,

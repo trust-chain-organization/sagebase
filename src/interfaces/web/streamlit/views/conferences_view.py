@@ -17,6 +17,9 @@ from src.infrastructure.external.conference_member_extractor.extractor import (
 from src.infrastructure.persistence.conference_repository_impl import (
     ConferenceRepositoryImpl,
 )
+from src.infrastructure.persistence.extracted_conference_member_repository_impl import (
+    ExtractedConferenceMemberRepositoryImpl,
+)
 from src.infrastructure.persistence.governing_body_repository_impl import (
     GoverningBodyRepositoryImpl,
 )
@@ -35,6 +38,7 @@ def render_conferences_page():
     # Initialize repositories
     conference_repo = RepositoryAdapter(ConferenceRepositoryImpl)
     governing_body_repo = RepositoryAdapter(GoverningBodyRepositoryImpl)
+    extracted_member_repo = RepositoryAdapter(ExtractedConferenceMemberRepositoryImpl)
 
     # Initialize use case and presenter
     # Type: ignore - RepositoryAdapter duck-types as repository protocol
@@ -42,8 +46,8 @@ def render_conferences_page():
     presenter = ConferencePresenter(use_case)
 
     # Create tabs
-    tab1, tab2, tab3, tab4 = st.tabs(
-        ["会議体一覧", "新規登録", "編集・削除", "SEED生成"]
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+        ["会議体一覧", "新規登録", "編集・削除", "SEED生成", "抽出結果確認"]
     )
 
     with tab1:
@@ -65,6 +69,9 @@ def render_conferences_page():
 
     with tab4:
         render_seed_generator(presenter)
+
+    with tab5:
+        render_extracted_members(extracted_member_repo, conference_repo)
 
 
 def render_conferences_list(
@@ -472,3 +479,109 @@ def extract_members_from_conferences(selected_rows: pd.DataFrame):
         st.error(f"抽出処理中にエラーが発生しました: {str(e)}")
     finally:
         extractor.close()
+
+
+def render_extracted_members(
+    extracted_member_repo: RepositoryAdapter, conference_repo: RepositoryAdapter
+):
+    """抽出された議員情報を表示する
+
+    Args:
+        extracted_member_repo: 抽出メンバーリポジトリ
+        conference_repo: 会議体リポジトリ
+    """
+    st.header("抽出結果確認")
+
+    # 会議体でフィルタリング
+    conferences = conference_repo.get_all()
+    conference_options = {"すべて": None}
+    conference_options.update({conf.name: conf.id for conf in conferences})
+
+    selected_conf = st.selectbox(
+        "会議体で絞り込み",
+        options=list(conference_options.keys()),
+        key="filter_extracted_conference",
+    )
+    conference_id = conference_options[selected_conf]
+
+    # ステータスでフィルタリング
+    status_options = {
+        "すべて": None,
+        "未マッチング": "pending",
+        "マッチング済み": "matched",
+        "マッチなし": "no_match",
+        "要確認": "needs_review",
+    }
+    selected_status = st.selectbox(
+        "ステータスで絞り込み",
+        options=list(status_options.keys()),
+        key="filter_extracted_status",
+    )
+    status = status_options[selected_status]
+
+    # サマリー統計を取得
+    summary = asyncio.run(extracted_member_repo.get_extraction_summary(conference_id))
+
+    # 統計を表示
+    col1, col2, col3, col4, col5 = st.columns(5)
+    with col1:
+        st.metric("総件数", summary.get("total", 0))
+    with col2:
+        st.metric("未マッチング", summary.get("pending", 0))
+    with col3:
+        st.metric("マッチング済み", summary.get("matched", 0))
+    with col4:
+        st.metric("マッチなし", summary.get("no_match", 0))
+    with col5:
+        st.metric("要確認", summary.get("needs_review", 0))
+
+    # 抽出結果を取得
+    if conference_id:
+        members = asyncio.run(extracted_member_repo.get_by_conference(conference_id))
+    else:
+        members = asyncio.run(extracted_member_repo.get_all(limit=1000))
+
+    # ステータスでフィルタリング
+    if status:
+        members = [m for m in members if m.matching_status == status]
+
+    if not members:
+        st.info("該当する抽出結果がありません。")
+        return
+
+    # DataFrameに変換
+    data = []
+    for member in members:
+        data.append(
+            {
+                "ID": member.id,
+                "会議体ID": member.conference_id,
+                "名前": member.extracted_name,
+                "役職": member.extracted_role or "",
+                "政党": member.extracted_party_name or "",
+                "ステータス": member.matching_status,
+                "マッチング信頼度": (
+                    f"{member.matching_confidence:.2f}"
+                    if member.matching_confidence
+                    else ""
+                ),
+                "抽出日時": member.extracted_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "ソースURL": member.source_url,
+            }
+        )
+
+    df = pd.DataFrame(data)
+
+    # 表示
+    st.dataframe(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "ソースURL": st.column_config.LinkColumn("ソースURL"),
+            "マッチング信頼度": st.column_config.NumberColumn(
+                "マッチング信頼度",
+                format="%.2f",
+            ),
+        },
+    )
