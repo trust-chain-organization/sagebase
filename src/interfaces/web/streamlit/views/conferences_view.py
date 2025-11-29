@@ -519,8 +519,8 @@ def render_extracted_members(
     )
     status = status_options[selected_status]
 
-    # サマリー統計を取得
-    summary = asyncio.run(extracted_member_repo.get_extraction_summary(conference_id))
+    # サマリー統計を取得（RepositoryAdapterが自動的にasyncio.run()を実行）
+    summary = extracted_member_repo.get_extraction_summary(conference_id)
 
     # 統計を表示
     col1, col2, col3, col4, col5 = st.columns(5)
@@ -535,11 +535,11 @@ def render_extracted_members(
     with col5:
         st.metric("要確認", summary.get("needs_review", 0))
 
-    # 抽出結果を取得
+    # 抽出結果を取得（RepositoryAdapterが自動的にasyncio.run()を実行）
     if conference_id:
-        members = asyncio.run(extracted_member_repo.get_by_conference(conference_id))
+        members = extracted_member_repo.get_by_conference(conference_id)
     else:
-        members = asyncio.run(extracted_member_repo.get_all(limit=1000))
+        members = extracted_member_repo.get_all(limit=1000)
 
     # ステータスでフィルタリング
     if status:
