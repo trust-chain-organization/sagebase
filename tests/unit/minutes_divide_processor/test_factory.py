@@ -2,7 +2,7 @@
 
 from unittest.mock import patch
 
-from src.minutes_divide_processor.factory import MinutesDividerFactory
+from src.infrastructure.external.minutes_divider.factory import MinutesDividerFactory
 
 
 class TestMinutesDividerFactory:

@@ -4,16 +4,16 @@
 既存のPydantic実装と並行して動作し、フィーチャーフラグで切り替え可能です。
 """
 
-import asyncio
 import logging
 import re
 import unicodedata
 from typing import Any
 
 from baml_client import b
+from src.domain.interfaces.minutes_divider_service import IMinutesDividerService
 
 # 既存のPydanticモデルを使用（BAML結果をこれに変換）
-from .models import (
+from src.minutes_divide_processor.models import (
     AttendeesMapping,
     MinutesBoundary,
     RedividedSectionInfo,
@@ -31,7 +31,7 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 
-class BAMLMinutesDivider:
+class BAMLMinutesDivider(IMinutesDividerService):
     """BAML-based MinutesDivider
 
     BAMLを使用して議事録分割処理を行うクラス。
@@ -408,9 +408,9 @@ class BAMLMinutesDivider:
             セクション情報リスト
         """
         try:
-            # BAMLを非同期で呼び出し
+            # BAMLを呼び出し
             logger.info("Calling BAML DivideMinutesToKeywords")
-            baml_result = asyncio.run(b.DivideMinutesToKeywords(minutes))  # type: ignore[arg-type]
+            baml_result = b.DivideMinutesToKeywords(minutes)
 
             # BAML結果をPydanticモデルに変換
             section_info_list = [
@@ -457,18 +457,17 @@ class BAMLMinutesDivider:
             divide_counter = divide_counter + 2
 
             try:
-                # BAMLを非同期で呼び出し
+                # BAMLを呼び出し
                 logger.info(
                     f"Calling BAML RedivideSection "
                     f"(divide_counter={divide_counter}, "
                     f"original_index={redivide_section_string.original_index})"
                 )
-                coro = b.RedivideSection(
+                baml_result = b.RedivideSection(
                     redivide_section_string.redivide_section_string.section_string,
                     divide_counter,
                     redivide_section_string.original_index,
                 )
-                baml_result = asyncio.run(coro)  # type: ignore[arg-type]
 
                 # BAML結果をPydanticモデルに変換してリストに追加
                 for item in baml_result:
@@ -501,9 +500,9 @@ class BAMLMinutesDivider:
         logger.info(f"Input text length: {len(minutes_text)}")
 
         try:
-            # BAMLを非同期で呼び出し
+            # BAMLを呼び出し
             logger.info("Calling BAML DetectBoundary")
-            baml_result = asyncio.run(b.DetectBoundary(minutes_text))  # type: ignore[arg-type]
+            baml_result = b.DetectBoundary(minutes_text)
 
             # BAML結果をPydanticモデルに変換
             result = MinutesBoundary(
@@ -551,9 +550,9 @@ class BAMLMinutesDivider:
             )
 
         try:
-            # BAMLを非同期で呼び出し
+            # BAMLを呼び出し
             logger.info("Calling BAML ExtractAttendees")
-            baml_result = asyncio.run(b.ExtractAttendees(attendees_text))  # type: ignore[arg-type]
+            baml_result = b.ExtractAttendees(attendees_text)
 
             # BAML結果をPydanticモデルに変換
             result = AttendeesMapping(
@@ -618,9 +617,9 @@ class BAMLMinutesDivider:
             return SpeakerAndSpeechContentList(speaker_and_speech_content_list=[])
 
         try:
-            # BAMLを非同期で呼び出し
+            # BAMLを呼び出し
             logger.info("Calling BAML DivideSpeech")
-            baml_result = asyncio.run(b.DivideSpeech(section_text))  # type: ignore[arg-type]
+            baml_result = b.DivideSpeech(section_text)
 
             # BAML結果をPydanticモデルに変換
             speaker_and_speech_content_list = [

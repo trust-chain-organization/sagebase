@@ -1,10 +1,12 @@
 """Tests for BAML MinutesDivider"""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 
-from src.minutes_divide_processor.baml_minutes_divider import BAMLMinutesDivider
+from src.infrastructure.external.minutes_divider.baml_minutes_divider import (
+    BAMLMinutesDivider,
+)
 from src.minutes_divide_processor.models import (
     RedivideSectionString,
     RedivideSectionStringList,
@@ -40,8 +42,7 @@ class TestBAMLMinutesDivider:
         ]
 
         with patch(
-            "src.minutes_divide_processor.baml_minutes_divider.b.DivideMinutesToKeywords",
-            new_callable=AsyncMock,
+            "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.DivideMinutesToKeywords"
         ) as mock_baml:
             mock_baml.return_value = mock_result
 
@@ -61,8 +62,7 @@ class TestBAMLMinutesDivider:
     def test_section_divide_run_empty_result(self, divider):
         """Test section division with empty result"""
         with patch(
-            "src.minutes_divide_processor.baml_minutes_divider.b.DivideMinutesToKeywords",
-            new_callable=AsyncMock,
+            "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.DivideMinutesToKeywords"
         ) as mock_baml:
             mock_baml.return_value = []
 
@@ -75,8 +75,7 @@ class TestBAMLMinutesDivider:
     def test_section_divide_run_error_handling(self, divider):
         """Test error handling in section division"""
         with patch(
-            "src.minutes_divide_processor.baml_minutes_divider.b.DivideMinutesToKeywords",
-            new_callable=AsyncMock,
+            "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.DivideMinutesToKeywords"
         ) as mock_baml:
             mock_baml.side_effect = Exception("BAML error")
 
@@ -120,8 +119,7 @@ class TestBAMLMinutesDivider:
         )
 
         with patch(
-            "src.minutes_divide_processor.baml_minutes_divider.b.RedivideSection",
-            new_callable=AsyncMock,
+            "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.RedivideSection"
         ) as mock_baml:
             mock_baml.return_value = mock_result
 
@@ -151,8 +149,7 @@ class TestBAMLMinutesDivider:
         )
 
         with patch(
-            "src.minutes_divide_processor.baml_minutes_divider.b.RedivideSection",
-            new_callable=AsyncMock,
+            "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.RedivideSection"
         ) as mock_baml:
             mock_baml.side_effect = Exception("BAML error")
 
@@ -179,8 +176,7 @@ class TestBAMLMinutesDivider:
                 self.reason = "区切り線で明確に分離されている"
 
         with patch(
-            "src.minutes_divide_processor.baml_minutes_divider.b.DetectBoundary",
-            new_callable=AsyncMock,
+            "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.DetectBoundary"
         ) as mock_baml:
             mock_baml.return_value = MockBoundary()
 
@@ -207,8 +203,7 @@ class TestBAMLMinutesDivider:
                 self.reason = "境界が見つかりませんでした"
 
         with patch(
-            "src.minutes_divide_processor.baml_minutes_divider.b.DetectBoundary",
-            new_callable=AsyncMock,
+            "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.DetectBoundary"
         ) as mock_baml:
             mock_baml.return_value = MockBoundary()
 
@@ -222,8 +217,7 @@ class TestBAMLMinutesDivider:
     def test_detect_attendee_boundary_error_handling(self, divider):
         """Test error handling in boundary detection"""
         with patch(
-            "src.minutes_divide_processor.baml_minutes_divider.b.DetectBoundary",
-            new_callable=AsyncMock,
+            "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.DetectBoundary"
         ) as mock_baml:
             mock_baml.side_effect = Exception("BAML error")
 
@@ -250,8 +244,7 @@ class TestBAMLMinutesDivider:
                 self.confidence = 0.95
 
         with patch(
-            "src.minutes_divide_processor.baml_minutes_divider.b.ExtractAttendees",
-            new_callable=AsyncMock,
+            "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.ExtractAttendees"
         ) as mock_baml:
             mock_baml.return_value = MockAttendees()
 
@@ -278,8 +271,7 @@ class TestBAMLMinutesDivider:
     def test_extract_attendees_mapping_error_handling(self, divider):
         """Test error handling in attendees extraction"""
         with patch(
-            "src.minutes_divide_processor.baml_minutes_divider.b.ExtractAttendees",
-            new_callable=AsyncMock,
+            "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.ExtractAttendees"
         ) as mock_baml:
             mock_baml.side_effect = Exception("BAML error")
 
@@ -320,14 +312,12 @@ class TestBAMLMinutesDivider:
         ]
 
         with patch(
-            "src.minutes_divide_processor.baml_minutes_divider.b.DetectBoundary",
-            new_callable=AsyncMock,
+            "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.DetectBoundary"
         ) as mock_boundary:
             mock_boundary.return_value = MockBoundary()
 
             with patch(
-                "src.minutes_divide_processor.baml_minutes_divider.b.DivideSpeech",
-                new_callable=AsyncMock,
+                "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.DivideSpeech"
             ) as mock_speech:
                 mock_speech.return_value = mock_speeches
 
@@ -363,8 +353,7 @@ class TestBAMLMinutesDivider:
                 self.reason = "境界なし"
 
         with patch(
-            "src.minutes_divide_processor.baml_minutes_divider.b.DetectBoundary",
-            new_callable=AsyncMock,
+            "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.DetectBoundary"
         ) as mock_boundary:
             mock_boundary.return_value = MockBoundary()
 
@@ -390,14 +379,12 @@ class TestBAMLMinutesDivider:
                 self.reason = "境界なし"
 
         with patch(
-            "src.minutes_divide_processor.baml_minutes_divider.b.DetectBoundary",
-            new_callable=AsyncMock,
+            "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.DetectBoundary"
         ) as mock_boundary:
             mock_boundary.return_value = MockBoundary()
 
             with patch(
-                "src.minutes_divide_processor.baml_minutes_divider.b.DivideSpeech",
-                new_callable=AsyncMock,
+                "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.DivideSpeech"
             ) as mock_speech:
                 mock_speech.side_effect = Exception("BAML error")
 

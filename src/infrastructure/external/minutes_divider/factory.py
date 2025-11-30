@@ -8,6 +8,8 @@ import logging
 import os
 from typing import Any
 
+from src.domain.interfaces.minutes_divider_service import IMinutesDividerService
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,7 +20,7 @@ class MinutesDividerFactory:
     """
 
     @staticmethod
-    def create(llm_service: Any | None = None, k: int = 5) -> Any:
+    def create(llm_service: Any | None = None, k: int = 5) -> IMinutesDividerService:
         """フィーチャーフラグに基づいてMinutesDividerを作成
 
         Args:
@@ -35,13 +37,19 @@ class MinutesDividerFactory:
 
         if use_baml:
             logger.info("Creating BAML MinutesDivider")
-            from src.minutes_divide_processor.baml_minutes_divider import (
+            # fmt: off
+            from src.infrastructure.external.minutes_divider.baml_minutes_divider import (  # noqa: E501
                 BAMLMinutesDivider,
             )
+            # fmt: on
 
             return BAMLMinutesDivider(llm_service=llm_service, k=k)
 
         logger.info("Creating Pydantic MinutesDivider")
-        from src.minutes_divide_processor.minutes_divider import MinutesDivider
+        # fmt: off
+        from src.infrastructure.external.minutes_divider.pydantic_minutes_divider import (  # noqa: E501
+            MinutesDivider,
+        )
+        # fmt: on
 
         return MinutesDivider(llm_service=llm_service, k=k)

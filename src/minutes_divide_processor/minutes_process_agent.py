@@ -7,8 +7,7 @@ from langgraph.store.memory import InMemoryStore
 
 from src.domain.services.interfaces.llm_service import ILLMService
 from src.infrastructure.external.instrumented_llm_service import InstrumentedLLMService
-
-from .factory import MinutesDividerFactory
+from src.infrastructure.external.minutes_divider.factory import MinutesDividerFactory
 
 # Use relative import for modules within the same package
 from .models import (

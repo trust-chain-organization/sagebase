@@ -8,11 +8,9 @@ from langchain import hub
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 
+from src.domain.interfaces.minutes_divider_service import IMinutesDividerService
 from src.domain.services.interfaces.llm_service import ILLMService
-from src.services.llm_factory import LLMServiceFactory
-
-# Use relative import for modules within the same package
-from .models import (
+from src.minutes_divide_processor.models import (
     AttendeesMapping,
     MinutesBoundary,
     RedividedSectionInfoList,
@@ -23,11 +21,12 @@ from .models import (
     SectionStringList,
     SpeakerAndSpeechContentList,
 )
+from src.services.llm_factory import LLMServiceFactory
 
 logger = logging.getLogger(__name__)
 
 
-class MinutesDivider:
+class MinutesDivider(IMinutesDividerService):
     def __init__(
         self,
         llm_service: ILLMService | None = None,

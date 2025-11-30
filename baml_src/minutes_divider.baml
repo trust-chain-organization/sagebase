@@ -73,6 +73,20 @@ function DivideMinutesToKeywords(minutes: string) -> SectionInfo[] {
         注意:
         - キーワードは議事録内に実際に存在する文字列である必要があります
         - キーワードは先頭から正確に30文字抽出してください（30文字未満の場合は全文）
+
+        出力形式（JSON配列）:
+        [
+          {
+            "chapter_number": 1,
+            "keyword": "先頭30文字のキーワード"
+          },
+          {
+            "chapter_number": 2,
+            "keyword": "次のセクションの先頭30文字"
+          }
+        ]
+
+        重要: "keyword"フィールドを使用してください（"keywords"ではありません）
     "#
 }
 
@@ -152,6 +166,26 @@ function DivideSpeech(section_string: string) -> SpeakerAndSpeechContent[] {
         注意:
         - 発言者が明示されていない場合でも、文脈から推測して抽出してください
         - 発言内容は元のテキストから正確に抽出してください
+
+        出力形式（JSON配列）:
+        [
+          {
+            "speaker": "発言者名（敬称なし）",
+            "speech_content": "発言内容",
+            "chapter_number": 1,
+            "sub_chapter_number": 1,
+            "speech_order": 1
+          },
+          {
+            "speaker": "次の発言者名",
+            "speech_content": "次の発言内容",
+            "chapter_number": 1,
+            "sub_chapter_number": 1,
+            "speech_order": 2
+          }
+        ]
+
+        重要: "speech_content"フィールドを使用してください（"utterance", "speech"ではありません）
     "#
 }
 
