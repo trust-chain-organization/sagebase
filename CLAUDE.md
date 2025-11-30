@@ -24,6 +24,7 @@ Sagebase is a Political Activity Tracking Application (政治活動追跡アプ�
 - **Speaker-Politician Matching**: LLM-based matching with hybrid approach
 - **Parliamentary Groups**: Voting blocs within conferences
 - **Staged Processing**: Multi-step workflows with manual review capability
+- **Conference Member Extraction**: Web scraping + LLM extraction using BAML for structured output
 
 ## Quick Start
 
@@ -83,6 +84,7 @@ src/
 ## Technology Stack
 
 - **LLM**: Google Gemini API (gemini-2.0-flash, gemini-1.5-flash) via LangChain
+- **Structured Output**: BAML (Boundary ML) for type-safe LLM outputs
 - **Database**: PostgreSQL 15 with SQLAlchemy ORM
 - **Package Management**: UV (modern Python package manager)
 - **PDF Processing**: pypdfium2
@@ -148,3 +150,31 @@ Sagebaseプロジェクトでは、以下のスキルが自動的にアクティ
 - **GCS URI Format**: Always use `gs://` format, not HTTPS URLs
 
 **📖 For detailed conventions**: See [.claude/skills/project-conventions/](.claude/skills/project-conventions/)
+
+## BAML Integration
+
+### Overview
+Sagebaseでは、会議体メンバー情報の抽出にBAML (Boundary ML)を使用しています。BAMLはLLMの構造化出力を型安全に扱うためのドメイン特化言語(DSL)です。
+
+### Key Features
+- **型安全性**: Pydanticモデルと完全に互換性のある型定義
+- **トークン効率**: 最適化されたプロンプト生成により、従来のPydantic実装よりトークン使用量を削減
+- **パース精度**: LLMの出力を確実に構造化データに変換
+- **フィーチャーフラグ対応**: 環境変数で実装を切り替え可能
+
+### Implementation
+- **Factory Pattern**: `MemberExtractorFactory`で実装を切り替え
+  - `USE_BAML_EXTRACTOR=true`: BAML実装を使用
+  - `USE_BAML_EXTRACTOR=false`: 従来のPydantic実装を使用
+- **Interface**: `IMemberExtractorService`を実装し、既存コードとの互換性を保証
+- **DTO**: `ExtractedMemberDTO`で層間のデータ転送を実現
+
+### Files
+- `baml_src/`: BAML定義ファイル（.baml）
+- `src/infrastructure/external/conference_member_extractor/baml_extractor.py`: BAML実装
+- `src/infrastructure/external/conference_member_extractor/pydantic_extractor.py`: Pydantic実装
+- `src/infrastructure/external/conference_member_extractor/factory.py`: ファクトリー
+- `tests/unit/conference_member_extractor/`: 単体テスト
+
+### Usage in Streamlit
+会議体管理画面の「会議体一覧」タブで、会議体を選択して「選択した会議体から議員情報を抽出」ボタンをクリックすると、BAMLを使用してメンバー情報を抽出できます。抽出結果は「抽出結果確認」タブで確認できます。

@@ -1,6 +1,8 @@
 """Conference member extractor that saves to staging table"""
 
+import asyncio
 import logging
+import os
 from typing import Any, cast
 
 from langchain_core.output_parsers import PydanticOutputParser
@@ -16,11 +18,28 @@ from src.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
+# フィーチャーフラグ
+USE_BAML = os.getenv("USE_BAML_MEMBER_EXTRACTION", "false").lower() == "true"
+ENABLE_AB_TEST = (
+    os.getenv("ENABLE_MEMBER_EXTRACTION_AB_TEST", "false").lower() == "true"
+)
+
 
 class ConferenceMemberExtractor:
     """会議体メンバー情報を抽出してステージングテーブルに保存するクラス"""
 
     def __init__(self):
+        # BAML extractorの条件付き初期化
+        if USE_BAML or ENABLE_AB_TEST:
+            from src.conference_member_extractor.baml_extractor import (
+                BAMLMemberExtractor,
+            )
+
+            logger.info("Initializing BAML member extractor")
+            self._baml_extractor = BAMLMemberExtractor()
+        else:
+            self._baml_extractor = None
+
         self.llm_service = LLMService()
         self.repo = RepositoryAdapter(ExtractedConferenceMemberRepositoryImpl)
 
@@ -43,7 +62,36 @@ class ConferenceMemberExtractor:
     def extract_members_with_llm(
         self, html_content: str, conference_name: str
     ) -> list[ExtractedMember]:
-        """LLMを使用してHTMLから議員情報を抽出"""
+        """LLMを使用してHTMLから議員情報を抽出
+
+        フィーチャーフラグに基づいて、PydanticまたはBAML実装を使用します。
+        A/Bテストモードが有効な場合は、両方の実装を実行して比較します。
+
+        Args:
+            html_content: HTMLコンテンツ
+            conference_name: 会議体名
+
+        Returns:
+            抽出されたメンバーのリスト
+        """
+        # A/Bテストモード
+        if ENABLE_AB_TEST:
+            return self._extract_with_comparison(html_content, conference_name)
+
+        # 本番モード
+        if USE_BAML:
+            logger.info("Using BAML implementation")
+            return asyncio.run(
+                self._baml_extractor.extract_members(html_content, conference_name)  # type: ignore
+            )
+        else:
+            logger.info("Using Pydantic implementation")
+            return self._extract_with_pydantic(html_content, conference_name)
+
+    def _extract_with_pydantic(
+        self, html_content: str, conference_name: str
+    ) -> list[ExtractedMember]:
+        """既存のPydantic実装（変更なし）"""
         from pydantic import BaseModel, Field
 
         # リストを扱うためのラッパークラス
@@ -101,6 +149,55 @@ HTMLコンテンツ:
         except Exception as e:
             logger.error(f"Error extracting members with LLM: {e}")
             return []
+
+    def _extract_with_comparison(
+        self, html_content: str, conference_name: str
+    ) -> list[ExtractedMember]:
+        """A/Bテストモード：両方の実装を実行して比較"""
+        logger.info("=== A/B Test Mode Enabled ===")
+
+        # Pydantic実装
+        logger.info("Executing Pydantic implementation...")
+        pydantic_result = self._extract_with_pydantic(html_content, conference_name)
+
+        # BAML実装
+        logger.info("Executing BAML implementation...")
+        baml_result = asyncio.run(
+            self._baml_extractor.extract_members(html_content, conference_name)  # type: ignore
+        )
+
+        # 比較ログ
+        logger.info("=== Comparison Results ===")
+        logger.info(f"Pydantic: {len(pydantic_result)} members")
+        logger.info(f"BAML: {len(baml_result)} members")
+
+        # 詳細な差分記録
+        self._log_comparison_details(pydantic_result, baml_result)
+
+        # デフォルトはPydantic結果を返す（安全側）
+        logger.info("Returning Pydantic results (default in A/B test mode)")
+        return pydantic_result
+
+    def _log_comparison_details(
+        self, pydantic_result: list[ExtractedMember], baml_result: list[ExtractedMember]
+    ) -> None:
+        """比較の詳細をログに記録"""
+        logger.info("Pydantic names: " + ", ".join([m.name for m in pydantic_result]))
+        logger.info("BAML names: " + ", ".join([m.name for m in baml_result]))
+
+        # 名前の差分を検出
+        pydantic_names = {m.name for m in pydantic_result}
+        baml_names = {m.name for m in baml_result}
+
+        only_in_pydantic = pydantic_names - baml_names
+        only_in_baml = baml_names - pydantic_names
+
+        if only_in_pydantic:
+            logger.info(f"Only in Pydantic: {only_in_pydantic}")
+        if only_in_baml:
+            logger.info(f"Only in BAML: {only_in_baml}")
+
+        # TODO: トークン数、レイテンシなどのメトリクスを追加
 
     async def extract_and_save_members(
         self, conference_id: int, conference_name: str, url: str

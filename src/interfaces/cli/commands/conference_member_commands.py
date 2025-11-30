@@ -7,11 +7,13 @@ from typing import Any
 
 import click
 
-from src.conference_member_extractor.extractor import ConferenceMemberExtractor
 from src.conference_member_extractor.matching_service import (
     ConferenceMemberMatchingService,
 )
 from src.infrastructure.exceptions import DatabaseError, ScrapingError
+from src.infrastructure.external.conference_member_extractor.extractor import (
+    ConferenceMemberExtractor,
+)
 from src.infrastructure.persistence.conference_repository_impl import (
     ConferenceRepositoryImpl,
 )

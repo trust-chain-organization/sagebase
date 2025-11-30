@@ -28,7 +28,7 @@ class TestLLMService:
         """Test LLM service initialization with API key"""
         service = LLMService(api_key="test-key")
         assert service.api_key == "test-key"
-        assert service.model_name == "gemini-1.5-flash"  # Default model
+        assert service.model_name == "gemini-2.5-flash"  # Default model
         assert service.temperature == 0.1
 
     @patch("src.services.llm_service.ChatGoogleGenerativeAI")

@@ -11,6 +11,9 @@ from typing import Any
 import streamlit as st
 
 from src.interfaces.web.streamlit.auth import google_sign_in
+from src.interfaces.web.streamlit.auth.google_sign_in import render_login_page
+
+__all__ = ["require_auth", "render_login_page"]
 
 
 def require_auth[F: Callable[..., Any]](func: F) -> F:

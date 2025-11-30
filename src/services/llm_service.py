@@ -40,9 +40,9 @@ class LLMService:
 
     # Default models for different use cases
     DEFAULT_MODELS = {
-        "fast": "gemini-1.5-flash",
-        "advanced": "gemini-2.0-flash-exp",
-        "legacy": "gemini-1.5-flash",
+        "fast": "gemini-2.5-flash",
+        "advanced": "gemini-2.5-flash",
+        "legacy": "gemini-1.5-flash-latest",
     }
 
     def __init__(
