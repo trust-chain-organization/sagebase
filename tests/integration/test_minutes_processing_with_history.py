@@ -83,6 +83,7 @@ class TestMinutesProcessingWithHistory:
         assert divider.llm_service == instrumented_llm_service
         assert divider.k == 5
 
+    @patch.dict("os.environ", {"USE_BAML_MINUTES_DIVIDER": "false"})
     def test_minutes_process_agent_with_instrumented_service(
         self, instrumented_llm_service
     ):
