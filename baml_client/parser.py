@@ -11,10 +11,12 @@
 # baml-cli is available with the baml package.
 
 import typing
+import typing_extensions
+
+import baml_py
 
 from . import stream_types, types
-from .runtime import BamlCallOptions, DoNotUseDirectlyCallManager
-
+from .runtime import DoNotUseDirectlyCallManager, BamlCallOptions
 
 class LlmResponseParser:
     __options: DoNotUseDirectlyCallManager
@@ -22,25 +24,48 @@ class LlmResponseParser:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
+    def DetectBoundary(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.MinutesBoundary:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="DetectBoundary", llm_response=llm_response, mode="request")
+        return typing.cast(types.MinutesBoundary, result)
+
+    def DivideMinutesToKeywords(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> typing.List["types.SectionInfo"]:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="DivideMinutesToKeywords", llm_response=llm_response, mode="request")
+        return typing.cast(typing.List["types.SectionInfo"], result)
+
+    def DivideSpeech(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> typing.List["types.SpeakerAndSpeechContent"]:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="DivideSpeech", llm_response=llm_response, mode="request")
+        return typing.cast(typing.List["types.SpeakerAndSpeechContent"], result)
+
+    def ExtractAttendees(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.AttendeesMapping:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractAttendees", llm_response=llm_response, mode="request")
+        return typing.cast(types.AttendeesMapping, result)
+
     def ExtractMembers(
-        self,
-        llm_response: str,
-        baml_options: BamlCallOptions = {},
-    ) -> list["types.ExtractedMember"]:
-        result = self.__options.merge_options(baml_options).parse_response(
-            function_name="ExtractMembers", llm_response=llm_response, mode="request"
-        )
-        return typing.cast(list["types.ExtractedMember"], result)
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> typing.List["types.ExtractedMember"]:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractMembers", llm_response=llm_response, mode="request")
+        return typing.cast(typing.List["types.ExtractedMember"], result)
 
     def ExtractResume(
-        self,
-        llm_response: str,
-        baml_options: BamlCallOptions = {},
+        self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.Resume:
-        result = self.__options.merge_options(baml_options).parse_response(
-            function_name="ExtractResume", llm_response=llm_response, mode="request"
-        )
+        result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractResume", llm_response=llm_response, mode="request")
         return typing.cast(types.Resume, result)
+
+    def RedivideSection(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> typing.List["types.SectionInfo"]:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="RedivideSection", llm_response=llm_response, mode="request")
+        return typing.cast(typing.List["types.SectionInfo"], result)
+
 
 
 class LlmStreamParser:
@@ -49,22 +74,44 @@ class LlmStreamParser:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
+    def DetectBoundary(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.MinutesBoundary:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="DetectBoundary", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.MinutesBoundary, result)
+
+    def DivideMinutesToKeywords(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> typing.List["stream_types.SectionInfo"]:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="DivideMinutesToKeywords", llm_response=llm_response, mode="stream")
+        return typing.cast(typing.List["stream_types.SectionInfo"], result)
+
+    def DivideSpeech(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> typing.List["stream_types.SpeakerAndSpeechContent"]:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="DivideSpeech", llm_response=llm_response, mode="stream")
+        return typing.cast(typing.List["stream_types.SpeakerAndSpeechContent"], result)
+
+    def ExtractAttendees(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.AttendeesMapping:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractAttendees", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.AttendeesMapping, result)
+
     def ExtractMembers(
-        self,
-        llm_response: str,
-        baml_options: BamlCallOptions = {},
-    ) -> list["stream_types.ExtractedMember"]:
-        result = self.__options.merge_options(baml_options).parse_response(
-            function_name="ExtractMembers", llm_response=llm_response, mode="stream"
-        )
-        return typing.cast(list["stream_types.ExtractedMember"], result)
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> typing.List["stream_types.ExtractedMember"]:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractMembers", llm_response=llm_response, mode="stream")
+        return typing.cast(typing.List["stream_types.ExtractedMember"], result)
 
     def ExtractResume(
-        self,
-        llm_response: str,
-        baml_options: BamlCallOptions = {},
+        self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.Resume:
-        result = self.__options.merge_options(baml_options).parse_response(
-            function_name="ExtractResume", llm_response=llm_response, mode="stream"
-        )
+        result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractResume", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.Resume, result)
+
+    def RedivideSection(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> typing.List["stream_types.SectionInfo"]:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="RedivideSection", llm_response=llm_response, mode="stream")
+        return typing.cast(typing.List["stream_types.SectionInfo"], result)

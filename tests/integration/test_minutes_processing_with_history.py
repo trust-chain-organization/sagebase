@@ -10,7 +10,9 @@ from src.domain.entities.llm_processing_history import (
     ProcessingType,
 )
 from src.infrastructure.external.instrumented_llm_service import InstrumentedLLMService
-from src.minutes_divide_processor.minutes_divider import MinutesDivider
+from src.infrastructure.external.minutes_divider.pydantic_minutes_divider import (
+    MinutesDivider,
+)
 from src.minutes_divide_processor.minutes_process_agent import MinutesProcessAgent
 from src.services.llm_factory import LLMServiceFactory
 
@@ -81,6 +83,7 @@ class TestMinutesProcessingWithHistory:
         assert divider.llm_service == instrumented_llm_service
         assert divider.k == 5
 
+    @patch.dict("os.environ", {"USE_BAML_MINUTES_DIVIDER": "false"})
     def test_minutes_process_agent_with_instrumented_service(
         self, instrumented_llm_service
     ):

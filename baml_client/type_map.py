@@ -10,11 +10,35 @@
 # BAML files and re-generate this code using: baml-cli generate
 # baml-cli is available with the baml package.
 
-from . import stream_types, types
+from . import types
+from . import stream_types
+
 
 type_map = {
+
+    "types.AttendeesMapping": types.AttendeesMapping,
+    "stream_types.AttendeesMapping": stream_types.AttendeesMapping,
+
     "types.ExtractedMember": types.ExtractedMember,
     "stream_types.ExtractedMember": stream_types.ExtractedMember,
+
+    "types.MinutesBoundary": types.MinutesBoundary,
+    "stream_types.MinutesBoundary": stream_types.MinutesBoundary,
+
+    "types.RedividedSectionInfo": types.RedividedSectionInfo,
+    "stream_types.RedividedSectionInfo": stream_types.RedividedSectionInfo,
+
     "types.Resume": types.Resume,
     "stream_types.Resume": stream_types.Resume,
+
+    "types.SectionInfo": types.SectionInfo,
+    "stream_types.SectionInfo": stream_types.SectionInfo,
+
+    "types.SectionString": types.SectionString,
+    "stream_types.SectionString": stream_types.SectionString,
+
+    "types.SpeakerAndSpeechContent": types.SpeakerAndSpeechContent,
+    "stream_types.SpeakerAndSpeechContent": stream_types.SpeakerAndSpeechContent,
+
+
 }

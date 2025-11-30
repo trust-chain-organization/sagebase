@@ -11,15 +11,13 @@
 # baml-cli is available with the baml package.
 
 import typing
-
+import typing_extensions
 import baml_py
 
-from . import stream_types, type_builder, types
-from .globals import (
-    DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME as __runtime__,
-)
+from . import stream_types, types, type_builder
 from .parser import LlmResponseParser, LlmStreamParser
-from .runtime import BamlCallOptions, DoNotUseDirectlyCallManager
+from .runtime import DoNotUseDirectlyCallManager, BamlCallOptions
+from .globals import DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME as __runtime__
 
 
 class BamlAsyncClient:
@@ -38,14 +36,13 @@ class BamlAsyncClient:
         self.__llm_response_parser = LlmResponseParser(options)
         self.__llm_stream_parser = LlmStreamParser(options)
 
-    def with_options(
-        self,
-        tb: type_builder.TypeBuilder | None = None,
-        client_registry: baml_py.baml_py.ClientRegistry | None = None,
-        collector: baml_py.baml_py.Collector | list[baml_py.baml_py.Collector] | None = None,
-        env: dict[str, str | None] | None = None,
-        tags: dict[str, str] | None = None,
-        on_tick: typing.Callable[[str, baml_py.baml_py.FunctionLog], None] | None = None,
+    def with_options(self,
+        tb: typing.Optional[type_builder.TypeBuilder] = None,
+        client_registry: typing.Optional[baml_py.baml_py.ClientRegistry] = None,
+        collector: typing.Optional[typing.Union[baml_py.baml_py.Collector, typing.List[baml_py.baml_py.Collector]]] = None,
+        env: typing.Optional[typing.Dict[str, typing.Optional[str]]] = None,
+        tags: typing.Optional[typing.Dict[str, str]] = None,
+        on_tick: typing.Optional[typing.Callable[[str, baml_py.baml_py.FunctionLog], None]] = None,
     ) -> "BamlAsyncClient":
         options: BamlCallOptions = {}
         if tb is not None:
@@ -64,77 +61,130 @@ class BamlAsyncClient:
 
     @property
     def stream(self):
-        return self.__stream_client
+      return self.__stream_client
 
     @property
     def request(self):
-        return self.__http_request
+      return self.__http_request
 
     @property
     def stream_request(self):
-        return self.__http_stream_request
+      return self.__http_stream_request
 
     @property
     def parse(self):
-        return self.__llm_response_parser
+      return self.__llm_response_parser
 
     @property
     def parse_stream(self):
-        return self.__llm_stream_parser
+      return self.__llm_stream_parser
 
-    async def ExtractMembers(
-        self,
-        html: str,
-        conference_name: str,
+    async def DetectBoundary(self, minutes_text: str,
         baml_options: BamlCallOptions = {},
-    ) -> list["types.ExtractedMember"]:
+    ) -> types.MinutesBoundary:
         # Check if on_tick is provided
-        if "on_tick" in baml_options:
+        if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.ExtractMembers(
-                html=html, conference_name=conference_name, baml_options=baml_options
-            )
+            stream = self.stream.DetectBoundary(minutes_text=minutes_text,
+                baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(
-                baml_options
-            ).call_function_async(
-                function_name="ExtractMembers",
-                args={
-                    "html": html,
-                    "conference_name": conference_name,
-                },
-            )
-            return typing.cast(
-                list["types.ExtractedMember"],
-                result.cast_to(types, types, stream_types, False, __runtime__),
-            )
-
-    async def ExtractResume(
-        self,
-        resume: str,
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="DetectBoundary", args={
+                "minutes_text": minutes_text,
+            })
+            return typing.cast(types.MinutesBoundary, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def DivideMinutesToKeywords(self, minutes: str,
+        baml_options: BamlCallOptions = {},
+    ) -> typing.List["types.SectionInfo"]:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.DivideMinutesToKeywords(minutes=minutes,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="DivideMinutesToKeywords", args={
+                "minutes": minutes,
+            })
+            return typing.cast(typing.List["types.SectionInfo"], result.cast_to(types, types, stream_types, False, __runtime__))
+    async def DivideSpeech(self, section_string: str,
+        baml_options: BamlCallOptions = {},
+    ) -> typing.List["types.SpeakerAndSpeechContent"]:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.DivideSpeech(section_string=section_string,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="DivideSpeech", args={
+                "section_string": section_string,
+            })
+            return typing.cast(typing.List["types.SpeakerAndSpeechContent"], result.cast_to(types, types, stream_types, False, __runtime__))
+    async def ExtractAttendees(self, attendees_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.AttendeesMapping:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.ExtractAttendees(attendees_text=attendees_text,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="ExtractAttendees", args={
+                "attendees_text": attendees_text,
+            })
+            return typing.cast(types.AttendeesMapping, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def ExtractMembers(self, html: str,conference_name: str,
+        baml_options: BamlCallOptions = {},
+    ) -> typing.List["types.ExtractedMember"]:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.ExtractMembers(html=html,conference_name=conference_name,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="ExtractMembers", args={
+                "html": html,"conference_name": conference_name,
+            })
+            return typing.cast(typing.List["types.ExtractedMember"], result.cast_to(types, types, stream_types, False, __runtime__))
+    async def ExtractResume(self, resume: str,
         baml_options: BamlCallOptions = {},
     ) -> types.Resume:
         # Check if on_tick is provided
-        if "on_tick" in baml_options:
+        if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.ExtractResume(resume=resume, baml_options=baml_options)
+            stream = self.stream.ExtractResume(resume=resume,
+                baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(
-                baml_options
-            ).call_function_async(
-                function_name="ExtractResume",
-                args={
-                    "resume": resume,
-                },
-            )
-            return typing.cast(
-                types.Resume,
-                result.cast_to(types, types, stream_types, False, __runtime__),
-            )
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="ExtractResume", args={
+                "resume": resume,
+            })
+            return typing.cast(types.Resume, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def RedivideSection(self, section_text: str,divide_counter: int,original_index: int,
+        baml_options: BamlCallOptions = {},
+    ) -> typing.List["types.SectionInfo"]:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.RedivideSection(section_text=section_text,divide_counter=divide_counter,original_index=original_index,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="RedivideSection", args={
+                "section_text": section_text,"divide_counter": divide_counter,"original_index": original_index,
+            })
+            return typing.cast(typing.List["types.SectionInfo"], result.cast_to(types, types, stream_types, False, __runtime__))
+
 
 
 class BamlStreamClient:
@@ -143,59 +193,89 @@ class BamlStreamClient:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
-    def ExtractMembers(
-        self,
-        html: str,
-        conference_name: str,
+    def DetectBoundary(self, minutes_text: str,
         baml_options: BamlCallOptions = {},
-    ) -> baml_py.BamlStream[
-        list["stream_types.ExtractedMember"],
-        list["types.ExtractedMember"],
-    ]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(
-            function_name="ExtractMembers",
-            args={
-                "html": html,
-                "conference_name": conference_name,
-            },
+    ) -> baml_py.BamlStream[stream_types.MinutesBoundary, types.MinutesBoundary]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="DetectBoundary", args={
+            "minutes_text": minutes_text,
+        })
+        return baml_py.BamlStream[stream_types.MinutesBoundary, types.MinutesBoundary](
+          result,
+          lambda x: typing.cast(stream_types.MinutesBoundary, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.MinutesBoundary, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
         )
-        return baml_py.BamlStream[
-            list["stream_types.ExtractedMember"],
-            list["types.ExtractedMember"],
-        ](
-            result,
-            lambda x: typing.cast(
-                list["stream_types.ExtractedMember"],
-                x.cast_to(types, types, stream_types, True, __runtime__),
-            ),
-            lambda x: typing.cast(
-                list["types.ExtractedMember"],
-                x.cast_to(types, types, stream_types, False, __runtime__),
-            ),
-            ctx,
+    def DivideMinutesToKeywords(self, minutes: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[typing.List["stream_types.SectionInfo"], typing.List["types.SectionInfo"]]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="DivideMinutesToKeywords", args={
+            "minutes": minutes,
+        })
+        return baml_py.BamlStream[typing.List["stream_types.SectionInfo"], typing.List["types.SectionInfo"]](
+          result,
+          lambda x: typing.cast(typing.List["stream_types.SectionInfo"], x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(typing.List["types.SectionInfo"], x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
         )
-
-    def ExtractResume(
-        self,
-        resume: str,
+    def DivideSpeech(self, section_string: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[typing.List["stream_types.SpeakerAndSpeechContent"], typing.List["types.SpeakerAndSpeechContent"]]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="DivideSpeech", args={
+            "section_string": section_string,
+        })
+        return baml_py.BamlStream[typing.List["stream_types.SpeakerAndSpeechContent"], typing.List["types.SpeakerAndSpeechContent"]](
+          result,
+          lambda x: typing.cast(typing.List["stream_types.SpeakerAndSpeechContent"], x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(typing.List["types.SpeakerAndSpeechContent"], x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def ExtractAttendees(self, attendees_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.AttendeesMapping, types.AttendeesMapping]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="ExtractAttendees", args={
+            "attendees_text": attendees_text,
+        })
+        return baml_py.BamlStream[stream_types.AttendeesMapping, types.AttendeesMapping](
+          result,
+          lambda x: typing.cast(stream_types.AttendeesMapping, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.AttendeesMapping, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def ExtractMembers(self, html: str,conference_name: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[typing.List["stream_types.ExtractedMember"], typing.List["types.ExtractedMember"]]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="ExtractMembers", args={
+            "html": html,"conference_name": conference_name,
+        })
+        return baml_py.BamlStream[typing.List["stream_types.ExtractedMember"], typing.List["types.ExtractedMember"]](
+          result,
+          lambda x: typing.cast(typing.List["stream_types.ExtractedMember"], x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(typing.List["types.ExtractedMember"], x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def ExtractResume(self, resume: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.Resume, types.Resume]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(
-            function_name="ExtractResume",
-            args={
-                "resume": resume,
-            },
-        )
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="ExtractResume", args={
+            "resume": resume,
+        })
         return baml_py.BamlStream[stream_types.Resume, types.Resume](
-            result,
-            lambda x: typing.cast(
-                stream_types.Resume,
-                x.cast_to(types, types, stream_types, True, __runtime__),
-            ),
-            lambda x: typing.cast(
-                types.Resume, x.cast_to(types, types, stream_types, False, __runtime__)
-            ),
-            ctx,
+          result,
+          lambda x: typing.cast(stream_types.Resume, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.Resume, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def RedivideSection(self, section_text: str,divide_counter: int,original_index: int,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[typing.List["stream_types.SectionInfo"], typing.List["types.SectionInfo"]]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="RedivideSection", args={
+            "section_text": section_text,"divide_counter": divide_counter,"original_index": original_index,
+        })
+        return baml_py.BamlStream[typing.List["stream_types.SectionInfo"], typing.List["types.SectionInfo"]](
+          result,
+          lambda x: typing.cast(typing.List["stream_types.SectionInfo"], x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(typing.List["types.SectionInfo"], x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
         )
 
 
@@ -205,38 +285,54 @@ class BamlHttpRequestClient:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
-    async def ExtractMembers(
-        self,
-        html: str,
-        conference_name: str,
+    async def DetectBoundary(self, minutes_text: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(
-            baml_options
-        ).create_http_request_async(
-            function_name="ExtractMembers",
-            args={
-                "html": html,
-                "conference_name": conference_name,
-            },
-            mode="request",
-        )
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="DetectBoundary", args={
+            "minutes_text": minutes_text,
+        }, mode="request")
         return result
-
-    async def ExtractResume(
-        self,
-        resume: str,
+    async def DivideMinutesToKeywords(self, minutes: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(
-            baml_options
-        ).create_http_request_async(
-            function_name="ExtractResume",
-            args={
-                "resume": resume,
-            },
-            mode="request",
-        )
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="DivideMinutesToKeywords", args={
+            "minutes": minutes,
+        }, mode="request")
+        return result
+    async def DivideSpeech(self, section_string: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="DivideSpeech", args={
+            "section_string": section_string,
+        }, mode="request")
+        return result
+    async def ExtractAttendees(self, attendees_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ExtractAttendees", args={
+            "attendees_text": attendees_text,
+        }, mode="request")
+        return result
+    async def ExtractMembers(self, html: str,conference_name: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ExtractMembers", args={
+            "html": html,"conference_name": conference_name,
+        }, mode="request")
+        return result
+    async def ExtractResume(self, resume: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ExtractResume", args={
+            "resume": resume,
+        }, mode="request")
+        return result
+    async def RedivideSection(self, section_text: str,divide_counter: int,original_index: int,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="RedivideSection", args={
+            "section_text": section_text,"divide_counter": divide_counter,"original_index": original_index,
+        }, mode="request")
         return result
 
 
@@ -246,38 +342,54 @@ class BamlHttpStreamRequestClient:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
-    async def ExtractMembers(
-        self,
-        html: str,
-        conference_name: str,
+    async def DetectBoundary(self, minutes_text: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(
-            baml_options
-        ).create_http_request_async(
-            function_name="ExtractMembers",
-            args={
-                "html": html,
-                "conference_name": conference_name,
-            },
-            mode="stream",
-        )
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="DetectBoundary", args={
+            "minutes_text": minutes_text,
+        }, mode="stream")
         return result
-
-    async def ExtractResume(
-        self,
-        resume: str,
+    async def DivideMinutesToKeywords(self, minutes: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(
-            baml_options
-        ).create_http_request_async(
-            function_name="ExtractResume",
-            args={
-                "resume": resume,
-            },
-            mode="stream",
-        )
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="DivideMinutesToKeywords", args={
+            "minutes": minutes,
+        }, mode="stream")
+        return result
+    async def DivideSpeech(self, section_string: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="DivideSpeech", args={
+            "section_string": section_string,
+        }, mode="stream")
+        return result
+    async def ExtractAttendees(self, attendees_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ExtractAttendees", args={
+            "attendees_text": attendees_text,
+        }, mode="stream")
+        return result
+    async def ExtractMembers(self, html: str,conference_name: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ExtractMembers", args={
+            "html": html,"conference_name": conference_name,
+        }, mode="stream")
+        return result
+    async def ExtractResume(self, resume: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ExtractResume", args={
+            "resume": resume,
+        }, mode="stream")
+        return result
+    async def RedivideSection(self, section_text: str,divide_counter: int,original_index: int,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="RedivideSection", args={
+            "section_text": section_text,"divide_counter": divide_counter,"original_index": original_index,
+        }, mode="stream")
         return result
 
 

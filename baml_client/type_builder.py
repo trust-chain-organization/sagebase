@@ -10,48 +10,62 @@
 # BAML files and re-generate this code using: baml-cli generate
 # baml-cli is available with the baml package.
 
-
-from baml_py import baml_py, type_builder
-
+import typing
+from baml_py import type_builder
+from baml_py import baml_py
 # These are exports, not used here, hence the linter is disabled
-from baml_py.baml_py import (  # noqa: F401 # pylint: disable=unused-import
-    ClassBuilder,
-    EnumBuilder,
-    EnumValueBuilder,
-    FieldType,
-)
-
+from baml_py.baml_py import FieldType, EnumValueBuilder, EnumBuilder, ClassBuilder # noqa: F401 # pylint: disable=unused-import
 from .globals import DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME
-
 
 class TypeBuilder(type_builder.TypeBuilder):
     def __init__(self):
-        super().__init__(
-            classes=set(
-                [
-                    "ExtractedMember",
-                    "Resume",
-                ]
-            ),
-            enums=set([]),
-            runtime=DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME,
-        )
+        super().__init__(classes=set(
+          ["AttendeesMapping","ExtractedMember","MinutesBoundary","RedividedSectionInfo","Resume","SectionInfo","SectionString","SpeakerAndSpeechContent",]
+        ), enums=set(
+          []
+        ), runtime=DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME)
 
     # #########################################################################
     # Generated enums 0
     # #########################################################################
 
+
     # #########################################################################
-    # Generated classes 2
+    # Generated classes 8
     # #########################################################################
+
+    @property
+    def AttendeesMapping(self) -> "AttendeesMappingViewer":
+        return AttendeesMappingViewer(self)
 
     @property
     def ExtractedMember(self) -> "ExtractedMemberViewer":
         return ExtractedMemberViewer(self)
 
     @property
+    def MinutesBoundary(self) -> "MinutesBoundaryViewer":
+        return MinutesBoundaryViewer(self)
+
+    @property
+    def RedividedSectionInfo(self) -> "RedividedSectionInfoViewer":
+        return RedividedSectionInfoViewer(self)
+
+    @property
     def Resume(self) -> "ResumeViewer":
         return ResumeViewer(self)
+
+    @property
+    def SectionInfo(self) -> "SectionInfoViewer":
+        return SectionInfoViewer(self)
+
+    @property
+    def SectionString(self) -> "SectionStringViewer":
+        return SectionStringViewer(self)
+
+    @property
+    def SpeakerAndSpeechContent(self) -> "SpeakerAndSpeechContentViewer":
+        return SpeakerAndSpeechContentViewer(self)
+
 
 
 # #########################################################################
@@ -60,22 +74,61 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
 # #########################################################################
-# Generated classes 2
+# Generated classes 8
 # #########################################################################
+
+class AttendeesMappingAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("AttendeesMapping")
+        self._properties: typing.Set[str] = set([  "attendees_mapping",  "regular_attendees",  "confidence",  ])
+        self._props = AttendeesMappingProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "AttendeesMappingProperties":
+        return self._props
+
+
+class AttendeesMappingViewer(AttendeesMappingAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+
+
+
+class AttendeesMappingProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+
+
+    @property
+    def attendees_mapping(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("attendees_mapping"))
+
+    @property
+    def regular_attendees(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("regular_attendees"))
+
+    @property
+    def confidence(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("confidence"))
+
+
 
 
 class ExtractedMemberAst:
     def __init__(self, tb: type_builder.TypeBuilder):
-        _tb = tb._tb  # type: ignore (we know how to use this private attribute)
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("ExtractedMember")
-        self._properties: set[str] = set(
-            [
-                "name",
-                "role",
-                "party_name",
-                "additional_info",
-            ]
-        )
+        self._properties: typing.Set[str] = set([  "name",  "role",  "party_name",  "additional_info",  ])
         self._props = ExtractedMemberProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -90,19 +143,18 @@ class ExtractedMemberViewer(ExtractedMemberAst):
     def __init__(self, tb: type_builder.TypeBuilder):
         super().__init__(tb)
 
-    def list_properties(
-        self,
-    ) -> list[tuple[str, type_builder.ClassPropertyViewer]]:
-        return [
-            (name, type_builder.ClassPropertyViewer(self._bldr.property(name)))
-            for name in self._properties
-        ]
+
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+
 
 
 class ExtractedMemberProperties:
-    def __init__(self, bldr: baml_py.ClassBuilder, properties: set[str]):
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
         self.__bldr = bldr
-        self.__properties = properties  # type: ignore (we know how to use this private attribute) # noqa: F821
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+
 
     @property
     def name(self) -> type_builder.ClassPropertyViewer:
@@ -121,18 +173,115 @@ class ExtractedMemberProperties:
         return type_builder.ClassPropertyViewer(self.__bldr.property("additional_info"))
 
 
+
+
+class MinutesBoundaryAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("MinutesBoundary")
+        self._properties: typing.Set[str] = set([  "boundary_found",  "boundary_text",  "boundary_type",  "confidence",  "reason",  ])
+        self._props = MinutesBoundaryProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "MinutesBoundaryProperties":
+        return self._props
+
+
+class MinutesBoundaryViewer(MinutesBoundaryAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+
+
+
+class MinutesBoundaryProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+
+
+    @property
+    def boundary_found(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("boundary_found"))
+
+    @property
+    def boundary_text(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("boundary_text"))
+
+    @property
+    def boundary_type(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("boundary_type"))
+
+    @property
+    def confidence(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("confidence"))
+
+    @property
+    def reason(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("reason"))
+
+
+
+
+class RedividedSectionInfoAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("RedividedSectionInfo")
+        self._properties: typing.Set[str] = set([  "chapter_number",  "sub_chapter_number",  "keyword",  ])
+        self._props = RedividedSectionInfoProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "RedividedSectionInfoProperties":
+        return self._props
+
+
+class RedividedSectionInfoViewer(RedividedSectionInfoAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+
+
+
+class RedividedSectionInfoProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+
+
+    @property
+    def chapter_number(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("chapter_number"))
+
+    @property
+    def sub_chapter_number(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("sub_chapter_number"))
+
+    @property
+    def keyword(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("keyword"))
+
+
+
+
 class ResumeAst:
     def __init__(self, tb: type_builder.TypeBuilder):
-        _tb = tb._tb  # type: ignore (we know how to use this private attribute)
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("Resume")
-        self._properties: set[str] = set(
-            [
-                "name",
-                "email",
-                "experience",
-                "skills",
-            ]
-        )
+        self._properties: typing.Set[str] = set([  "name",  "email",  "experience",  "skills",  ])
         self._props = ResumeProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -147,19 +296,18 @@ class ResumeViewer(ResumeAst):
     def __init__(self, tb: type_builder.TypeBuilder):
         super().__init__(tb)
 
-    def list_properties(
-        self,
-    ) -> list[tuple[str, type_builder.ClassPropertyViewer]]:
-        return [
-            (name, type_builder.ClassPropertyViewer(self._bldr.property(name)))
-            for name in self._properties
-        ]
+
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+
 
 
 class ResumeProperties:
-    def __init__(self, bldr: baml_py.ClassBuilder, properties: set[str]):
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
         self.__bldr = bldr
-        self.__properties = properties  # type: ignore (we know how to use this private attribute) # noqa: F821
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+
 
     @property
     def name(self) -> type_builder.ClassPropertyViewer:
@@ -176,3 +324,148 @@ class ResumeProperties:
     @property
     def skills(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("skills"))
+
+
+
+
+class SectionInfoAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("SectionInfo")
+        self._properties: typing.Set[str] = set([  "chapter_number",  "keyword",  ])
+        self._props = SectionInfoProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "SectionInfoProperties":
+        return self._props
+
+
+class SectionInfoViewer(SectionInfoAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+
+
+
+class SectionInfoProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+
+
+    @property
+    def chapter_number(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("chapter_number"))
+
+    @property
+    def keyword(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("keyword"))
+
+
+
+
+class SectionStringAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("SectionString")
+        self._properties: typing.Set[str] = set([  "chapter_number",  "sub_chapter_number",  "section_string",  ])
+        self._props = SectionStringProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "SectionStringProperties":
+        return self._props
+
+
+class SectionStringViewer(SectionStringAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+
+
+
+class SectionStringProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+
+
+    @property
+    def chapter_number(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("chapter_number"))
+
+    @property
+    def sub_chapter_number(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("sub_chapter_number"))
+
+    @property
+    def section_string(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("section_string"))
+
+
+
+
+class SpeakerAndSpeechContentAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("SpeakerAndSpeechContent")
+        self._properties: typing.Set[str] = set([  "speaker",  "speech_content",  "chapter_number",  "sub_chapter_number",  "speech_order",  ])
+        self._props = SpeakerAndSpeechContentProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "SpeakerAndSpeechContentProperties":
+        return self._props
+
+
+class SpeakerAndSpeechContentViewer(SpeakerAndSpeechContentAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+
+
+
+class SpeakerAndSpeechContentProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+
+
+    @property
+    def speaker(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("speaker"))
+
+    @property
+    def speech_content(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("speech_content"))
+
+    @property
+    def chapter_number(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("chapter_number"))
+
+    @property
+    def sub_chapter_number(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("sub_chapter_number"))
+
+    @property
+    def speech_order(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("speech_order"))

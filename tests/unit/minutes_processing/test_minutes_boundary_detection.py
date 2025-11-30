@@ -12,14 +12,18 @@ from unittest.mock import Mock, patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.minutes_divide_processor.minutes_divider import MinutesDivider
+from src.infrastructure.external.minutes_divider.pydantic_minutes_divider import (
+    MinutesDivider,
+)
 from src.minutes_divide_processor.models import MinutesBoundary
 
 
 class TestBoundaryDetection(unittest.TestCase):
     """Test cases for boundary detection in minutes processing."""
 
-    @patch("src.minutes_divide_processor.minutes_divider.LLMServiceFactory")
+    @patch(
+        "src.infrastructure.external.minutes_divider.pydantic_minutes_divider.LLMServiceFactory"
+    )
     def setUp(self, mock_factory: Any) -> None:
         """Set up test fixtures."""
         # Create a mock LLM service

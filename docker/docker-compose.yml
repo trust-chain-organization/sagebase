@@ -8,6 +8,8 @@ services:
       - ../tests:/app/tests
       - ../database:/app/database
       - ../scripts:/app/scripts
+      - ../baml_client:/app/baml_client # BAML生成コード
+      - ../baml_src:/app/baml_src # BAML定義ファイル
       - ../.streamlit:/app/.streamlit # Streamlit認証設定をマウント
       - ../pyproject.toml:/app/pyproject.toml
       - ../pyrightconfig.json:/app/pyrightconfig.json
@@ -38,6 +40,8 @@ services:
       - ../tests:/app/tests
       - ../database:/app/database
       - ../scripts:/app/scripts
+      - ../baml_client:/app/baml_client # BAML生成コード
+      - ../baml_src:/app/baml_src # BAML定義ファイル
       - ../.streamlit:/app/.streamlit # Streamlit認証設定をマウント
       - ../pyproject.toml:/app/pyproject.toml
       - ../pyrightconfig.json:/app/pyrightconfig.json

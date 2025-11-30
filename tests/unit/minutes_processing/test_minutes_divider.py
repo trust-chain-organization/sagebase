@@ -6,7 +6,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import unittest
 from unittest.mock import Mock, patch
 
-from src.minutes_divide_processor.minutes_divider import MinutesDivider
+from src.infrastructure.external.minutes_divider.pydantic_minutes_divider import (
+    MinutesDivider,
+)
 from src.minutes_divide_processor.models import (
     SectionInfo,
     SectionInfoList,
@@ -16,7 +18,9 @@ from src.minutes_divide_processor.models import (
 
 
 class TestMinutesDivider(unittest.TestCase):
-    @patch("src.minutes_divide_processor.minutes_divider.LLMServiceFactory")
+    @patch(
+        "src.infrastructure.external.minutes_divider.pydantic_minutes_divider.LLMServiceFactory"
+    )
     def setUp(self, mock_factory):
         # Create a mock LLM service
         mock_service = Mock()

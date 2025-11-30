@@ -73,6 +73,8 @@ RUN --mount=type=cache,target=/root/.cache/ms-playwright \
 COPY src/ src/
 COPY database/ database/
 COPY scripts/ scripts/
+COPY baml_client/ baml_client/
+COPY baml_src/ baml_src/
 
 # 実行権限を設定
 RUN chmod +x scripts/docker-uv-wrapper.sh scripts/docker-entrypoint.sh && \

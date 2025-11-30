@@ -11,55 +11,83 @@
 # baml-cli is available with the baml package.
 
 import typing
-
 import typing_extensions
-from pydantic import BaseModel
+from enum import Enum
 
-CheckT = typing_extensions.TypeVar("CheckT")
-CheckName = typing_extensions.TypeVar("CheckName", bound=str)
 
+from pydantic import BaseModel, ConfigDict
+
+
+import baml_py
+
+CheckT = typing_extensions.TypeVar('CheckT')
+CheckName = typing_extensions.TypeVar('CheckName', bound=str)
 
 class Check(BaseModel):
     name: str
     expression: str
     status: str
-
-
 class Checked(BaseModel, typing.Generic[CheckT, CheckName]):
     value: CheckT
-    checks: dict[CheckName, Check]
+    checks: typing.Dict[CheckName, Check]
 
-
-def get_checks(checks: dict[CheckName, Check]) -> list[Check]:
+def get_checks(checks: typing.Dict[CheckName, Check]) -> typing.List[Check]:
     return list(checks.values())
 
-
-def all_succeeded(checks: dict[CheckName, Check]) -> bool:
+def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
     return all(check.status == "succeeded" for check in get_checks(checks))
-
-
 # #########################################################################
 # Generated enums (0)
 # #########################################################################
 
 # #########################################################################
-# Generated classes (2)
+# Generated classes (8)
 # #########################################################################
 
+class AttendeesMapping(BaseModel):
+    attendees_mapping: typing.Optional[typing.Dict[str, typing.Optional[str]]] = None
+    regular_attendees: typing.List[str]
+    confidence: float
 
 class ExtractedMember(BaseModel):
     name: str
-    role: str | None = None
-    party_name: str | None = None
-    additional_info: str | None = None
+    role: typing.Optional[str] = None
+    party_name: typing.Optional[str] = None
+    additional_info: typing.Optional[str] = None
 
+class MinutesBoundary(BaseModel):
+    boundary_found: bool
+    boundary_text: typing.Optional[str] = None
+    boundary_type: str
+    confidence: float
+    reason: str
+
+class RedividedSectionInfo(BaseModel):
+    chapter_number: int
+    sub_chapter_number: int
+    keyword: str
 
 class Resume(BaseModel):
     name: str
     email: str
-    experience: list[str]
-    skills: list[str]
+    experience: typing.List[str]
+    skills: typing.List[str]
 
+class SectionInfo(BaseModel):
+    chapter_number: int
+    keyword: str
+
+class SectionString(BaseModel):
+    chapter_number: int
+    sub_chapter_number: int
+    section_string: str
+
+class SpeakerAndSpeechContent(BaseModel):
+    speaker: str
+    speech_content: str
+    chapter_number: int
+    sub_chapter_number: int
+    speech_order: int
 
 # #########################################################################
 # Generated type aliases (0)

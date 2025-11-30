@@ -11,7 +11,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import unittest
 from unittest.mock import Mock, patch
 
-from src.minutes_divide_processor.minutes_divider import MinutesDivider
+from src.infrastructure.external.minutes_divider.pydantic_minutes_divider import (
+    MinutesDivider,
+)
 from src.minutes_divide_processor.models import (
     AttendeesMapping,
     MinutesBoundary,
@@ -25,7 +27,9 @@ from src.minutes_divide_processor.models import (
 class TestDoDivideSimple(unittest.TestCase):
     """Simple tests for do_divide method"""
 
-    @patch("src.minutes_divide_processor.minutes_divider.LLMServiceFactory")
+    @patch(
+        "src.infrastructure.external.minutes_divider.pydantic_minutes_divider.LLMServiceFactory"
+    )
     def setUp(self, mock_factory):
         mock_service = Mock()
         mock_factory.return_value.create_advanced.return_value = mock_service
@@ -53,7 +57,9 @@ class TestDoDivideSimple(unittest.TestCase):
 class TestCheckLengthSimple(unittest.TestCase):
     """Simple tests for check_length method"""
 
-    @patch("src.minutes_divide_processor.minutes_divider.LLMServiceFactory")
+    @patch(
+        "src.infrastructure.external.minutes_divider.pydantic_minutes_divider.LLMServiceFactory"
+    )
     def setUp(self, mock_factory):
         mock_service = Mock()
         mock_factory.return_value.create_advanced.return_value = mock_service
@@ -80,7 +86,9 @@ class TestCheckLengthSimple(unittest.TestCase):
 class TestDetectAttendeeBoundarySimple(unittest.TestCase):
     """Simple tests for detect_attendee_boundary method"""
 
-    @patch("src.minutes_divide_processor.minutes_divider.LLMServiceFactory")
+    @patch(
+        "src.infrastructure.external.minutes_divider.pydantic_minutes_divider.LLMServiceFactory"
+    )
     def setUp(self, mock_factory):
         mock_service = Mock()
         mock_factory.return_value.create_advanced.return_value = mock_service
@@ -104,7 +112,9 @@ class TestDetectAttendeeBoundarySimple(unittest.TestCase):
 class TestSplitMinutesByBoundarySimple(unittest.TestCase):
     """Simple tests for split_minutes_by_boundary method"""
 
-    @patch("src.minutes_divide_processor.minutes_divider.LLMServiceFactory")
+    @patch(
+        "src.infrastructure.external.minutes_divider.pydantic_minutes_divider.LLMServiceFactory"
+    )
     def setUp(self, mock_factory):
         mock_service = Mock()
         mock_factory.return_value.create_advanced.return_value = mock_service
@@ -152,7 +162,9 @@ class TestSplitMinutesByBoundarySimple(unittest.TestCase):
 class TestExtractAttendeesMappingSimple(unittest.TestCase):
     """Simple tests for extract_attendees_mapping method"""
 
-    @patch("src.minutes_divide_processor.minutes_divider.LLMServiceFactory")
+    @patch(
+        "src.infrastructure.external.minutes_divider.pydantic_minutes_divider.LLMServiceFactory"
+    )
     def setUp(self, mock_factory):
         mock_service = Mock()
         mock_factory.return_value.create_advanced.return_value = mock_service

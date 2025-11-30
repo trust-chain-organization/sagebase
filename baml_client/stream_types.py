@@ -11,36 +11,65 @@
 # baml-cli is available with the baml package.
 
 import typing
-
 import typing_extensions
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-StreamStateValueT = typing.TypeVar("StreamStateValueT")
+import baml_py
 
+from . import types
 
+StreamStateValueT = typing.TypeVar('StreamStateValueT')
 class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
-
-
 # #########################################################################
-# Generated classes (2)
+# Generated classes (8)
 # #########################################################################
 
+class AttendeesMapping(BaseModel):
+    attendees_mapping: typing.Optional[typing.Dict[str, typing.Optional[str]]] = None
+    regular_attendees: typing.List[str]
+    confidence: typing.Optional[float] = None
 
 class ExtractedMember(BaseModel):
-    name: str | None = None
-    role: str | None = None
-    party_name: str | None = None
-    additional_info: str | None = None
+    name: typing.Optional[str] = None
+    role: typing.Optional[str] = None
+    party_name: typing.Optional[str] = None
+    additional_info: typing.Optional[str] = None
 
+class MinutesBoundary(BaseModel):
+    boundary_found: typing.Optional[bool] = None
+    boundary_text: typing.Optional[str] = None
+    boundary_type: typing.Optional[str] = None
+    confidence: typing.Optional[float] = None
+    reason: typing.Optional[str] = None
+
+class RedividedSectionInfo(BaseModel):
+    chapter_number: typing.Optional[int] = None
+    sub_chapter_number: typing.Optional[int] = None
+    keyword: typing.Optional[str] = None
 
 class Resume(BaseModel):
-    name: str | None = None
-    email: str | None = None
-    experience: list[str]
-    skills: list[str]
+    name: typing.Optional[str] = None
+    email: typing.Optional[str] = None
+    experience: typing.List[str]
+    skills: typing.List[str]
 
+class SectionInfo(BaseModel):
+    chapter_number: typing.Optional[int] = None
+    keyword: typing.Optional[str] = None
+
+class SectionString(BaseModel):
+    chapter_number: typing.Optional[int] = None
+    sub_chapter_number: typing.Optional[int] = None
+    section_string: typing.Optional[str] = None
+
+class SpeakerAndSpeechContent(BaseModel):
+    speaker: typing.Optional[str] = None
+    speech_content: typing.Optional[str] = None
+    chapter_number: typing.Optional[int] = None
+    sub_chapter_number: typing.Optional[int] = None
+    speech_order: typing.Optional[int] = None
 
 # #########################################################################
 # Generated type aliases (0)
