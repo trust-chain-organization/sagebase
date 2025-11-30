@@ -54,6 +54,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractMembers", llm_response=llm_response, mode="request")
         return typing.cast(typing.List["types.ExtractedMember"], result)
 
+    def ExtractParliamentaryGroupMembers(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> typing.List["types.ParliamentaryGroupMember"]:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractParliamentaryGroupMembers", llm_response=llm_response, mode="request")
+        return typing.cast(typing.List["types.ParliamentaryGroupMember"], result)
+
     def ExtractResume(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.Resume:
@@ -103,6 +109,12 @@ class LlmStreamParser:
     ) -> typing.List["stream_types.ExtractedMember"]:
         result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractMembers", llm_response=llm_response, mode="stream")
         return typing.cast(typing.List["stream_types.ExtractedMember"], result)
+
+    def ExtractParliamentaryGroupMembers(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> typing.List["stream_types.ParliamentaryGroupMember"]:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="ExtractParliamentaryGroupMembers", llm_response=llm_response, mode="stream")
+        return typing.cast(typing.List["stream_types.ParliamentaryGroupMember"], result)
 
     def ExtractResume(
         self, llm_response: str, baml_options: BamlCallOptions = {},

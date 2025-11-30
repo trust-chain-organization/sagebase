@@ -19,8 +19,8 @@ from src.domain.repositories.parliamentary_group_repository import (
 )
 from src.domain.repositories.politician_repository import PoliticianRepository
 from src.domain.services.interfaces.llm_service import ILLMService
-from src.parliamentary_group_member_extractor.extractor import (
-    ParliamentaryGroupMemberExtractor,
+from src.infrastructure.external.parliamentary_group_member_extractor.factory import (
+    ParliamentaryGroupMemberExtractorFactory,
 )
 from src.parliamentary_group_member_extractor.service import (
     ParliamentaryGroupMembershipService,
@@ -183,7 +183,7 @@ class ManageParliamentaryGroupsUseCase:
 
         # Initialize extractor and service if all dependencies are available
         if llm_service:
-            self.extractor = ParliamentaryGroupMemberExtractor(llm_service)
+            self.extractor = ParliamentaryGroupMemberExtractorFactory.create()
         else:
             self.extractor = None
 

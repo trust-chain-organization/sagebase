@@ -41,7 +41,7 @@ def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
 # #########################################################################
 
 # #########################################################################
-# Generated classes (8)
+# Generated classes (9)
 # #########################################################################
 
 class AttendeesMapping(BaseModel):
@@ -61,6 +61,13 @@ class MinutesBoundary(BaseModel):
     boundary_type: str
     confidence: float
     reason: str
+
+class ParliamentaryGroupMember(BaseModel):
+    name: str
+    role: typing.Optional[str] = None
+    party_name: typing.Optional[str] = None
+    district: typing.Optional[str] = None
+    additional_info: typing.Optional[str] = None
 
 class RedividedSectionInfo(BaseModel):
     chapter_number: int
