@@ -45,6 +45,130 @@ class ExtractedConferenceMemberRepositoryImpl(
             session, ExtractedConferenceMember, ExtractedConferenceMemberModel
         )
 
+    async def get_by_id(self, entity_id: int) -> ExtractedConferenceMember | None:
+        """Get extracted member by ID."""
+        query = text("""
+            SELECT * FROM extracted_conference_members
+            WHERE id = :id
+        """)
+        result = await self.session.execute(query, {"id": entity_id})
+        row = result.fetchone()
+        return self._row_to_entity(row) if row else None
+
+    async def get_all(
+        self, limit: int | None = None, offset: int | None = None
+    ) -> list[ExtractedConferenceMember]:
+        """Get all extracted members with optional pagination."""
+        query_str = (
+            "SELECT * FROM extracted_conference_members ORDER BY extracted_at DESC"
+        )
+
+        if limit:
+            query_str += f" LIMIT {limit}"
+        if offset:
+            query_str += f" OFFSET {offset}"
+
+        query = text(query_str)
+        result = await self.session.execute(query)
+        rows = result.fetchall()
+
+        return [self._row_to_entity(row) for row in rows]
+
+    async def create(
+        self, entity: ExtractedConferenceMember
+    ) -> ExtractedConferenceMember:
+        """Create a new extracted member."""
+        query = text("""
+            INSERT INTO extracted_conference_members (
+                conference_id, extracted_name, source_url,
+                extracted_role, extracted_party_name,
+                extracted_at, matching_status, additional_data
+            ) VALUES (
+                :conference_id, :extracted_name, :source_url,
+                :extracted_role, :extracted_party_name,
+                :extracted_at, :matching_status, :additional_data
+            ) RETURNING id
+        """)
+
+        result = await self.session.execute(
+            query,
+            {
+                "conference_id": entity.conference_id,
+                "extracted_name": entity.extracted_name,
+                "source_url": entity.source_url,
+                "extracted_role": entity.extracted_role,
+                "extracted_party_name": entity.extracted_party_name,
+                "extracted_at": entity.extracted_at,
+                "matching_status": entity.matching_status,
+                "additional_data": entity.additional_data,
+            },
+        )
+        row = result.fetchone()
+        if row:
+            entity.id = row.id
+        await self.session.flush()
+        return entity
+
+    async def update(
+        self, entity: ExtractedConferenceMember
+    ) -> ExtractedConferenceMember:
+        """Update an existing extracted member."""
+        if not entity.id:
+            raise ValueError("Entity must have an ID to update")
+
+        query = text("""
+            UPDATE extracted_conference_members
+            SET conference_id = :conference_id,
+                extracted_name = :extracted_name,
+                source_url = :source_url,
+                extracted_role = :extracted_role,
+                extracted_party_name = :extracted_party_name,
+                matching_status = :matching_status,
+                matched_politician_id = :matched_politician_id,
+                matching_confidence = :matching_confidence,
+                matched_at = :matched_at,
+                additional_data = :additional_data
+            WHERE id = :id
+        """)
+
+        await self.session.execute(
+            query,
+            {
+                "id": entity.id,
+                "conference_id": entity.conference_id,
+                "extracted_name": entity.extracted_name,
+                "source_url": entity.source_url,
+                "extracted_role": entity.extracted_role,
+                "extracted_party_name": entity.extracted_party_name,
+                "matching_status": entity.matching_status,
+                "matched_politician_id": entity.matched_politician_id,
+                "matching_confidence": entity.matching_confidence,
+                "matched_at": entity.matched_at,
+                "additional_data": entity.additional_data,
+            },
+        )
+        await self.session.flush()
+        return entity
+
+    async def delete(self, entity_id: int) -> bool:
+        """Delete an extracted member by ID."""
+        query = text("""
+            DELETE FROM extracted_conference_members
+            WHERE id = :id
+        """)
+        result = await self.session.execute(query, {"id": entity_id})
+        await self.session.flush()
+        return result.rowcount > 0
+
+    async def count(self) -> int:
+        """Count total number of extracted members."""
+        query = text("""
+            SELECT COUNT(*) FROM extracted_conference_members
+        """)
+        result = await self.session.execute(query)
+        count = result.scalar()
+        return count if count is not None else 0
+
     async def get_pending_members(
         self, conference_id: int | None = None
     ) -> list[ExtractedConferenceMember]:
