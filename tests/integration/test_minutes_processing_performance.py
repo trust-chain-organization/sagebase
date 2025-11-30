@@ -6,7 +6,9 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 from src.infrastructure.external.instrumented_llm_service import InstrumentedLLMService
-from src.minutes_divide_processor.minutes_divider import MinutesDivider
+from src.infrastructure.external.minutes_divider.pydantic_minutes_divider import (
+    MinutesDivider,
+)
 
 
 class TestMinutesProcessingPerformance:
@@ -72,7 +74,9 @@ class TestMinutesProcessingPerformance:
         mock.update = AsyncMock(side_effect=mock_update)
         return mock
 
-    @patch("src.minutes_divide_processor.minutes_divider.hub.pull")
+    @patch(
+        "src.infrastructure.external.minutes_divider.pydantic_minutes_divider.hub.pull"
+    )
     def test_history_recording_does_not_block_main_processing(
         self, mock_hub_pull, mock_llm_service, mock_history_repository
     ):

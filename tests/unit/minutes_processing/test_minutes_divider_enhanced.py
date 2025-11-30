@@ -8,7 +8,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import unittest
 from unittest.mock import AsyncMock, Mock, patch
 
-from src.minutes_divide_processor.minutes_divider import MinutesDivider
+from src.infrastructure.external.minutes_divider.pydantic_minutes_divider import (
+    MinutesDivider,
+)
 from src.minutes_divide_processor.models import (
     MinutesBoundary,
     RedivideSectionString,
@@ -24,7 +26,9 @@ from src.minutes_divide_processor.models import (
 class TestMinutesDividerEnhanced(unittest.TestCase):
     """Enhanced test cases for MinutesDivider covering additional methods"""
 
-    @patch("src.minutes_divide_processor.minutes_divider.LLMServiceFactory")
+    @patch(
+        "src.infrastructure.external.minutes_divider.pydantic_minutes_divider.LLMServiceFactory"
+    )
     def setUp(self, mock_factory):
         # Create a mock LLM service
         mock_service = Mock()
@@ -242,7 +246,9 @@ class TestMinutesDividerEnhanced(unittest.TestCase):
 
 def test_section_divide_run_basic():
     """Test section_divide_run with basic text"""
-    with patch("src.minutes_divide_processor.minutes_divider.LLMServiceFactory"):
+    with patch(
+        "src.infrastructure.external.minutes_divider.pydantic_minutes_divider.LLMServiceFactory"
+    ):
         minutes_text = (
             "◎議長(山田太郎)本日の議事を開始します。"
             "◎副議長(佐藤花子)議案について説明します。"
@@ -270,7 +276,9 @@ def test_section_divide_run_basic():
 
 def test_speech_divide_run_basic():
     """Test speech_divide_run with basic text - minimal test to avoid complex mocking"""
-    with patch("src.minutes_divide_processor.minutes_divider.LLMServiceFactory"):
+    with patch(
+        "src.infrastructure.external.minutes_divider.pydantic_minutes_divider.LLMServiceFactory"
+    ):
         section_string = SectionString(
             chapter_number=1,
             sub_chapter_number=1,

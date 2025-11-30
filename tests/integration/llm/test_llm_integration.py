@@ -61,7 +61,9 @@ class TestLLMServiceIntegration:
                 }
             ]
         ):
-            from src.minutes_divide_processor.minutes_divider import MinutesDivider
+            from src.infrastructure.external.minutes_divider.pydantic_minutes_divider import (  # noqa: E501
+                MinutesDivider,
+            )
 
             divider = MinutesDivider()
 

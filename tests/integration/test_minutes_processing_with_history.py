@@ -10,7 +10,9 @@ from src.domain.entities.llm_processing_history import (
     ProcessingType,
 )
 from src.infrastructure.external.instrumented_llm_service import InstrumentedLLMService
-from src.minutes_divide_processor.minutes_divider import MinutesDivider
+from src.infrastructure.external.minutes_divider.pydantic_minutes_divider import (
+    MinutesDivider,
+)
 from src.minutes_divide_processor.minutes_process_agent import MinutesProcessAgent
 from src.services.llm_factory import LLMServiceFactory
 
