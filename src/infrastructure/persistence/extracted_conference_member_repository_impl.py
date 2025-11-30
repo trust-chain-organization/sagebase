@@ -82,11 +82,11 @@ class ExtractedConferenceMemberRepositoryImpl(
             INSERT INTO extracted_conference_members (
                 conference_id, extracted_name, source_url,
                 extracted_role, extracted_party_name,
-                extracted_at, matching_status, additional_data
+                extracted_at, matching_status, additional_info
             ) VALUES (
                 :conference_id, :extracted_name, :source_url,
                 :extracted_role, :extracted_party_name,
-                :extracted_at, :matching_status, :additional_data
+                :extracted_at, :matching_status, :additional_info
             ) RETURNING id
         """)
 
@@ -100,7 +100,7 @@ class ExtractedConferenceMemberRepositoryImpl(
                 "extracted_party_name": entity.extracted_party_name,
                 "extracted_at": entity.extracted_at,
                 "matching_status": entity.matching_status,
-                "additional_data": entity.additional_data,
+                "additional_info": entity.additional_data,
             },
         )
         await self.session.commit()
@@ -128,7 +128,7 @@ class ExtractedConferenceMemberRepositoryImpl(
                 matched_politician_id = :matched_politician_id,
                 matching_confidence = :matching_confidence,
                 matched_at = :matched_at,
-                additional_data = :additional_data
+                additional_info = :additional_info
             WHERE id = :id
         """)
 
@@ -145,7 +145,7 @@ class ExtractedConferenceMemberRepositoryImpl(
                 "matched_politician_id": entity.matched_politician_id,
                 "matching_confidence": entity.matching_confidence,
                 "matched_at": entity.matched_at,
-                "additional_data": entity.additional_data,
+                "additional_info": entity.additional_data,
             },
         )
         await self.session.commit()
