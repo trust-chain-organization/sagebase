@@ -7,9 +7,11 @@ from typing import Any
 import click
 
 from src.infrastructure.di.container import get_container, init_container
+from src.infrastructure.external.parliamentary_group_member_extractor.factory import (
+    ParliamentaryGroupMemberExtractorFactory,
+)
 from src.interfaces.cli.progress import ProgressTracker
 from src.parliamentary_group_member_extractor import (
-    ParliamentaryGroupMemberExtractor,
     ParliamentaryGroupMembershipService,
 )
 
@@ -126,7 +128,7 @@ def extract_group_members(
         )
 
     # 抽出器とサービスの初期化
-    extractor = ParliamentaryGroupMemberExtractor()
+    extractor = ParliamentaryGroupMemberExtractorFactory.create()
     service = ParliamentaryGroupMembershipService()
 
     # 開始日の設定

@@ -25,6 +25,9 @@ type_map = {
     "types.MinutesBoundary": types.MinutesBoundary,
     "stream_types.MinutesBoundary": stream_types.MinutesBoundary,
 
+    "types.ParliamentaryGroupMember": types.ParliamentaryGroupMember,
+    "stream_types.ParliamentaryGroupMember": stream_types.ParliamentaryGroupMember,
+
     "types.RedividedSectionInfo": types.RedividedSectionInfo,
     "stream_types.RedividedSectionInfo": stream_types.RedividedSectionInfo,
 
