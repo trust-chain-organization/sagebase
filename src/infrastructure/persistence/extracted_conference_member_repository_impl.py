@@ -103,10 +103,11 @@ class ExtractedConferenceMemberRepositoryImpl(
                 "additional_data": entity.additional_data,
             },
         )
+        await self.session.commit()
+
         row = result.fetchone()
         if row:
             entity.id = row.id
-        await self.session.flush()
         return entity
 
     async def update(
@@ -147,7 +148,7 @@ class ExtractedConferenceMemberRepositoryImpl(
                 "additional_data": entity.additional_data,
             },
         )
-        await self.session.flush()
+        await self.session.commit()
         return entity
 
     async def delete(self, entity_id: int) -> bool:
@@ -157,7 +158,7 @@ class ExtractedConferenceMemberRepositoryImpl(
             WHERE id = :id
         """)
         result = await self.session.execute(query, {"id": entity_id})
-        await self.session.flush()
+        await self.session.commit()
         return result.rowcount > 0
 
     async def count(self) -> int:
