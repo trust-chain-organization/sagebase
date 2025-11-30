@@ -177,8 +177,8 @@ class ConferenceMemberExtractor:
                         additional_data=member.additional_info,
                     )
 
-                    # リポジトリのcreate()メソッドを使用
-                    created_entity = self.repo.create(entity)
+                    # リポジトリのcreate()メソッドを使用（async関数内なのでawait必要）
+                    created_entity = await self.repo.create(entity)
 
                     if created_entity:
                         saved_count += 1
