@@ -3,7 +3,6 @@
 from datetime import datetime
 
 import pytest
-from pydantic import ValidationError
 
 from src.domain.dtos.parliamentary_group_member_dto import (
     ExtractedParliamentaryGroupMemberDTO,
@@ -42,13 +41,9 @@ class TestExtractedParliamentaryGroupMemberDTO:
 
     def test_name_is_required(self):
         """Test that name field is required"""
-        with pytest.raises(ValidationError) as exc_info:
+        # dataclass requires name parameter, TypeError is raised if missing
+        with pytest.raises(TypeError):
             ExtractedParliamentaryGroupMemberDTO()  # type: ignore
-
-        errors = exc_info.value.errors()
-        assert len(errors) == 1
-        assert errors[0]["loc"] == ("name",)
-        assert errors[0]["type"] == "missing"
 
     def test_optional_fields_default_to_none(self):
         """Test that optional fields default to None"""
@@ -60,19 +55,7 @@ class TestExtractedParliamentaryGroupMemberDTO:
         assert dto.district is None
         assert dto.additional_info is None
 
-    def test_pydantic_validation(self):
-        """Test Pydantic validation works correctly"""
-        # Valid data
-        dto = ExtractedParliamentaryGroupMemberDTO(
-            name="鈴木一郎", role="幹事長", party_name="立憲民主党"
-        )
-        assert dto.name == "鈴木一郎"
-
-        # Invalid data (name must be string)
-        with pytest.raises(ValidationError):
-            ExtractedParliamentaryGroupMemberDTO(name=123)  # type: ignore
-
-    def test_dto_is_immutable_after_validation(self):
+    def test_dto_is_mutable(self):
         """Test that DTO can be updated (Pydantic allows assignment)"""
         dto = ExtractedParliamentaryGroupMemberDTO(name="高橋花子")
         # Pydantic allows field assignment by default
@@ -123,33 +106,27 @@ class TestParliamentaryGroupMemberExtractionResultDTO:
 
     def test_parliamentary_group_id_is_required(self):
         """Test that parliamentary_group_id is required"""
-        with pytest.raises(ValidationError) as exc_info:
+        # dataclass requires all non-default parameters
+        with pytest.raises(TypeError):
             ParliamentaryGroupMemberExtractionResultDTO(  # type: ignore
                 url="https://example.com", extracted_members=[]
             )
 
-        errors = exc_info.value.errors()
-        assert any(e["loc"] == ("parliamentary_group_id",) for e in errors)
-
     def test_url_is_required(self):
         """Test that url is required"""
-        with pytest.raises(ValidationError) as exc_info:
+        # dataclass requires all non-default parameters
+        with pytest.raises(TypeError):
             ParliamentaryGroupMemberExtractionResultDTO(  # type: ignore
                 parliamentary_group_id=1, extracted_members=[]
             )
 
-        errors = exc_info.value.errors()
-        assert any(e["loc"] == ("url",) for e in errors)
-
     def test_extracted_members_is_required(self):
         """Test that extracted_members is required"""
-        with pytest.raises(ValidationError) as exc_info:
+        # dataclass requires all non-default parameters
+        with pytest.raises(TypeError):
             ParliamentaryGroupMemberExtractionResultDTO(  # type: ignore
                 parliamentary_group_id=1, url="https://example.com"
             )
-
-        errors = exc_info.value.errors()
-        assert any(e["loc"] == ("extracted_members",) for e in errors)
 
     def test_extraction_date_defaults_to_none(self):
         """Test that extraction_date defaults to None"""

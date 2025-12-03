@@ -39,8 +39,8 @@ class TestParliamentaryGroupMemberCommands:
             "src.interfaces.cli.commands.parliamentary_group_member_commands.RepositoryAdapter"
         ) as mock_adapter_class:
             with patch(
-                "src.interfaces.cli.commands.parliamentary_group_member_commands.ParliamentaryGroupMemberExtractor"
-            ) as mock_extractor_class:
+                "src.interfaces.cli.commands.parliamentary_group_member_commands.ParliamentaryGroupMemberExtractorFactory"
+            ) as mock_factory_class:
                 # Setup mocks
                 mock_group_repo = MagicMock()
                 mock_group_repo.get_parliamentary_group_by_id.return_value = {
@@ -84,7 +84,7 @@ class TestParliamentaryGroupMemberCommands:
                 ]
                 mock_extractor.extract_members_sync.return_value = mock_result
                 mock_extractor.close = Mock()
-                mock_extractor_class.return_value = mock_extractor
+                mock_factory_class.create.return_value = mock_extractor
 
                 # Execute
                 result = runner.invoke(
@@ -111,8 +111,8 @@ class TestParliamentaryGroupMemberCommands:
             "src.interfaces.cli.commands.parliamentary_group_member_commands.RepositoryAdapter"
         ) as mock_adapter_class:
             with patch(
-                "src.interfaces.cli.commands.parliamentary_group_member_commands.ParliamentaryGroupMemberExtractor"
-            ) as mock_extractor_class:
+                "src.interfaces.cli.commands.parliamentary_group_member_commands.ParliamentaryGroupMemberExtractorFactory"
+            ) as mock_factory_class:
                 # Setup mocks
                 mock_group_repo = Mock()
                 mock_group_repo.get_parliamentary_group_by_id.return_value = {
@@ -153,7 +153,7 @@ class TestParliamentaryGroupMemberCommands:
                     Mock(name="佐藤花子"),
                 ]
                 mock_extractor.extract_members_sync.return_value = mock_result
-                mock_extractor_class.return_value = mock_extractor
+                mock_factory_class.create.return_value = mock_extractor
 
                 # Execute with --force
                 result = runner.invoke(
@@ -243,8 +243,8 @@ class TestParliamentaryGroupMemberCommands:
             "src.interfaces.cli.commands.parliamentary_group_member_commands.RepositoryAdapter"
         ) as mock_adapter_class:
             with patch(
-                "src.interfaces.cli.commands.parliamentary_group_member_commands.ParliamentaryGroupMemberExtractor"
-            ) as mock_extractor_class:
+                "src.interfaces.cli.commands.parliamentary_group_member_commands.ParliamentaryGroupMemberExtractorFactory"
+            ) as mock_factory_class:
                 # Setup mocks
                 mock_group_repo = MagicMock()
                 mock_group_repo.get_all_parliamentary_groups.return_value = [
@@ -289,7 +289,7 @@ class TestParliamentaryGroupMemberCommands:
                     Mock(name=f"議員{i}") for i in range(5)
                 ]
                 mock_extractor.extract_members_sync.return_value = mock_result
-                mock_extractor_class.return_value = mock_extractor
+                mock_factory_class.create.return_value = mock_extractor
 
                 # Execute without group ID
                 result = runner.invoke(
