@@ -46,7 +46,8 @@ class TestLLMServiceIntegration:
         assert len(result.members) == 1
         assert result.members[0].name == "田中太郎"
 
-    def test_minutes_divider_integration(self, monkeypatch: MonkeyPatch) -> None:
+    @pytest.mark.asyncio
+    async def test_minutes_divider_integration(self, monkeypatch: MonkeyPatch) -> None:
         """Test MinutesDivider with LLMService"""
         # Set dummy API key for testing
         monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
@@ -68,7 +69,7 @@ class TestLLMServiceIntegration:
             divider = MinutesDivider()
 
             # Test section divide
-            result = divider.section_divide_run("議事録テキスト")
+            result = await divider.section_divide_run("議事録テキスト")
             assert result is not None
             assert len(result.section_info_list) == 2
 
