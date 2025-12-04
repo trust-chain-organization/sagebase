@@ -1,5 +1,6 @@
 """Enhanced tests for MinutesDivider - covering additional methods"""
 
+import asyncio
 import os
 import sys
 
@@ -139,7 +140,7 @@ class TestMinutesDividerEnhanced(unittest.TestCase):
         # Mock get_prompt to avoid KeyError
         self.mock_service.get_prompt = Mock(side_effect=KeyError("Not found"))
 
-        result = self.divider.detect_attendee_boundary(minutes_text)
+        result = asyncio.run(self.divider.detect_attendee_boundary(minutes_text))
 
         # Should return MinutesBoundary object (fallback when prompt not found)
         self.assertIsInstance(result, MinutesBoundary)
@@ -153,7 +154,7 @@ class TestMinutesDividerEnhanced(unittest.TestCase):
         # Mock get_prompt to avoid KeyError (simulates missing prompt)
         self.mock_service.get_prompt = Mock(side_effect=KeyError("Not found"))
 
-        result = self.divider.detect_attendee_boundary(minutes_text)
+        result = asyncio.run(self.divider.detect_attendee_boundary(minutes_text))
 
         # Should return MinutesBoundary object (fallback when prompt not found)
         self.assertIsInstance(result, MinutesBoundary)
@@ -224,7 +225,7 @@ class TestMinutesDividerEnhanced(unittest.TestCase):
         )
 
         try:
-            result = self.divider.extract_attendees_mapping(attendee_text)
+            result = asyncio.run(self.divider.extract_attendees_mapping(attendee_text))
 
             # Should return mapping of names to roles
             self.assertIsInstance(result, dict)
@@ -235,7 +236,7 @@ class TestMinutesDividerEnhanced(unittest.TestCase):
     def test_extract_attendees_mapping_empty(self):
         """Test extract_attendees_mapping with empty text"""
         try:
-            result = self.divider.extract_attendees_mapping("")
+            result = asyncio.run(self.divider.extract_attendees_mapping(""))
 
             # Should return empty dict or handle gracefully
             self.assertIsInstance(result, (dict, type(None)))
@@ -267,7 +268,7 @@ def test_section_divide_run_basic():
         divider.llm_service.invoke_with_retry = Mock(return_value=expected_result)
         divider.llm_service.get_prompt = Mock(return_value="test prompt")
 
-        result = divider.section_divide_run(minutes_text)
+        result = asyncio.run(divider.section_divide_run(minutes_text))
 
         # Should return SectionInfoList
         assert isinstance(result, SectionInfoList)
@@ -288,8 +289,8 @@ def test_speech_divide_run_basic():
         # Create divider instance
         divider = MinutesDivider()
 
-        # Mock the detect_attendee_boundary to return no boundary
-        divider.detect_attendee_boundary = Mock(
+        # Mock the detect_attendee_boundary to return no boundary (use AsyncMock)
+        divider.detect_attendee_boundary = AsyncMock(
             return_value=MinutesBoundary(
                 boundary_found=False,
                 boundary_text=None,
@@ -299,7 +300,7 @@ def test_speech_divide_run_basic():
             )
         )
 
-        result = divider.speech_divide_run(section_string)
+        result = asyncio.run(divider.speech_divide_run(section_string))
 
         # Should return SpeakerAndSpeechContentList (empty due to short text)
         assert isinstance(result, SpeakerAndSpeechContentList)

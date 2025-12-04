@@ -3,6 +3,7 @@
 These tests focus on successfully exercising code paths without complex mocking
 """
 
+import asyncio
 import os
 import sys
 
@@ -102,7 +103,7 @@ class TestDetectAttendeeBoundarySimple(unittest.TestCase):
         # Mock get_prompt to raise KeyError
         self.mock_service.get_prompt = Mock(side_effect=KeyError("Not found"))
 
-        result = self.divider.detect_attendee_boundary(minutes_text)
+        result = asyncio.run(self.divider.detect_attendee_boundary(minutes_text))
 
         # Should return MinutesBoundary with boundary_found=False
         self.assertIsInstance(result, MinutesBoundary)
@@ -173,7 +174,7 @@ class TestExtractAttendeesMappingSimple(unittest.TestCase):
 
     def test_extract_attendees_mapping_empty_text(self):
         """Test extract_attendees_mapping with empty text"""
-        result = self.divider.extract_attendees_mapping("")
+        result = asyncio.run(self.divider.extract_attendees_mapping(""))
 
         # Should return empty AttendeesMapping
         self.assertIsInstance(result, AttendeesMapping)
@@ -187,7 +188,7 @@ class TestExtractAttendeesMappingSimple(unittest.TestCase):
         self.mock_service.get_prompt = Mock(return_value="test prompt")
         self.mock_service.invoke_with_retry = Mock(side_effect=Exception("LLM error"))
 
-        result = self.divider.extract_attendees_mapping(attendees_text)
+        result = asyncio.run(self.divider.extract_attendees_mapping(attendees_text))
 
         # Should return empty mapping on error
         self.assertIsInstance(result, AttendeesMapping)

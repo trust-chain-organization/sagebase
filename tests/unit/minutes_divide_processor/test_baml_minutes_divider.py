@@ -26,7 +26,8 @@ class TestBAMLMinutesDivider:
     # section_divide_run tests
     # ========================================
 
-    def test_section_divide_run_success(self, divider):
+    @pytest.mark.asyncio
+    async def test_section_divide_run_success(self, divider):
         """Test successful section division with BAML"""
 
         # Mock BAML result
@@ -47,7 +48,7 @@ class TestBAMLMinutesDivider:
             mock_baml.return_value = mock_result
 
             # Execute
-            result = divider.section_divide_run("議事録テキスト")
+            result = await divider.section_divide_run("議事録テキスト")
 
             # Assert
             assert len(result.section_info_list) == 3
@@ -59,7 +60,8 @@ class TestBAMLMinutesDivider:
             # Verify BAML was called
             mock_baml.assert_called_once_with("議事録テキスト")
 
-    def test_section_divide_run_empty_result(self, divider):
+    @pytest.mark.asyncio
+    async def test_section_divide_run_empty_result(self, divider):
         """Test section division with empty result"""
         with patch(
             "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.DivideMinutesToKeywords"
@@ -67,12 +69,13 @@ class TestBAMLMinutesDivider:
             mock_baml.return_value = []
 
             # Execute
-            result = divider.section_divide_run("議事録テキスト")
+            result = await divider.section_divide_run("議事録テキスト")
 
             # Assert
             assert result.section_info_list == []
 
-    def test_section_divide_run_error_handling(self, divider):
+    @pytest.mark.asyncio
+    async def test_section_divide_run_error_handling(self, divider):
         """Test error handling in section division"""
         with patch(
             "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.DivideMinutesToKeywords"
@@ -80,7 +83,7 @@ class TestBAMLMinutesDivider:
             mock_baml.side_effect = Exception("BAML error")
 
             # Execute
-            result = divider.section_divide_run("議事録テキスト")
+            result = await divider.section_divide_run("議事録テキスト")
 
             # Assert - should return empty list on error
             assert result.section_info_list == []
@@ -89,7 +92,8 @@ class TestBAMLMinutesDivider:
     # do_redivide tests
     # ========================================
 
-    def test_do_redivide_success(self, divider):
+    @pytest.mark.asyncio
+    async def test_do_redivide_success(self, divider):
         """Test successful section redivision with BAML"""
 
         # Mock BAML result
@@ -124,13 +128,14 @@ class TestBAMLMinutesDivider:
             mock_baml.return_value = mock_result
 
             # Execute
-            result = divider.do_redivide(redivide_list)
+            result = await divider.do_redivide(redivide_list)
 
             # Assert
             assert len(result.redivided_section_info_list) == 2
             mock_baml.assert_called_once()
 
-    def test_do_redivide_error_handling(self, divider):
+    @pytest.mark.asyncio
+    async def test_do_redivide_error_handling(self, divider):
         """Test error handling in section redivision"""
 
         # Create redivide input
@@ -154,7 +159,7 @@ class TestBAMLMinutesDivider:
             mock_baml.side_effect = Exception("BAML error")
 
             # Execute
-            result = divider.do_redivide(redivide_list)
+            result = await divider.do_redivide(redivide_list)
 
             # Assert - should return empty list on error
             assert result.redivided_section_info_list == []
@@ -163,7 +168,8 @@ class TestBAMLMinutesDivider:
     # detect_attendee_boundary tests
     # ========================================
 
-    def test_detect_attendee_boundary_success(self, divider):
+    @pytest.mark.asyncio
+    async def test_detect_attendee_boundary_success(self, divider):
         """Test successful boundary detection with BAML"""
 
         # Mock BAML result
@@ -181,7 +187,7 @@ class TestBAMLMinutesDivider:
             mock_baml.return_value = MockBoundary()
 
             # Execute
-            result = divider.detect_attendee_boundary("議事録テキスト")
+            result = await divider.detect_attendee_boundary("議事録テキスト")
 
             # Assert
             assert result.boundary_found is True
@@ -190,7 +196,8 @@ class TestBAMLMinutesDivider:
             assert result.confidence == 0.9
             mock_baml.assert_called_once_with("議事録テキスト")
 
-    def test_detect_attendee_boundary_not_found(self, divider):
+    @pytest.mark.asyncio
+    async def test_detect_attendee_boundary_not_found(self, divider):
         """Test boundary detection when no boundary found"""
 
         # Mock BAML result
@@ -208,13 +215,14 @@ class TestBAMLMinutesDivider:
             mock_baml.return_value = MockBoundary()
 
             # Execute
-            result = divider.detect_attendee_boundary("議事録テキスト")
+            result = await divider.detect_attendee_boundary("議事録テキスト")
 
             # Assert
             assert result.boundary_found is False
             assert result.boundary_type == "none"
 
-    def test_detect_attendee_boundary_error_handling(self, divider):
+    @pytest.mark.asyncio
+    async def test_detect_attendee_boundary_error_handling(self, divider):
         """Test error handling in boundary detection"""
         with patch(
             "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.DetectBoundary"
@@ -222,7 +230,7 @@ class TestBAMLMinutesDivider:
             mock_baml.side_effect = Exception("BAML error")
 
             # Execute
-            result = divider.detect_attendee_boundary("議事録テキスト")
+            result = await divider.detect_attendee_boundary("議事録テキスト")
 
             # Assert - should return no boundary on error
             assert result.boundary_found is False
@@ -233,7 +241,8 @@ class TestBAMLMinutesDivider:
     # extract_attendees_mapping tests
     # ========================================
 
-    def test_extract_attendees_mapping_success(self, divider):
+    @pytest.mark.asyncio
+    async def test_extract_attendees_mapping_success(self, divider):
         """Test successful attendees extraction with BAML"""
 
         # Mock BAML result
@@ -249,7 +258,7 @@ class TestBAMLMinutesDivider:
             mock_baml.return_value = MockAttendees()
 
             # Execute
-            result = divider.extract_attendees_mapping("出席者情報テキスト")
+            result = await divider.extract_attendees_mapping("出席者情報テキスト")
 
             # Assert
             assert len(result.attendees_mapping) == 2  # type: ignore[arg-type]
@@ -258,17 +267,19 @@ class TestBAMLMinutesDivider:
             assert result.confidence == 0.95
             mock_baml.assert_called_once_with("出席者情報テキスト")
 
-    def test_extract_attendees_mapping_empty_text(self, divider):
+    @pytest.mark.asyncio
+    async def test_extract_attendees_mapping_empty_text(self, divider):
         """Test attendees extraction with empty text"""
         # Execute
-        result = divider.extract_attendees_mapping("")
+        result = await divider.extract_attendees_mapping("")
 
         # Assert
         assert result.attendees_mapping == {}
         assert result.regular_attendees == []
         assert result.confidence == 0.0
 
-    def test_extract_attendees_mapping_error_handling(self, divider):
+    @pytest.mark.asyncio
+    async def test_extract_attendees_mapping_error_handling(self, divider):
         """Test error handling in attendees extraction"""
         with patch(
             "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.ExtractAttendees"
@@ -276,7 +287,7 @@ class TestBAMLMinutesDivider:
             mock_baml.side_effect = Exception("BAML error")
 
             # Execute
-            result = divider.extract_attendees_mapping("出席者情報テキスト")
+            result = await divider.extract_attendees_mapping("出席者情報テキスト")
 
             # Assert - should return empty on error
             assert result.attendees_mapping == {}
@@ -286,7 +297,8 @@ class TestBAMLMinutesDivider:
     # speech_divide_run tests
     # ========================================
 
-    def test_speech_divide_run_success(self, divider):
+    @pytest.mark.asyncio
+    async def test_speech_divide_run_success(self, divider):
         """Test successful speech division with BAML"""
 
         # Mock BAML results for boundary detection and speech division
@@ -329,7 +341,7 @@ class TestBAMLMinutesDivider:
                         "○山田議長 会議を開きます。◆田中議員 質問があります。"
                     ),
                 )
-                result = divider.speech_divide_run(section)
+                result = await divider.speech_divide_run(section)
 
                 # Assert
                 assert len(result.speaker_and_speech_content_list) == 2
@@ -340,7 +352,8 @@ class TestBAMLMinutesDivider:
                 )
                 assert result.speaker_and_speech_content_list[1].speaker == "田中議員"
 
-    def test_speech_divide_run_empty_section(self, divider):
+    @pytest.mark.asyncio
+    async def test_speech_divide_run_empty_section(self, divider):
         """Test speech division with empty section"""
 
         # Mock boundary detection
@@ -361,12 +374,13 @@ class TestBAMLMinutesDivider:
             section = SectionString(
                 chapter_number=1, sub_chapter_number=1, section_string=""
             )
-            result = divider.speech_divide_run(section)
+            result = await divider.speech_divide_run(section)
 
             # Assert
             assert result.speaker_and_speech_content_list == []
 
-    def test_speech_divide_run_error_handling(self, divider):
+    @pytest.mark.asyncio
+    async def test_speech_divide_run_error_handling(self, divider):
         """Test error handling in speech division"""
 
         # Mock boundary detection (success)
@@ -394,7 +408,7 @@ class TestBAMLMinutesDivider:
                     sub_chapter_number=1,
                     section_string="○山田議長 会議を開きます。",
                 )
-                result = divider.speech_divide_run(section)
+                result = await divider.speech_divide_run(section)
 
                 # Assert - should return empty list on error
                 assert result.speaker_and_speech_content_list == []

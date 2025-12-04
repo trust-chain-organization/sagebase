@@ -31,7 +31,7 @@ class IMinutesDividerService(ABC):
         pass
 
     @abstractmethod
-    def section_divide_run(self, minutes: str) -> SectionInfoList:
+    async def section_divide_run(self, minutes: str) -> SectionInfoList:
         """議事録を章に分割してキーワードリストを返す
 
         Args:
@@ -43,7 +43,7 @@ class IMinutesDividerService(ABC):
         pass
 
     @abstractmethod
-    def detect_attendee_boundary(self, minutes_text: str) -> MinutesBoundary:
+    async def detect_attendee_boundary(self, minutes_text: str) -> MinutesBoundary:
         """議事録テキストから出席者情報と発言部分の境界を検出する
 
         Args:
@@ -55,7 +55,7 @@ class IMinutesDividerService(ABC):
         pass
 
     @abstractmethod
-    def extract_attendees_mapping(self, attendees_text: str) -> AttendeesMapping:
+    async def extract_attendees_mapping(self, attendees_text: str) -> AttendeesMapping:
         """出席者情報から役職と人名のマッピングを抽出する
 
         Args:
@@ -67,7 +67,7 @@ class IMinutesDividerService(ABC):
         pass
 
     @abstractmethod
-    def speech_divide_run(
+    async def speech_divide_run(
         self, section_string: SectionString
     ) -> SpeakerAndSpeechContentList:
         """セクションから発言者と発言内容を抽出する

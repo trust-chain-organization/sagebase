@@ -211,7 +211,7 @@ class MinutesDivider(IMinutesDividerService):
         return SectionStringList(section_string_list=split_minutes_list)
 
     # 議事録の情報をベースに議事録を30分割する
-    def section_divide_run(self, minutes: str) -> SectionInfoList:
+    async def section_divide_run(self, minutes: str) -> SectionInfoList:
         # Try to get prompt from hub first, fallback to local
         try:
             prompt_template = hub.pull("divide_chapter_prompt")
@@ -316,7 +316,7 @@ class MinutesDivider(IMinutesDividerService):
         return RedividedSectionInfoList(redivided_section_info_list=section_info_list)
 
     # 発言者と発言内容に分割する
-    def detect_attendee_boundary(self, minutes_text: str) -> MinutesBoundary:
+    async def detect_attendee_boundary(self, minutes_text: str) -> MinutesBoundary:
         """議事録テキストから出席者情報と発言部分の境界を検出する
 
         Args:
@@ -584,7 +584,7 @@ class MinutesDivider(IMinutesDividerService):
 
         return attendee_part, speech_part
 
-    def extract_attendees_mapping(self, attendees_text: str) -> AttendeesMapping:
+    async def extract_attendees_mapping(self, attendees_text: str) -> AttendeesMapping:
         """出席者情報から役職と人名のマッピングを抽出する
 
         Args:
@@ -662,7 +662,7 @@ class MinutesDivider(IMinutesDividerService):
                 attendees_mapping={}, regular_attendees=[], confidence=0.0
             )
 
-    def speech_divide_run(
+    async def speech_divide_run(
         self, section_string: SectionString
     ) -> SpeakerAndSpeechContentList:
         # セクション全体のテキストを取得
@@ -675,7 +675,7 @@ class MinutesDivider(IMinutesDividerService):
 
         # LLMベースの境界検出を実行
         logger.info("Calling detect_attendee_boundary...")
-        boundary = self.detect_attendee_boundary(section_text)
+        boundary = await self.detect_attendee_boundary(section_text)
         logger.info(
             f"Boundary detection result: found={boundary.boundary_found}, "
             f"type={boundary.boundary_type}, confidence={boundary.confidence}"

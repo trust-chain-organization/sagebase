@@ -398,7 +398,7 @@ class BAMLMinutesDivider(IMinutesDividerService):
     # BAML使用メソッド
     # ========================================
 
-    def section_divide_run(self, minutes: str) -> SectionInfoList:
+    async def section_divide_run(self, minutes: str) -> SectionInfoList:
         """議事録を章に分割する（BAML使用）
 
         Args:
@@ -410,7 +410,7 @@ class BAMLMinutesDivider(IMinutesDividerService):
         try:
             # BAMLを呼び出し
             logger.info("Calling BAML DivideMinutesToKeywords")
-            baml_result = b.DivideMinutesToKeywords(minutes)
+            baml_result = await b.DivideMinutesToKeywords(minutes)
 
             # BAML結果をPydanticモデルに変換
             section_info_list = [
@@ -436,7 +436,7 @@ class BAMLMinutesDivider(IMinutesDividerService):
             # エラー時は空のリストを返す
             return SectionInfoList(section_info_list=[])
 
-    def do_redivide(
+    async def do_redivide(
         self, redivide_section_string_list: RedivideSectionStringList
     ) -> RedividedSectionInfoList:
         """長いセクションを再分割する（BAML使用）
@@ -463,7 +463,7 @@ class BAMLMinutesDivider(IMinutesDividerService):
                     f"(divide_counter={divide_counter}, "
                     f"original_index={redivide_section_string.original_index})"
                 )
-                baml_result = b.RedivideSection(
+                baml_result = await b.RedivideSection(
                     redivide_section_string.redivide_section_string.section_string,
                     divide_counter,
                     redivide_section_string.original_index,
@@ -487,7 +487,7 @@ class BAMLMinutesDivider(IMinutesDividerService):
 
         return RedividedSectionInfoList(redivided_section_info_list=section_info_list)
 
-    def detect_attendee_boundary(self, minutes_text: str) -> MinutesBoundary:
+    async def detect_attendee_boundary(self, minutes_text: str) -> MinutesBoundary:
         """出席者情報と発言部分の境界を検出する（BAML使用）
 
         Args:
@@ -502,7 +502,7 @@ class BAMLMinutesDivider(IMinutesDividerService):
         try:
             # BAMLを呼び出し
             logger.info("Calling BAML DetectBoundary")
-            baml_result = b.DetectBoundary(minutes_text)
+            baml_result = await b.DetectBoundary(minutes_text)
 
             # BAML結果をPydanticモデルに変換
             result = MinutesBoundary(
@@ -531,7 +531,7 @@ class BAMLMinutesDivider(IMinutesDividerService):
                 reason=f"境界検出中にエラーが発生しました: {str(e)}",
             )
 
-    def extract_attendees_mapping(self, attendees_text: str) -> AttendeesMapping:
+    async def extract_attendees_mapping(self, attendees_text: str) -> AttendeesMapping:
         """出席者情報から役職と人名のマッピングを抽出する（BAML使用）
 
         Args:
@@ -552,7 +552,7 @@ class BAMLMinutesDivider(IMinutesDividerService):
         try:
             # BAMLを呼び出し
             logger.info("Calling BAML ExtractAttendees")
-            baml_result = b.ExtractAttendees(attendees_text)
+            baml_result = await b.ExtractAttendees(attendees_text)
 
             # BAML結果をPydanticモデルに変換
             result = AttendeesMapping(
@@ -577,7 +577,7 @@ class BAMLMinutesDivider(IMinutesDividerService):
                 attendees_mapping={}, regular_attendees=[], confidence=0.0
             )
 
-    def speech_divide_run(
+    async def speech_divide_run(
         self, section_string: SectionString
     ) -> SpeakerAndSpeechContentList:
         """発言者と発言内容に分割する（BAML使用）
@@ -595,7 +595,7 @@ class BAMLMinutesDivider(IMinutesDividerService):
 
         # 境界検出と分割
         logger.info("Calling detect_attendee_boundary...")
-        boundary = self.detect_attendee_boundary(section_text)
+        boundary = await self.detect_attendee_boundary(section_text)
 
         logger.info("Calling split_minutes_by_boundary...")
         attendee_part, speech_part = self.split_minutes_by_boundary(
@@ -619,7 +619,7 @@ class BAMLMinutesDivider(IMinutesDividerService):
         try:
             # BAMLを呼び出し
             logger.info("Calling BAML DivideSpeech")
-            baml_result = b.DivideSpeech(section_text)
+            baml_result = await b.DivideSpeech(section_text)
 
             # BAML結果をPydanticモデルに変換
             speaker_and_speech_content_list = [
