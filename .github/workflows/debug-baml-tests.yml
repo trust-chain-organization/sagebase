@@ -1,7 +1,7 @@
-name: Debug BAML Tests (Manual)
+name: BAML Tests
 
-# 手動トリガーのみで実行されるデバッグ用ワークフロー
-# 失敗しているBAML関連テストのみを実行し、詳細なデバッグ出力を提供
+# BAML関連テストを実行するワークフロー
+# 手動トリガーまたはBAML関連ファイルの変更時に実行
 on:
   workflow_dispatch:
   pull_request:
@@ -20,8 +20,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  debug-baml-tests:
-    name: Debug BAML Tests Only
+  baml-tests:
+    name: BAML Tests
     runs-on: ubuntu-latest
 
     steps:
