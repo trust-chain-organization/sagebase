@@ -84,6 +84,7 @@ markers = [
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
     "evaluation: marks tests as LLM evaluation tests (skipped in CI)",
+    "baml: marks tests as BAML-related tests (run in separate BAML CI)",
 ]
 
 [dependency-groups]

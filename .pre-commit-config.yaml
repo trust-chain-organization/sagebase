@@ -32,8 +32,8 @@ repos:
         files: ^src/
 
       - id: pytest
-        name: pytest (unit tests only)
-        entry: uv run --frozen pytest --ignore=tests/integration --ignore=tests/database
+        name: pytest (unit tests only, excluding BAML tests)
+        entry: uv run --frozen pytest --ignore=tests/integration --ignore=tests/database -m "not baml"
         language: system
         pass_filenames: false
         always_run: true
