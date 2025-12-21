@@ -41,7 +41,7 @@ def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
 # #########################################################################
 
 # #########################################################################
-# Generated classes (12)
+# Generated classes (14)
 # #########################################################################
 
 class AttendeesMapping(BaseModel):
@@ -90,6 +90,14 @@ class ParliamentaryGroupMember(BaseModel):
     district: typing.Optional[str] = None
     additional_info: typing.Optional[str] = None
 
+class PoliticianMatch(BaseModel):
+    matched: bool
+    politician_id: typing.Optional[int] = None
+    politician_name: typing.Optional[str] = None
+    political_party_name: typing.Optional[str] = None
+    confidence: float
+    reason: str
+
 class RedividedSectionInfo(BaseModel):
     chapter_number: int
     sub_chapter_number: int
@@ -116,6 +124,13 @@ class SpeakerAndSpeechContent(BaseModel):
     chapter_number: int
     sub_chapter_number: int
     speech_order: int
+
+class SpeakerMatch(BaseModel):
+    matched: bool
+    speaker_id: typing.Optional[int] = None
+    speaker_name: typing.Optional[str] = None
+    confidence: float
+    reason: str
 
 # #########################################################################
 # Generated type aliases (0)

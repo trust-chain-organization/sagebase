@@ -229,6 +229,36 @@ class BamlAsyncClient:
                 "resume": resume,
             })
             return typing.cast(types.Resume, __result__.cast_to(types, types, stream_types, False, __runtime__))
+    async def MatchPolitician(self, speaker_name: str,speaker_type: str,speaker_party: str,available_politicians: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.PoliticianMatch:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            __stream__ = self.stream.MatchPolitician(speaker_name=speaker_name,speaker_type=speaker_type,speaker_party=speaker_party,available_politicians=available_politicians,
+                baml_options=baml_options)
+            return await __stream__.get_final_response()
+        else:
+            # Original non-streaming code
+            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="MatchPolitician", args={
+                "speaker_name": speaker_name,"speaker_type": speaker_type,"speaker_party": speaker_party,"available_politicians": available_politicians,
+            })
+            return typing.cast(types.PoliticianMatch, __result__.cast_to(types, types, stream_types, False, __runtime__))
+    async def MatchSpeaker(self, speaker_name: str,available_speakers: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.SpeakerMatch:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            __stream__ = self.stream.MatchSpeaker(speaker_name=speaker_name,available_speakers=available_speakers,
+                baml_options=baml_options)
+            return await __stream__.get_final_response()
+        else:
+            # Original non-streaming code
+            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="MatchSpeaker", args={
+                "speaker_name": speaker_name,"available_speakers": available_speakers,
+            })
+            return typing.cast(types.SpeakerMatch, __result__.cast_to(types, types, stream_types, False, __runtime__))
     async def RedivideSection(self, section_text: str,divide_counter: int,original_index: int,
         baml_options: BamlCallOptions = {},
     ) -> typing.List["types.SectionInfo"]:
@@ -373,6 +403,30 @@ class BamlStreamClient:
           lambda x: typing.cast(types.Resume, x.cast_to(types, types, stream_types, False, __runtime__)),
           __ctx__,
         )
+    def MatchPolitician(self, speaker_name: str,speaker_type: str,speaker_party: str,available_politicians: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.PoliticianMatch, types.PoliticianMatch]:
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="MatchPolitician", args={
+            "speaker_name": speaker_name,"speaker_type": speaker_type,"speaker_party": speaker_party,"available_politicians": available_politicians,
+        })
+        return baml_py.BamlStream[stream_types.PoliticianMatch, types.PoliticianMatch](
+          __result__,
+          lambda x: typing.cast(stream_types.PoliticianMatch, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.PoliticianMatch, x.cast_to(types, types, stream_types, False, __runtime__)),
+          __ctx__,
+        )
+    def MatchSpeaker(self, speaker_name: str,available_speakers: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.SpeakerMatch, types.SpeakerMatch]:
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="MatchSpeaker", args={
+            "speaker_name": speaker_name,"available_speakers": available_speakers,
+        })
+        return baml_py.BamlStream[stream_types.SpeakerMatch, types.SpeakerMatch](
+          __result__,
+          lambda x: typing.cast(stream_types.SpeakerMatch, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.SpeakerMatch, x.cast_to(types, types, stream_types, False, __runtime__)),
+          __ctx__,
+        )
     def RedivideSection(self, section_text: str,divide_counter: int,original_index: int,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[typing.List["stream_types.SectionInfo"], typing.List["types.SectionInfo"]]:
@@ -463,6 +517,20 @@ class BamlHttpRequestClient:
             "resume": resume,
         }, mode="request")
         return __result__
+    async def MatchPolitician(self, speaker_name: str,speaker_type: str,speaker_party: str,available_politicians: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="MatchPolitician", args={
+            "speaker_name": speaker_name,"speaker_type": speaker_type,"speaker_party": speaker_party,"available_politicians": available_politicians,
+        }, mode="request")
+        return __result__
+    async def MatchSpeaker(self, speaker_name: str,available_speakers: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="MatchSpeaker", args={
+            "speaker_name": speaker_name,"available_speakers": available_speakers,
+        }, mode="request")
+        return __result__
     async def RedivideSection(self, section_text: str,divide_counter: int,original_index: int,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -546,6 +614,20 @@ class BamlHttpStreamRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ExtractResume", args={
             "resume": resume,
+        }, mode="stream")
+        return __result__
+    async def MatchPolitician(self, speaker_name: str,speaker_type: str,speaker_party: str,available_politicians: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="MatchPolitician", args={
+            "speaker_name": speaker_name,"speaker_type": speaker_type,"speaker_party": speaker_party,"available_politicians": available_politicians,
+        }, mode="stream")
+        return __result__
+    async def MatchSpeaker(self, speaker_name: str,available_speakers: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="MatchSpeaker", args={
+            "speaker_name": speaker_name,"available_speakers": available_speakers,
         }, mode="stream")
         return __result__
     async def RedivideSection(self, section_text: str,divide_counter: int,original_index: int,

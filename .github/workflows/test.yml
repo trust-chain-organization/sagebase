@@ -120,10 +120,11 @@ jobs:
           USE_BAML_MINUTES_DIVIDER: true
         run: |
           # Exclude evaluation tests from CI to save costs (run manually via workflow_dispatch)
-          # Exclude BAML integration tests (tested separately in Debug BAML Tests workflow)
+          # Exclude BAML tests (tested separately in Debug BAML Tests workflow)
           uv run pytest -v --tb=short --cov=src --cov-report=html --cov-report=term --cov-report=xml --cov-report=json \
             --ignore=tests/evaluation/ \
             --ignore=tests/integration/parliamentary_group_member_extractor/test_baml_integration.py \
+            -m "not baml" \
             -k 'not test_create_baml_extractor_by_default'
 
       - name: Check coverage threshold

@@ -20,7 +20,7 @@ from .globals import DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIM
 class TypeBuilder(type_builder.TypeBuilder):
     def __init__(self):
         super().__init__(classes=set(
-          ["AttendeesMapping","ExtractedMember","ExtractedPartyMember","LinkClassification","MinutesBoundary","PageClassification","ParliamentaryGroupMember","RedividedSectionInfo","Resume","SectionInfo","SectionString","SpeakerAndSpeechContent",]
+          ["AttendeesMapping","ExtractedMember","ExtractedPartyMember","LinkClassification","MinutesBoundary","PageClassification","ParliamentaryGroupMember","PoliticianMatch","RedividedSectionInfo","Resume","SectionInfo","SectionString","SpeakerAndSpeechContent","SpeakerMatch",]
         ), enums=set(
           []
         ), runtime=DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME)
@@ -31,7 +31,7 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
     # #########################################################################
-    # Generated classes 12
+    # Generated classes 14
     # #########################################################################
 
     @property
@@ -63,6 +63,10 @@ class TypeBuilder(type_builder.TypeBuilder):
         return ParliamentaryGroupMemberViewer(self)
 
     @property
+    def PoliticianMatch(self) -> "PoliticianMatchViewer":
+        return PoliticianMatchViewer(self)
+
+    @property
     def RedividedSectionInfo(self) -> "RedividedSectionInfoViewer":
         return RedividedSectionInfoViewer(self)
 
@@ -82,6 +86,10 @@ class TypeBuilder(type_builder.TypeBuilder):
     def SpeakerAndSpeechContent(self) -> "SpeakerAndSpeechContentViewer":
         return SpeakerAndSpeechContentViewer(self)
 
+    @property
+    def SpeakerMatch(self) -> "SpeakerMatchViewer":
+        return SpeakerMatchViewer(self)
+
 
 
 # #########################################################################
@@ -90,7 +98,7 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
 # #########################################################################
-# Generated classes 12
+# Generated classes 14
 # #########################################################################
 
 class AttendeesMappingAst:
@@ -466,6 +474,65 @@ class ParliamentaryGroupMemberProperties:
 
 
 
+class PoliticianMatchAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("PoliticianMatch")
+        self._properties: typing.Set[str] = set([  "matched",  "politician_id",  "politician_name",  "political_party_name",  "confidence",  "reason",  ])
+        self._props = PoliticianMatchProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "PoliticianMatchProperties":
+        return self._props
+
+
+class PoliticianMatchViewer(PoliticianMatchAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+
+
+
+class PoliticianMatchProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+
+
+    @property
+    def matched(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("matched"))
+
+    @property
+    def politician_id(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("politician_id"))
+
+    @property
+    def politician_name(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("politician_name"))
+
+    @property
+    def political_party_name(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("political_party_name"))
+
+    @property
+    def confidence(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("confidence"))
+
+    @property
+    def reason(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("reason"))
+
+
+
+
 class RedividedSectionInfoAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
@@ -705,3 +772,58 @@ class SpeakerAndSpeechContentProperties:
     @property
     def speech_order(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("speech_order"))
+
+
+
+
+class SpeakerMatchAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("SpeakerMatch")
+        self._properties: typing.Set[str] = set([  "matched",  "speaker_id",  "speaker_name",  "confidence",  "reason",  ])
+        self._props = SpeakerMatchProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "SpeakerMatchProperties":
+        return self._props
+
+
+class SpeakerMatchViewer(SpeakerMatchAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+
+
+
+class SpeakerMatchProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+
+
+    @property
+    def matched(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("matched"))
+
+    @property
+    def speaker_id(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("speaker_id"))
+
+    @property
+    def speaker_name(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("speaker_name"))
+
+    @property
+    def confidence(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("confidence"))
+
+    @property
+    def reason(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("reason"))

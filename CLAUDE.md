@@ -154,7 +154,7 @@ Sagebaseプロジェクトでは、以下のスキルが自動的にアクティ
 ## BAML Integration
 
 ### Overview
-Sagebaseでは、会議体メンバー情報の抽出にBAML (Boundary ML)を使用しています。BAMLはLLMの構造化出力を型安全に扱うためのドメイン特化言語(DSL)です。
+Sagebaseでは、以下の機能にBAML (Boundary ML)を使用しています。BAMLはLLMの構造化出力を型安全に扱うためのドメイン特化言語(DSL)です。
 
 ### Key Features
 - **型安全性**: Pydanticモデルと完全に互換性のある型定義
@@ -162,19 +162,52 @@ Sagebaseでは、会議体メンバー情報の抽出にBAML (Boundary ML)を使
 - **パース精度**: LLMの出力を確実に構造化データに変換
 - **フィーチャーフラグ対応**: 環境変数で実装を切り替え可能
 
-### Implementation
-- **Factory Pattern**: `MemberExtractorFactory`で実装を切り替え
-  - `USE_BAML_EXTRACTOR=true`: BAML実装を使用
-  - `USE_BAML_EXTRACTOR=false`: 従来のPydantic実装を使用
-- **Interface**: `IMemberExtractorService`を実装し、既存コードとの互換性を保証
-- **DTO**: `ExtractedMemberDTO`で層間のデータ転送を実現
+### BAML対応機能
 
-### Files
-- `baml_src/`: BAML定義ファイル（.baml）
-- `src/infrastructure/external/conference_member_extractor/baml_extractor.py`: BAML実装
-- `src/infrastructure/external/conference_member_extractor/pydantic_extractor.py`: Pydantic実装
-- `src/infrastructure/external/conference_member_extractor/factory.py`: ファクトリー
-- `tests/unit/conference_member_extractor/`: 単体テスト
+#### 1. 議事録分割処理（Minutes Divider）
+- **BAML定義**: `baml_src/minutes_divider.baml`
+- **環境変数**: `USE_BAML_MINUTES_DIVIDER=true` （デフォルト: true）
+- **実装**: `src/infrastructure/external/minutes_divider/baml_minutes_divider.py`
+
+#### 2. 会議体メンバー抽出（Conference Member Extraction）
+- **BAML定義**: `baml_src/member_extraction.baml`
+- **環境変数**: `USE_BAML_MEMBER_EXTRACTION=true`
+- **実装**: `src/infrastructure/external/conference_member_extractor/baml_extractor.py`
+
+#### 3. 議員団メンバー抽出（Parliamentary Group Member Extraction）
+- **BAML定義**: `baml_src/parliamentary_group_member_extractor.baml`
+- **環境変数**: `USE_BAML_PARLIAMENTARY_GROUP_EXTRACTOR=true` （デフォルト: true）
+- **実装**: `src/infrastructure/external/parliamentary_group_member_extractor/baml_extractor.py`
+
+#### 4. 政党メンバー抽出（Party Member Extraction）
+- **BAML定義**: `baml_src/party_member_extractor.baml`
+- **環境変数**: `USE_BAML_PARTY_MEMBER_EXTRACTOR=true` （デフォルト: true）
+- **実装**: `src/party_member_extractor/baml_extractor.py`
+
+#### 5. 話者マッチング（Speaker Matching） **NEW**
+- **BAML定義**: `baml_src/speaker_matching.baml`
+- **環境変数**: `USE_BAML_SPEAKER_MATCHING=true` （デフォルト: false）
+- **実装**: `src/domain/services/baml_speaker_matching_service.py`
+- **ファクトリー**: `src/domain/services/factories/speaker_matching_factory.py`
+- **ハイブリッドアプローチ**: ルールベースマッチング（高速パス）+ BAMLマッチング
+
+#### 6. 政治家マッチング（Politician Matching） **NEW**
+- **BAML定義**: `baml_src/politician_matching.baml`
+- **環境変数**: `USE_BAML_POLITICIAN_MATCHING=true` （デフォルト: false）
+- **実装**: `src/domain/services/baml_politician_matching_service.py`
+- **ファクトリー**: `src/domain/services/factories/politician_matching_factory.py`
+- **ハイブリッドアプローチ**: ルールベースマッチング（高速パス）+ BAMLマッチング
+
+### Implementation Pattern
+- **Factory Pattern**: 環境変数に基づいて適切な実装を注入
+- **High-Speed Path**: ルールベースマッチング（完全一致、部分一致）で信頼度0.9以上の場合はLLMをスキップ
+- **LLM Matching**: 複雑なケースのみBAMLを使用してマッチング
+- **Interface**: 既存コードとの互換性を保証
+
+### トークン削減効果
+- **議事録分割**: 約10-15%削減
+- **話者マッチング**: 約5-10%削減（目標）
+- **政治家マッチング**: 約10-15%削減（目標）
 
 ### Usage in Streamlit
 会議体管理画面の「会議体一覧」タブで、会議体を選択して「選択した会議体から議員情報を抽出」ボタンをクリックすると、BAMLを使用してメンバー情報を抽出できます。抽出結果は「抽出結果確認」タブで確認できます。

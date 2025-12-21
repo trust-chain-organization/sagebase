@@ -23,7 +23,7 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (12)
+# Generated classes (14)
 # #########################################################################
 
 class AttendeesMapping(BaseModel):
@@ -72,6 +72,14 @@ class ParliamentaryGroupMember(BaseModel):
     district: typing.Optional[str] = None
     additional_info: typing.Optional[str] = None
 
+class PoliticianMatch(BaseModel):
+    matched: typing.Optional[bool] = None
+    politician_id: typing.Optional[int] = None
+    politician_name: typing.Optional[str] = None
+    political_party_name: typing.Optional[str] = None
+    confidence: typing.Optional[float] = None
+    reason: typing.Optional[str] = None
+
 class RedividedSectionInfo(BaseModel):
     chapter_number: typing.Optional[int] = None
     sub_chapter_number: typing.Optional[int] = None
@@ -98,6 +106,13 @@ class SpeakerAndSpeechContent(BaseModel):
     chapter_number: typing.Optional[int] = None
     sub_chapter_number: typing.Optional[int] = None
     speech_order: typing.Optional[int] = None
+
+class SpeakerMatch(BaseModel):
+    matched: typing.Optional[bool] = None
+    speaker_id: typing.Optional[int] = None
+    speaker_name: typing.Optional[str] = None
+    confidence: typing.Optional[float] = None
+    reason: typing.Optional[str] = None
 
 # #########################################################################
 # Generated type aliases (0)

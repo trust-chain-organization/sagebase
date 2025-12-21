@@ -37,6 +37,9 @@ type_map = {
     "types.ParliamentaryGroupMember": types.ParliamentaryGroupMember,
     "stream_types.ParliamentaryGroupMember": stream_types.ParliamentaryGroupMember,
 
+    "types.PoliticianMatch": types.PoliticianMatch,
+    "stream_types.PoliticianMatch": stream_types.PoliticianMatch,
+
     "types.RedividedSectionInfo": types.RedividedSectionInfo,
     "stream_types.RedividedSectionInfo": stream_types.RedividedSectionInfo,
 
@@ -51,6 +54,9 @@ type_map = {
 
     "types.SpeakerAndSpeechContent": types.SpeakerAndSpeechContent,
     "stream_types.SpeakerAndSpeechContent": stream_types.SpeakerAndSpeechContent,
+
+    "types.SpeakerMatch": types.SpeakerMatch,
+    "stream_types.SpeakerMatch": stream_types.SpeakerMatch,
 
 
 }
