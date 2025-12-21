@@ -1,6 +1,6 @@
 """Tests for LLMLinkClassifierService."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -39,29 +39,26 @@ class TestLLMLinkClassifierService:
     @pytest.mark.asyncio
     async def test_classify_links_success(self, sample_links):
         """Test successful link classification with BAML."""
-        from baml_client import types
+        # Create mock BAML results
+        mock_result_1 = Mock()
+        mock_result_1.url = "https://example.com/members/tokyo"
+        mock_result_1.link_type = "prefecture_list"
+        mock_result_1.confidence = 0.95
+        mock_result_1.reason = "Contains prefecture name Tokyo"
 
-        # Mock BAML response
-        mock_baml_results = [
-            types.LinkClassification(
-                url="https://example.com/members/tokyo",
-                link_type="prefecture_list",
-                confidence=0.95,
-                reason="Contains prefecture name Tokyo",
-            ),
-            types.LinkClassification(
-                url="https://example.com/members/osaka",
-                link_type="prefecture_list",
-                confidence=0.95,
-                reason="Contains prefecture name Osaka",
-            ),
-            types.LinkClassification(
-                url="https://example.com/members",
-                link_type="member_list",
-                confidence=0.9,
-                reason="Contains keyword 'members' and '議員一覧'",
-            ),
-        ]
+        mock_result_2 = Mock()
+        mock_result_2.url = "https://example.com/members/osaka"
+        mock_result_2.link_type = "prefecture_list"
+        mock_result_2.confidence = 0.95
+        mock_result_2.reason = "Contains prefecture name Osaka"
+
+        mock_result_3 = Mock()
+        mock_result_3.url = "https://example.com/members"
+        mock_result_3.link_type = "member_list"
+        mock_result_3.confidence = 0.9
+        mock_result_3.reason = "Contains keyword 'members' and '議員一覧'"
+
+        mock_baml_results = [mock_result_1, mock_result_2, mock_result_3]
 
         with patch(
             "src.infrastructure.external.llm_link_classifier_service.b.ClassifyLinks",
@@ -117,17 +114,14 @@ class TestLLMLinkClassifierService:
     @pytest.mark.asyncio
     async def test_classify_links_invalid_link_type(self, sample_links):
         """Test handling of invalid link_type in BAML response."""
-        from baml_client import types
+        # Create mock BAML result with invalid link_type
+        mock_result = Mock()
+        mock_result.url = "https://example.com/members"
+        mock_result.link_type = "invalid_type"
+        mock_result.confidence = 0.9
+        mock_result.reason = "Test"
 
-        # Mock BAML response with invalid link_type
-        mock_baml_results = [
-            types.LinkClassification(
-                url="https://example.com/members",
-                link_type="invalid_type",
-                confidence=0.9,
-                reason="Test",
-            )
-        ]
+        mock_baml_results = [mock_result]
 
         with patch(
             "src.infrastructure.external.llm_link_classifier_service.b.ClassifyLinks",

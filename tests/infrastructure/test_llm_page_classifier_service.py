@@ -1,6 +1,6 @@
 """Tests for LLM page classifier service."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -16,16 +16,13 @@ class TestLLMPageClassifierService:
     @pytest.mark.asyncio
     async def test_classify_index_page(self):
         """Test classifying an index page with BAML."""
-        from baml_client import types
-
-        # Mock BAML response
-        mock_baml_result = types.PageClassification(
-            page_type="index_page",
-            confidence=0.9,
-            reason="Page contains many prefecture links",
-            has_child_links=True,
-            has_member_info=False,
-        )
+        # Create mock BAML response
+        mock_baml_result = Mock()
+        mock_baml_result.page_type = "index_page"
+        mock_baml_result.confidence = 0.9
+        mock_baml_result.reason = "Page contains many prefecture links"
+        mock_baml_result.has_child_links = True
+        mock_baml_result.has_member_info = False
 
         with patch(
             "src.infrastructure.external.llm_page_classifier_service.b.ClassifyPage",
@@ -50,16 +47,15 @@ class TestLLMPageClassifierService:
     @pytest.mark.asyncio
     async def test_classify_member_list_page(self):
         """Test classifying a member list page with BAML."""
-        from baml_client import types
-
-        # Mock BAML response
-        mock_baml_result = types.PageClassification(
-            page_type="member_list_page",
-            confidence=0.95,
-            reason="Contains multiple member profiles with names and positions",
-            has_child_links=False,
-            has_member_info=True,
+        # Create mock BAML response
+        mock_baml_result = Mock()
+        mock_baml_result.page_type = "member_list_page"
+        mock_baml_result.confidence = 0.95
+        mock_baml_result.reason = (
+            "Contains multiple member profiles with names and positions"
         )
+        mock_baml_result.has_child_links = False
+        mock_baml_result.has_member_info = True
 
         with patch(
             "src.infrastructure.external.llm_page_classifier_service.b.ClassifyPage",
@@ -82,16 +78,13 @@ class TestLLMPageClassifierService:
     @pytest.mark.asyncio
     async def test_classify_other_page(self):
         """Test classifying an other type page with BAML."""
-        from baml_client import types
-
-        # Mock BAML response
-        mock_baml_result = types.PageClassification(
-            page_type="other",
-            confidence=0.8,
-            reason="News page",
-            has_child_links=False,
-            has_member_info=False,
-        )
+        # Create mock BAML response
+        mock_baml_result = Mock()
+        mock_baml_result.page_type = "other"
+        mock_baml_result.confidence = 0.8
+        mock_baml_result.reason = "News page"
+        mock_baml_result.has_child_links = False
+        mock_baml_result.has_member_info = False
 
         with patch(
             "src.infrastructure.external.llm_page_classifier_service.b.ClassifyPage",
@@ -133,16 +126,13 @@ class TestLLMPageClassifierService:
     @pytest.mark.asyncio
     async def test_invalid_page_type_defaults_to_other(self):
         """Test that invalid page_type defaults to OTHER with BAML."""
-        from baml_client import types
-
-        # Mock BAML response with invalid page_type
-        mock_baml_result = types.PageClassification(
-            page_type="invalid_type",
-            confidence=0.5,
-            reason="Test",
-            has_child_links=False,
-            has_member_info=False,
-        )
+        # Create mock BAML response with invalid page_type
+        mock_baml_result = Mock()
+        mock_baml_result.page_type = "invalid_type"
+        mock_baml_result.confidence = 0.5
+        mock_baml_result.reason = "Test"
+        mock_baml_result.has_child_links = False
+        mock_baml_result.has_member_info = False
 
         with patch(
             "src.infrastructure.external.llm_page_classifier_service.b.ClassifyPage",
