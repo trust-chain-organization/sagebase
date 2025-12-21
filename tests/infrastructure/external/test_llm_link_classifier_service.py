@@ -1,6 +1,6 @@
 """Tests for LLMLinkClassifierService."""
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -13,33 +13,9 @@ from src.infrastructure.external.llm_link_classifier_service import (
     LLMLinkClassifierService,
 )
 
-# TODO: Update tests for BAML implementation (Issue #816)
-# These tests need to be updated to mock BAML functions instead of ILLMService
-pytestmark = pytest.mark.skip(
-    reason="Tests need to be updated for BAML implementation (Issue #816)"
-)
-
 
 class TestLLMLinkClassifierService:
     """Test cases for LLMLinkClassifierService."""
-
-    @pytest.fixture
-    def mock_llm_service(self):
-        """Create a mock LLM service."""
-        mock_service = MagicMock()
-
-        # Mock the get_prompt method
-        mock_prompt = MagicMock()
-        mock_prompt.format = MagicMock(
-            return_value="Mocked prompt with {links}, {party_name}, {context}"
-        )
-        mock_service.get_prompt = MagicMock(return_value=mock_prompt)
-
-        # Mock the LLM call
-        mock_service.llm = MagicMock()
-        mock_service.llm.ainvoke = AsyncMock()
-
-        return mock_service
 
     @pytest.fixture
     def sample_links(self):
@@ -61,155 +37,118 @@ class TestLLMLinkClassifierService:
         ]
 
     @pytest.mark.asyncio
-    async def test_classify_links_success(self, mock_llm_service, sample_links):
-        """Test successful link classification."""
-        # Mock LLM response
-        mock_response = MagicMock()
-        mock_response.content = """
-        [
-            {
-                "url": "https://example.com/members/tokyo",
-                "link_type": "prefecture_list",
-                "confidence": 0.95,
-                "reason": "Contains prefecture name Tokyo"
-            },
-            {
-                "url": "https://example.com/members/osaka",
-                "link_type": "prefecture_list",
-                "confidence": 0.95,
-                "reason": "Contains prefecture name Osaka"
-            },
-            {
-                "url": "https://example.com/members",
-                "link_type": "member_list",
-                "confidence": 0.9,
-                "reason": "Contains keyword 'members' and '議員一覧'"
-            }
+    async def test_classify_links_success(self, sample_links):
+        """Test successful link classification with BAML."""
+        from baml_client import types
+
+        # Mock BAML response
+        mock_baml_results = [
+            types.LinkClassification(
+                url="https://example.com/members/tokyo",
+                link_type="prefecture_list",
+                confidence=0.95,
+                reason="Contains prefecture name Tokyo",
+            ),
+            types.LinkClassification(
+                url="https://example.com/members/osaka",
+                link_type="prefecture_list",
+                confidence=0.95,
+                reason="Contains prefecture name Osaka",
+            ),
+            types.LinkClassification(
+                url="https://example.com/members",
+                link_type="member_list",
+                confidence=0.9,
+                reason="Contains keyword 'members' and '議員一覧'",
+            ),
         ]
-        """
-        mock_llm_service.llm.ainvoke.return_value = mock_response
 
-        classifier = LLMLinkClassifierService(mock_llm_service)
-        result = await classifier.classify_links(
-            sample_links, party_name="Test Party", context="Member page"
-        )
+        with patch(
+            "src.infrastructure.external.llm_link_classifier_service.b.ClassifyLinks",
+            new_callable=AsyncMock,
+        ) as mock_classify_links:
+            mock_classify_links.return_value = mock_baml_results
 
-        # Verify result structure
-        assert isinstance(result, LinkClassificationResult)
-        assert len(result.classifications) == 3
+            classifier = LLMLinkClassifierService()
+            result = await classifier.classify_links(
+                sample_links, party_name="Test Party", context="Member page"
+            )
 
-        # Verify classifications
-        assert result.classifications[0].link_type == LinkType.PREFECTURE_LIST
-        assert result.classifications[0].confidence == 0.95
-        assert result.classifications[1].link_type == LinkType.PREFECTURE_LIST
-        assert result.classifications[2].link_type == LinkType.MEMBER_LIST
+            # Verify result structure
+            assert isinstance(result, LinkClassificationResult)
+            assert len(result.classifications) == 3
 
-        # Verify summary
-        assert result.summary["prefecture_list"] == 2
-        assert result.summary["member_list"] == 1
+            # Verify classifications
+            assert result.classifications[0].link_type == LinkType.PREFECTURE_LIST
+            assert result.classifications[0].confidence == 0.95
+            assert result.classifications[1].link_type == LinkType.PREFECTURE_LIST
+            assert result.classifications[2].link_type == LinkType.MEMBER_LIST
+
+            # Verify summary
+            assert result.summary["prefecture_list"] == 2
+            assert result.summary["member_list"] == 1
 
     @pytest.mark.asyncio
-    async def test_classify_links_with_json_code_block(
-        self, mock_llm_service, sample_links
-    ):
-        """Test classification when LLM returns JSON in code block."""
-        # Mock LLM response with code block
-        mock_response = MagicMock()
-        mock_response.content = """
-        ```json
-        [
-            {
-                "url": "https://example.com/members/tokyo",
-                "link_type": "prefecture_list",
-                "confidence": 0.95,
-                "reason": "Tokyo prefecture"
-            }
-        ]
-        ```
-        """
-        mock_llm_service.llm.ainvoke.return_value = mock_response
-
-        classifier = LLMLinkClassifierService(mock_llm_service)
-        result = await classifier.classify_links([sample_links[0]])
-
-        assert len(result.classifications) == 1
-        assert result.classifications[0].link_type == LinkType.PREFECTURE_LIST
-
-    @pytest.mark.asyncio
-    async def test_classify_links_empty_list(self, mock_llm_service):
+    async def test_classify_links_empty_list(self):
         """Test classification with empty link list."""
-        classifier = LLMLinkClassifierService(mock_llm_service)
+        classifier = LLMLinkClassifierService()
         result = await classifier.classify_links([])
 
         assert len(result.classifications) == 0
         assert result.summary == {}
 
     @pytest.mark.asyncio
-    async def test_classify_links_invalid_json_response(
-        self, mock_llm_service, sample_links
-    ):
-        """Test handling of invalid JSON response from LLM."""
-        # Mock invalid JSON response
-        mock_response = MagicMock()
-        mock_response.content = "This is not valid JSON"
-        mock_llm_service.llm.ainvoke.return_value = mock_response
+    async def test_classify_links_baml_error(self, sample_links):
+        """Test handling of BAML service error."""
+        # Mock BAML error
+        with patch(
+            "src.infrastructure.external.llm_link_classifier_service.b.ClassifyLinks",
+            new_callable=AsyncMock,
+        ) as mock_classify:
+            mock_classify.side_effect = Exception("BAML API error")
 
-        classifier = LLMLinkClassifierService(mock_llm_service)
-        result = await classifier.classify_links(sample_links)
+            classifier = LLMLinkClassifierService()
+            result = await classifier.classify_links(sample_links)
 
-        # Should return fallback classifications
-        assert len(result.classifications) == len(sample_links)
-        # All should be marked as "other" with low confidence
-        for classification in result.classifications:
-            assert classification.link_type == LinkType.OTHER
-            assert classification.confidence == 0.3
+            # Should return empty result on error
+            assert len(result.classifications) == 0
+            assert result.summary == {}
 
     @pytest.mark.asyncio
-    async def test_classify_links_llm_error(self, mock_llm_service, sample_links):
-        """Test handling of LLM service error."""
-        # Mock LLM error
-        mock_llm_service.llm.ainvoke.side_effect = Exception("LLM service error")
+    async def test_classify_links_invalid_link_type(self, sample_links):
+        """Test handling of invalid link_type in BAML response."""
+        from baml_client import types
 
-        classifier = LLMLinkClassifierService(mock_llm_service)
-        result = await classifier.classify_links(sample_links)
-
-        # Should return empty result on error
-        assert len(result.classifications) == 0
-        assert result.summary == {}
-
-    @pytest.mark.asyncio
-    async def test_classify_links_invalid_link_type(
-        self, mock_llm_service, sample_links
-    ):
-        """Test handling of invalid link_type in LLM response."""
-        # Mock LLM response with invalid link_type
-        mock_response = MagicMock()
-        mock_response.content = """
-        [
-            {
-                "url": "https://example.com/members",
-                "link_type": "invalid_type",
-                "confidence": 0.9,
-                "reason": "Test"
-            }
+        # Mock BAML response with invalid link_type
+        mock_baml_results = [
+            types.LinkClassification(
+                url="https://example.com/members",
+                link_type="invalid_type",
+                confidence=0.9,
+                reason="Test",
+            )
         ]
-        """
-        mock_llm_service.llm.ainvoke.return_value = mock_response
 
-        classifier = LLMLinkClassifierService(mock_llm_service)
-        result = await classifier.classify_links([sample_links[0]])
+        with patch(
+            "src.infrastructure.external.llm_link_classifier_service.b.ClassifyLinks",
+            new_callable=AsyncMock,
+        ) as mock_classify_links:
+            mock_classify_links.return_value = mock_baml_results
 
-        # Should fallback to OTHER type
-        assert len(result.classifications) == 1
-        assert result.classifications[0].link_type == LinkType.OTHER
+            classifier = LLMLinkClassifierService()
+            result = await classifier.classify_links([sample_links[0]])
 
-    def test_filter_by_type_basic(self, mock_llm_service):
+            # Should fallback to OTHER type
+            assert len(result.classifications) == 1
+            assert result.classifications[0].link_type == LinkType.OTHER
+
+    def test_filter_by_type_basic(self):
         """Test filtering by link type."""
-        # Create a sample result
         from src.domain.services.interfaces.llm_link_classifier_service import (
             LinkClassification,
         )
 
+        # Create a sample result
         classifications = [
             LinkClassification(
                 url="https://example.com/tokyo",
@@ -241,7 +180,7 @@ class TestLLMLinkClassifierService:
             summary={"prefecture_list": 2, "member_list": 1, "other": 1},
         )
 
-        classifier = LLMLinkClassifierService(mock_llm_service)
+        classifier = LLMLinkClassifierService()
 
         # Filter for prefecture lists
         prefecture_urls = classifier.filter_by_type(result, [LinkType.PREFECTURE_LIST])
@@ -254,7 +193,7 @@ class TestLLMLinkClassifierService:
         assert len(member_urls) == 1
         assert "https://example.com/members" in member_urls
 
-    def test_filter_by_type_with_confidence_threshold(self, mock_llm_service):
+    def test_filter_by_type_with_confidence_threshold(self):
         """Test filtering with confidence threshold."""
         from src.domain.services.interfaces.llm_link_classifier_service import (
             LinkClassification,
@@ -284,7 +223,7 @@ class TestLLMLinkClassifierService:
             classifications=classifications, summary={"member_list": 3}
         )
 
-        classifier = LLMLinkClassifierService(mock_llm_service)
+        classifier = LLMLinkClassifierService()
 
         # Filter with high threshold
         high_confidence_urls = classifier.filter_by_type(

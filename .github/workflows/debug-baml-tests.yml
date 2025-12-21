@@ -115,13 +115,16 @@ jobs:
           echo "===== Running BAML-related tests only ====="
           echo ""
 
-          # 失敗しているBAML関連テストを実行
+          # BAML関連テストを実行
           uv run pytest -xvs \
             tests/unit/interfaces/factories/test_party_member_extractor_factory.py \
             tests/unit/party_member_extractor/test_baml_extractor.py \
             tests/unit/parliamentary_group_member_extractor/test_baml_extractor.py \
             tests/unit/minutes_divide_processor/test_baml_minutes_divider.py \
             tests/unit/infrastructure/external/party_member_extractor/test_baml_extractor.py \
+            tests/infrastructure/external/test_llm_link_classifier_service.py \
+            tests/infrastructure/test_llm_page_classifier_service.py \
+            tests/integration/test_page_classification_integration.py \
             --tb=long \
             --capture=no \
             2>&1 | tee pytest-debug-output.txt
