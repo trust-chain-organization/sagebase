@@ -167,16 +167,20 @@ class TestConferenceMemberCommands:
         with patch(
             "src.interfaces.cli.commands.conference_member_commands.ConferenceMemberCommands._create_manage_members_usecase"
         ) as mock_usecase_creator:
+            # Import DTO to create proper return value
+            from src.application.usecases.manage_conference_members_usecase import (
+                MatchMembersOutputDTO,
+            )
+
             # Setup mocks
             mock_usecase = Mock()
             mock_usecase.match_members = AsyncMock(
-                return_value={
-                    "total": 5,
-                    "matched": 3,
-                    "needs_review": 1,
-                    "no_match": 1,
-                    "error": 0,
-                }
+                return_value=MatchMembersOutputDTO(
+                    matched_count=3,
+                    needs_review_count=1,
+                    no_match_count=1,
+                    results=[],
+                )
             )
             mock_usecase_creator.return_value = mock_usecase
 
@@ -200,16 +204,21 @@ class TestConferenceMemberCommands:
         with patch(
             "src.interfaces.cli.commands.conference_member_commands.ConferenceMemberCommands._create_manage_members_usecase"
         ) as mock_usecase_creator:
+            # Import DTO to create proper return value
+            from src.application.usecases.manage_conference_members_usecase import (
+                MatchMembersInputDTO,
+                MatchMembersOutputDTO,
+            )
+
             # Setup mocks
             mock_usecase = Mock()
             mock_usecase.match_members = AsyncMock(
-                return_value={
-                    "total": 10,
-                    "matched": 8,
-                    "needs_review": 1,
-                    "no_match": 1,
-                    "error": 0,
-                }
+                return_value=MatchMembersOutputDTO(
+                    matched_count=8,
+                    needs_review_count=1,
+                    no_match_count=1,
+                    results=[],
+                )
             )
             mock_usecase_creator.return_value = mock_usecase
 
@@ -219,21 +228,28 @@ class TestConferenceMemberCommands:
             # Assert
             assert result.exit_code == 0
             assert "🔍 議員情報のマッチングを開始します（ステップ2/3）" in result.output
-            mock_usecase.match_members.assert_called_once_with(None)
+            mock_usecase.match_members.assert_called_once_with(
+                MatchMembersInputDTO(conference_id=None)
+            )
 
     def test_create_affiliations_success(self, runner, mock_progress):
         """Test successful creation of affiliations"""
         with patch(
             "src.interfaces.cli.commands.conference_member_commands.ConferenceMemberCommands._create_manage_members_usecase"
         ) as mock_usecase_creator:
+            # Import DTO to create proper return value
+            from src.application.usecases.manage_conference_members_usecase import (
+                CreateAffiliationsOutputDTO,
+            )
+
             # Setup mocks
             mock_usecase = Mock()
             mock_usecase.create_affiliations = AsyncMock(
-                return_value={
-                    "total": 3,
-                    "created": 3,
-                    "failed": 0,
-                }
+                return_value=CreateAffiliationsOutputDTO(
+                    created_count=3,
+                    skipped_count=0,
+                    affiliations=[],
+                )
             )
             mock_usecase_creator.return_value = mock_usecase
 
@@ -258,6 +274,12 @@ class TestConferenceMemberCommands:
             with patch(
                 "src.interfaces.cli.commands.conference_member_commands.date"
             ) as mock_date:
+                # Import DTOs
+                from src.application.usecases.manage_conference_members_usecase import (
+                    CreateAffiliationsInputDTO,
+                    CreateAffiliationsOutputDTO,
+                )
+
                 # Mock today's date
                 mock_date.today.return_value = date(2024, 3, 15)
                 mock_date.side_effect = lambda *args, **kw: date(*args, **kw)
@@ -265,11 +287,11 @@ class TestConferenceMemberCommands:
                 # Setup mocks
                 mock_usecase = Mock()
                 mock_usecase.create_affiliations = AsyncMock(
-                    return_value={
-                        "total": 1,
-                        "created": 1,
-                        "failed": 0,
-                    }
+                    return_value=CreateAffiliationsOutputDTO(
+                        created_count=1,
+                        skipped_count=0,
+                        affiliations=[],
+                    )
                 )
                 mock_usecase_creator.return_value = mock_usecase
 
@@ -283,7 +305,9 @@ class TestConferenceMemberCommands:
                 assert result.exit_code == 0
                 # Check that today's date was used
                 mock_usecase.create_affiliations.assert_called_once_with(
-                    1, date(2024, 3, 15)
+                    CreateAffiliationsInputDTO(
+                        conference_id=1, start_date=date(2024, 3, 15)
+                    )
                 )
 
     def test_member_status_success(self, runner):
