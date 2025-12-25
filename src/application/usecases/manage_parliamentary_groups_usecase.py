@@ -25,9 +25,11 @@ from src.domain.repositories.parliamentary_group_repository import (
 )
 from src.domain.repositories.politician_repository import PoliticianRepository
 from src.domain.services.interfaces.llm_service import ILLMService
-from src.parliamentary_group_member_extractor.service import (
-    ParliamentaryGroupMembershipService,
-)
+
+# TODO: 旧実装への参照を削除し、新実装のUseCaseに置き換える必要がある
+# from src.parliamentary_group_member_extractor.service import (
+#     ParliamentaryGroupMembershipService,
+# )
 
 logger = get_logger(__name__)
 
@@ -177,22 +179,25 @@ class ManageParliamentaryGroupsUseCase:
         self.extracted_member_repository = extracted_member_repository
 
         # Initialize membership service if all dependencies are available
-        if all(
-            [
-                politician_repository,
-                parliamentary_group_repository,
-                membership_repository,
-                llm_service,
-            ]
-        ):
-            self.membership_service = ParliamentaryGroupMembershipService(
-                llm_service=llm_service,
-                politician_repo=politician_repository,
-                group_repo=parliamentary_group_repository,
-                membership_repo=membership_repository,
-            )
-        else:
-            self.membership_service = None
+        # TODO: 旧実装のParliamentaryGroupMembershipServiceは削除予定
+        # 新実装のUseCaseを使用するように書き直す必要がある
+        # if all(
+        #     [
+        #         politician_repository,
+        #         parliamentary_group_repository,
+        #         membership_repository,
+        #         llm_service,
+        #     ]
+        # ):
+        #     self.membership_service = ParliamentaryGroupMembershipService(
+        #         llm_service=llm_service,
+        #         politician_repo=politician_repository,
+        #         group_repo=parliamentary_group_repository,
+        #         membership_repo=membership_repository,
+        #     )
+        # else:
+        #     self.membership_service = None
+        self.membership_service = None  # 旧実装は使用しない
 
     async def list_parliamentary_groups(
         self, input_dto: ParliamentaryGroupListInputDto

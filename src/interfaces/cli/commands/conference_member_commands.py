@@ -7,18 +7,30 @@ from typing import Any
 
 import click
 
-from src.conference_member_extractor.matching_service import (
-    ConferenceMemberMatchingService,
+from src.application.usecases.manage_conference_members_usecase import (
+    CreateAffiliationsInputDTO,
+    ManageConferenceMembersUseCase,
+    MatchMembersInputDTO,
 )
+from src.domain.services.conference_domain_service import ConferenceDomainService
+from src.infrastructure.config.database import get_db_session
 from src.infrastructure.exceptions import DatabaseError, ScrapingError
 from src.infrastructure.external.conference_member_extractor.extractor import (
     ConferenceMemberExtractor,
 )
+from src.infrastructure.external.llm_service import GeminiLLMService
+from src.infrastructure.external.web_scraper_service import PlaywrightScraperService
 from src.infrastructure.persistence.conference_repository_impl import (
     ConferenceRepositoryImpl,
 )
 from src.infrastructure.persistence.extracted_conference_member_repository_impl import (
     ExtractedConferenceMemberRepositoryImpl,
+)
+from src.infrastructure.persistence.politician_affiliation_repository_impl import (
+    PoliticianAffiliationRepositoryImpl,
+)
+from src.infrastructure.persistence.politician_repository_impl import (
+    PoliticianRepositoryImpl,
 )
 from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
 from src.interfaces.cli.base import BaseCommand
@@ -49,6 +61,36 @@ class ConferenceMemberCommands(BaseCommand):
     def echo_error(message: str):
         """Show an error message"""
         click.echo(click.style(f"✗ {message}", fg="red"), err=True)
+
+    @staticmethod
+    def _create_manage_members_usecase() -> ManageConferenceMembersUseCase:
+        """Create ManageConferenceMembersUseCase with dependencies
+
+        Note: Uses sync session temporarily. Should be refactored to use async session.
+        """
+        session = get_db_session()
+
+        # リポジトリの初期化
+        # TODO: 型エラーを修正するため、async sessionを使用するようにリファクタリング
+        conference_repo = ConferenceRepositoryImpl(session)  # type: ignore
+        politician_repo = PoliticianRepositoryImpl(session)  # type: ignore
+        extracted_member_repo = ExtractedConferenceMemberRepositoryImpl(session)  # type: ignore
+        affiliation_repo = PoliticianAffiliationRepositoryImpl(session)  # type: ignore
+
+        # サービスの初期化
+        conference_service = ConferenceDomainService(conference_repo)
+        web_scraper = PlaywrightScraperService()  # type: ignore
+        llm_service = GeminiLLMService()
+
+        return ManageConferenceMembersUseCase(
+            conference_repository=conference_repo,
+            politician_repository=politician_repo,
+            conference_domain_service=conference_service,
+            extracted_member_repository=extracted_member_repo,
+            politician_affiliation_repository=affiliation_repo,
+            web_scraper_service=web_scraper,
+            llm_service=llm_service,
+        )
 
     def get_commands(self) -> list[click.Command]:
         """Get list of conference member commands"""
@@ -203,8 +245,8 @@ class ConferenceMemberCommands(BaseCommand):
             "🔍 議員情報のマッチングを開始します（ステップ2/3）"
         )
 
-        # マッチングサービスを初期化
-        matching_service = ConferenceMemberMatchingService()
+        # UseCaseを初期化
+        usecase = ConferenceMemberCommands._create_manage_members_usecase()
 
         # 処理実行
         ConferenceMemberCommands.echo_info(
@@ -214,23 +256,23 @@ class ConferenceMemberCommands(BaseCommand):
         with ProgressTracker(
             total_steps=1, description="マッチング処理中..."
         ) as progress:
-            results: dict[str, Any] = matching_service.process_pending_members(
-                conference_id
-            )
+            # 非同期処理を実行
+            input_dto = MatchMembersInputDTO(conference_id=conference_id)
+            output = asyncio.run(usecase.match_members(input_dto))
 
             progress.update(1)
 
         # 結果表示
         ConferenceMemberCommands.echo_info("\n=== マッチング完了 ===")
-        ConferenceMemberCommands.echo_info(f"処理総数: {results['total']}件")
-        ConferenceMemberCommands.echo_success(f"✅ マッチ成功: {results['matched']}件")
-        ConferenceMemberCommands.echo_warning(f"⚠️  要確認: {results['needs_review']}件")
-        ConferenceMemberCommands.echo_error(f"❌ 該当なし: {results['no_match']}件")
-
-        if results["error"] > 0:
-            ConferenceMemberCommands.echo_error(f"❌ エラー: {results['error']}件")
-
-        matching_service.close()
+        total = output.matched_count + output.needs_review_count + output.no_match_count
+        ConferenceMemberCommands.echo_info(f"処理総数: {total}件")
+        ConferenceMemberCommands.echo_success(
+            f"✅ マッチ成功: {output.matched_count}件"
+        )
+        ConferenceMemberCommands.echo_warning(
+            f"⚠️  要確認: {output.needs_review_count}件"
+        )
+        ConferenceMemberCommands.echo_error(f"❌ 該当なし: {output.no_match_count}件")
 
     @staticmethod
     @click.command("create-affiliations")
@@ -262,28 +304,31 @@ class ConferenceMemberCommands(BaseCommand):
 
         ConferenceMemberCommands.echo_info(f"所属開始日: {start_date_obj}")
 
-        # マッチングサービスを初期化
-        matching_service = ConferenceMemberMatchingService()
+        # UseCaseを初期化
+        usecase = ConferenceMemberCommands._create_manage_members_usecase()
 
         # 処理実行
         with ProgressTracker(
             total_steps=1, description="所属情報作成中..."
         ) as progress:
-            results: dict[str, Any] = matching_service.create_affiliations_from_matched(
-                conference_id, start_date_obj
+            # 非同期処理を実行
+            input_dto = CreateAffiliationsInputDTO(
+                conference_id=conference_id, start_date=start_date_obj
             )
+            output = asyncio.run(usecase.create_affiliations(input_dto))
 
             progress.update(1)
 
         # 結果表示
         ConferenceMemberCommands.echo_info("\n=== 所属情報作成完了 ===")
-        ConferenceMemberCommands.echo_info(f"処理総数: {results['total']}件")
-        ConferenceMemberCommands.echo_success(f"✅ 作成/更新: {results['created']}件")
+        total = output.created_count + output.skipped_count
+        ConferenceMemberCommands.echo_info(f"処理総数: {total}件")
+        ConferenceMemberCommands.echo_success(f"✅ 作成/更新: {output.created_count}件")
 
-        if results["failed"] > 0:
-            ConferenceMemberCommands.echo_error(f"❌ 失敗: {results['failed']}件")
-
-        matching_service.close()
+        if output.skipped_count > 0:
+            ConferenceMemberCommands.echo_warning(
+                f"⚠️  スキップ: {output.skipped_count}件"
+            )
 
     @staticmethod
     @click.command("member-status")

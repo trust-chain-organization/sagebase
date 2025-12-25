@@ -11,6 +11,9 @@ from src.infrastructure.external.parliamentary_group_member_extractor.factory im
     ParliamentaryGroupMemberExtractorFactory,
 )
 from src.interfaces.cli.progress import ProgressTracker
+
+# TODO: このファイルは旧実装を使用しているため、Phase 3で削除予定
+# 新実装のUseCaseを組み合わせた代替コマンドを検討する
 from src.parliamentary_group_member_extractor import (
     ParliamentaryGroupMembershipService,
 )

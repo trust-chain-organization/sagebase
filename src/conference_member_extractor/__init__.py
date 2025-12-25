@@ -1,1 +1,0 @@
-"""Conference member extractor package"""

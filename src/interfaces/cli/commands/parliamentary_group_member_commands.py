@@ -1,26 +1,43 @@
 """Commands for managing parliamentary group member extraction and matching"""
 
+import asyncio
 import logging
 from datetime import date, datetime
 
 import click
 
+from src.application.usecases.create_parliamentary_group_memberships_usecase import (
+    CreateParliamentaryGroupMembershipsUseCase,
+)
+from src.application.usecases.match_parliamentary_group_members_usecase import (
+    MatchParliamentaryGroupMembersUseCase,
+)
+from src.domain.services.parliamentary_group_member_matching_service import (
+    ParliamentaryGroupMemberMatchingService as PGMemberMatchingDomainService,
+)
+from src.domain.services.speaker_domain_service import SpeakerDomainService
+from src.infrastructure.config.database import get_db_session
 from src.infrastructure.exceptions import DatabaseError, ScrapingError
+from src.infrastructure.external.llm_service import GeminiLLMService
 from src.infrastructure.external.parliamentary_group_member_extractor.factory import (
     ParliamentaryGroupMemberExtractorFactory,
 )
 from src.infrastructure.persistence.extracted_parliamentary_group_member_repository_impl import (  # noqa: E501
     ExtractedParliamentaryGroupMemberRepositoryImpl,
 )
+from src.infrastructure.persistence.parliamentary_group_membership_repository_impl import (  # noqa: E501
+    ParliamentaryGroupMembershipRepositoryImpl,
+)
 from src.infrastructure.persistence.parliamentary_group_repository_impl import (
     ParliamentaryGroupRepositoryImpl,
 )
+from src.infrastructure.persistence.politician_repository_impl import (
+    PoliticianRepositoryImpl,
+)
 from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
+from src.infrastructure.persistence.speaker_repository_impl import SpeakerRepositoryImpl
 from src.interfaces.cli.base import BaseCommand
 from src.interfaces.cli.progress import ProgressTracker
-from src.parliamentary_group_member_extractor.matching_service import (
-    ParliamentaryGroupMemberMatchingService,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +64,52 @@ class ParliamentaryGroupMemberCommands(BaseCommand):
     def echo_error(message: str):
         """Show an error message"""
         click.echo(click.style(f"✗ {message}", fg="red"), err=True)
+
+    @staticmethod
+    def _create_match_members_usecase() -> MatchParliamentaryGroupMembersUseCase:
+        """Create MatchParliamentaryGroupMembersUseCase with dependencies
+
+        Note: Uses sync session temporarily. Should be refactored to use async session.
+        """
+        session = get_db_session()
+
+        # リポジトリの初期化
+        # TODO: 型エラーを修正するため、async sessionを使用するようにリファクタリング
+        member_repo = ExtractedParliamentaryGroupMemberRepositoryImpl(session)  # type: ignore
+        politician_repo = PoliticianRepositoryImpl(session)  # type: ignore
+        speaker_repo = SpeakerRepositoryImpl(session)  # type: ignore
+
+        # サービスの初期化
+        llm_service = GeminiLLMService()
+        speaker_service = SpeakerDomainService(speaker_repo)
+        matching_service = PGMemberMatchingDomainService(
+            politician_repository=politician_repo,
+            llm_service=llm_service,
+            speaker_service=speaker_service,
+        )
+
+        return MatchParliamentaryGroupMembersUseCase(
+            member_repository=member_repo,
+            matching_service=matching_service,
+        )
+
+    @staticmethod
+    def _create_memberships_usecase() -> CreateParliamentaryGroupMembershipsUseCase:
+        """Create CreateParliamentaryGroupMembershipsUseCase with dependencies
+
+        Note: Uses sync session temporarily. Should be refactored to use async session.
+        """
+        session = get_db_session()
+
+        # リポジトリの初期化
+        # TODO: 型エラーを修正するため、async sessionを使用するようにリファクタリング
+        member_repo = ExtractedParliamentaryGroupMemberRepositoryImpl(session)  # type: ignore
+        membership_repo = ParliamentaryGroupMembershipRepositoryImpl(session)  # type: ignore
+
+        return CreateParliamentaryGroupMembershipsUseCase(
+            member_repository=member_repo,
+            membership_repository=membership_repo,
+        )
 
     def get_commands(self) -> list[click.Command]:
         """Get list of parliamentary group member commands"""
@@ -226,8 +289,8 @@ class ParliamentaryGroupMemberCommands(BaseCommand):
             "🔍 議員情報のマッチングを開始します（ステップ2/3）"
         )
 
-        # マッチングサービスを初期化
-        matching_service = ParliamentaryGroupMemberMatchingService()
+        # UseCaseを初期化
+        usecase = ParliamentaryGroupMemberCommands._create_match_members_usecase()
 
         # 処理実行
         ParliamentaryGroupMemberCommands.echo_info(
@@ -237,29 +300,22 @@ class ParliamentaryGroupMemberCommands(BaseCommand):
         with ProgressTracker(
             total_steps=1, description="マッチング処理中..."
         ) as progress:
-            results = matching_service.process_pending_members(parliamentary_group_id)
+            # 非同期処理を実行
+            results = asyncio.run(usecase.execute(parliamentary_group_id))
 
             progress.update(1)
 
         # 結果表示
         ParliamentaryGroupMemberCommands.echo_info("\n=== マッチング完了 ===")
-        ParliamentaryGroupMemberCommands.echo_info(f"処理総数: {results['total']}件")
-        ParliamentaryGroupMemberCommands.echo_success(
-            f"✅ マッチ成功: {results['matched']}件"
-        )
-        ParliamentaryGroupMemberCommands.echo_warning(
-            f"⚠️  要確認: {results['needs_review']}件"
-        )
-        ParliamentaryGroupMemberCommands.echo_error(
-            f"❌ 該当なし: {results['no_match']}件"
-        )
+        total = len(results)
+        matched = sum(1 for r in results if r["status"] == "matched")
+        needs_review = sum(1 for r in results if r["status"] == "needs_review")
+        no_match = sum(1 for r in results if r["status"] == "no_match")
 
-        if results["error"] > 0:
-            ParliamentaryGroupMemberCommands.echo_error(
-                f"❌ エラー: {results['error']}件"
-            )
-
-        matching_service.close()
+        ParliamentaryGroupMemberCommands.echo_info(f"処理総数: {total}件")
+        ParliamentaryGroupMemberCommands.echo_success(f"✅ マッチ成功: {matched}件")
+        ParliamentaryGroupMemberCommands.echo_warning(f"⚠️  要確認: {needs_review}件")
+        ParliamentaryGroupMemberCommands.echo_error(f"❌ 該当なし: {no_match}件")
 
     @staticmethod
     @click.command("create-parliamentary-group-affiliations")
@@ -300,32 +356,39 @@ class ParliamentaryGroupMemberCommands(BaseCommand):
         ParliamentaryGroupMemberCommands.echo_info(f"所属開始日: {start_date_obj}")
         ParliamentaryGroupMemberCommands.echo_info(f"最低信頼度: {min_confidence}")
 
-        # マッチングサービスを初期化
-        matching_service = ParliamentaryGroupMemberMatchingService()
+        # UseCaseを初期化
+        usecase = ParliamentaryGroupMemberCommands._create_memberships_usecase()
 
         # 処理実行
         with ProgressTracker(
             total_steps=1, description="メンバーシップ作成中..."
         ) as progress:
-            results = matching_service.create_memberships_from_matched(
-                parliamentary_group_id, start_date_obj
+            # 非同期処理を実行
+            results = asyncio.run(
+                usecase.execute(
+                    parliamentary_group_id=parliamentary_group_id,
+                    min_confidence=min_confidence,
+                    start_date=start_date_obj,
+                )
             )
 
             progress.update(1)
 
         # 結果表示
         ParliamentaryGroupMemberCommands.echo_info("\n=== メンバーシップ作成完了 ===")
-        ParliamentaryGroupMemberCommands.echo_info(f"処理総数: {results['total']}件")
-        ParliamentaryGroupMemberCommands.echo_success(
-            f"✅ 作成/更新: {results['created']}件"
-        )
+        # 型アサーション: resultsは dict[str, int | list[...]] だが、
+        # これらのキーは int のみを返す
+        created_raw = results.get("created_count", 0)
+        skipped_raw = results.get("skipped_count", 0)
+        created = int(created_raw) if isinstance(created_raw, int) else 0
+        skipped = int(skipped_raw) if isinstance(skipped_raw, int) else 0
+        total = created + skipped
 
-        if results["failed"] > 0:
-            ParliamentaryGroupMemberCommands.echo_error(
-                f"❌ 失敗: {results['failed']}件"
-            )
+        ParliamentaryGroupMemberCommands.echo_info(f"処理総数: {total}件")
+        ParliamentaryGroupMemberCommands.echo_success(f"✅ 作成/更新: {created}件")
 
-        matching_service.close()
+        if skipped > 0:
+            ParliamentaryGroupMemberCommands.echo_warning(f"⚠️  スキップ: {skipped}件")
 
     @staticmethod
     @click.command("parliamentary-group-member-status")
