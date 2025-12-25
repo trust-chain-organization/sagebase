@@ -57,7 +57,7 @@ class EvaluationRunner:
         with path.open("r", encoding="utf-8") as f:
             return json.load(f)
 
-    def execute_test_case(
+    async def execute_test_case(
         self, task_type: str, test_case: dict[str, Any]
     ) -> dict[str, Any]:
         """Execute a single test case
@@ -98,7 +98,7 @@ class EvaluationRunner:
             if task_type == "speaker_matching":
                 return self._execute_speaker_matching(test_case)
             elif task_type == "party_member_extraction":
-                return self._execute_party_member_extraction(test_case)
+                return await self._execute_party_member_extraction(test_case)
             elif task_type == "conference_member_matching":
                 return self._execute_conference_member_matching(test_case)
             else:
@@ -189,7 +189,7 @@ JSON形式で、以下のような構造で返してください:
             logger.error(f"Error in speaker matching: {e}")
             return {"results": []}
 
-    def _execute_party_member_extraction(
+    async def _execute_party_member_extraction(
         self, test_case: dict[str, Any]
     ) -> dict[str, Any]:
         """Execute party member extraction using PartyMemberExtractor
@@ -205,6 +205,7 @@ JSON形式で、以下のような構造で返してください:
             html_content = input_data.get("html_content", "")
             html_file = input_data.get("html_file", "")
             party_name = input_data.get("party_name", "")
+            source_url = input_data.get("source_url", "http://example.com")
 
             # Load HTML content from file if html_file is provided
             if html_file and not html_content:
@@ -218,24 +219,25 @@ JSON形式で、以下のような構造で返してください:
             if not html_content:
                 return {"members": []}
 
-            # Use PartyMemberExtractor
+            # Use PartyMemberExtractor (new async interface)
             extractor = PartyMemberExtractorFactory.create(llm_service=self.llm_service)
-            members = extractor.extract_from_html(html_content, party_name)
+            result = await extractor.extract_from_html(
+                html_content, source_url, party_name
+            )
 
-            # Format the result
+            # Format the result from DTO
             formatted_members = []
-            for member in members:
-                formatted_member = {"name": member.get("name", ""), "party": party_name}
-                if "position" in member:
-                    formatted_member["position"] = member["position"]
-                if "district" in member:
-                    formatted_member["district"] = member["district"]
-                if "email" in member:
-                    formatted_member["email"] = member["email"]
-                if "website" in member:
-                    formatted_member["website"] = member["website"]
+            if result.extracted_members:
+                for member in result.extracted_members:
+                    formatted_member = {"name": member.name, "party": party_name}
+                    if member.position:
+                        formatted_member["position"] = member.position
+                    if member.electoral_district:
+                        formatted_member["district"] = member.electoral_district
+                    if member.profile_url:
+                        formatted_member["website"] = member.profile_url
 
-                formatted_members.append(formatted_member)
+                    formatted_members.append(formatted_member)
 
             return {"members": formatted_members}
 
@@ -346,7 +348,7 @@ JSON形式で以下のような構造で返してください:
             logger.error(f"Error in conference member matching: {e}")
             return {"matched_members": []}
 
-    def run_evaluation(
+    async def run_evaluation(
         self,
         task_type: str | None = None,
         dataset_path: str | None = None,
@@ -403,8 +405,10 @@ JSON形式で以下のような構造で返してください:
                 print(f"\nRunning {len(test_cases)} test cases for {current_task}")
 
                 for test_case in test_cases:
-                    # Execute test case
-                    actual_output = self.execute_test_case(current_task, test_case)
+                    # Execute test case (now async)
+                    actual_output = await self.execute_test_case(
+                        current_task, test_case
+                    )
 
                     # Calculate metrics
                     metrics = self.metrics_calculator.calculate_metrics(
