@@ -486,7 +486,7 @@ class MeetingPresenter(CRUDPresenter[list[Meeting]]):
         try:
             # Initialize use case
             scrape_usecase = ExecuteScrapeMeetingUseCase(
-                meeting_repository=self.meeting_repo.repository,
+                meeting_repository=self.meeting_repo,  # type: ignore[arg-type]
                 enable_gcs=True,
             )
 
