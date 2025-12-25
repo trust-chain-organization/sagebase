@@ -39,5 +39,11 @@ function ExtractMembers(
         - 複数の役職がある場合は主要な役職を選択してください
         - 必ず指定された「{{ conference_name }}」に関連する議員のみを抽出し、
           他の委員会や議会のメンバーは含めないでください
+
+        **重要: 必ず以下の英語フィールド名でJSONを返してください:**
+        - name: 議員名
+        - role: 役職
+        - party_name: 所属政党名
+        - additional_info: その他の情報
     "#
 }
