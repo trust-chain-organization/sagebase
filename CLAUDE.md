@@ -164,25 +164,25 @@ Sagebaseでは、以下の機能にBAML (Boundary ML)を使用しています。
 
 ### BAML対応機能
 
-#### 1. 議事録分割処理（Minutes Divider）
+#### 1. 議事録分割処理（Minutes Divider） **BAML専用**
 - **BAML定義**: `baml_src/minutes_divider.baml`
-- **環境変数**: `USE_BAML_MINUTES_DIVIDER=true` （デフォルト: true）
 - **実装**: `src/infrastructure/external/minutes_divider/baml_minutes_divider.py`
+- **備考**: Pydantic実装は削除済み、BAML実装のみ使用
 
 #### 2. 会議体メンバー抽出（Conference Member Extraction）
 - **BAML定義**: `baml_src/member_extraction.baml`
 - **環境変数**: `USE_BAML_MEMBER_EXTRACTION=true`
 - **実装**: `src/infrastructure/external/conference_member_extractor/baml_extractor.py`
 
-#### 3. 議員団メンバー抽出（Parliamentary Group Member Extraction）
+#### 3. 議員団メンバー抽出（Parliamentary Group Member Extraction） **BAML専用**
 - **BAML定義**: `baml_src/parliamentary_group_member_extractor.baml`
-- **環境変数**: `USE_BAML_PARLIAMENTARY_GROUP_EXTRACTOR=true` （デフォルト: true）
 - **実装**: `src/infrastructure/external/parliamentary_group_member_extractor/baml_extractor.py`
+- **備考**: Pydantic実装は削除済み、BAML実装のみ使用
 
-#### 4. 政党メンバー抽出（Party Member Extraction）
+#### 4. 政党メンバー抽出（Party Member Extraction） **BAML専用**
 - **BAML定義**: `baml_src/party_member_extractor.baml`
-- **環境変数**: `USE_BAML_PARTY_MEMBER_EXTRACTOR=true` （デフォルト: true）
-- **実装**: `src/party_member_extractor/baml_extractor.py`
+- **実装**: `src/party_member_extractor/baml_llm_extractor.py`
+- **備考**: Pydantic実装は削除済み、BAML実装のみ使用
 
 #### 5. 話者マッチング（Speaker Matching） **NEW**
 - **BAML定義**: `baml_src/speaker_matching.baml`

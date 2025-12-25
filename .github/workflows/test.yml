@@ -115,9 +115,6 @@ jobs:
         env:
           CI: true
           PYTHONPATH: ${{ github.workspace }}
-          USE_BAML_PARTY_MEMBER_EXTRACTOR: true
-          USE_BAML_PARLIAMENTARY_GROUP_EXTRACTOR: true
-          USE_BAML_MINUTES_DIVIDER: true
         run: |
           # Exclude evaluation tests from CI to save costs (run manually via workflow_dispatch)
           # Exclude BAML tests (tested separately in Debug BAML Tests workflow)

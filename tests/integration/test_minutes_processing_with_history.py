@@ -10,8 +10,8 @@ from src.domain.entities.llm_processing_history import (
     ProcessingType,
 )
 from src.infrastructure.external.instrumented_llm_service import InstrumentedLLMService
-from src.infrastructure.external.minutes_divider.pydantic_minutes_divider import (
-    MinutesDivider,
+from src.infrastructure.external.minutes_divider.baml_minutes_divider import (
+    BAMLMinutesDivider,
 )
 from src.minutes_divide_processor.minutes_process_agent import MinutesProcessAgent
 from src.services.llm_factory import LLMServiceFactory
@@ -74,16 +74,6 @@ class TestMinutesProcessingWithHistory:
         )
         return service
 
-    def test_minutes_divider_with_instrumented_service(self, instrumented_llm_service):
-        """Test that MinutesDivider works with InstrumentedLLMService."""
-        # Create MinutesDivider with instrumented service
-        divider = MinutesDivider(llm_service=instrumented_llm_service)
-
-        # Verify it was initialized correctly
-        assert divider.llm_service == instrumented_llm_service
-        assert divider.k == 5
-
-    @patch.dict("os.environ", {"USE_BAML_MINUTES_DIVIDER": "false"})
     def test_minutes_process_agent_with_instrumented_service(
         self, instrumented_llm_service
     ):
@@ -91,8 +81,10 @@ class TestMinutesProcessingWithHistory:
         # Create agent with instrumented service
         agent = MinutesProcessAgent(llm_service=instrumented_llm_service)
 
-        # Verify it was initialized correctly
-        assert agent.minutes_divider.llm_service == instrumented_llm_service
+        # Verify it was initialized correctly - agent should have minutes_divider
+        assert agent.minutes_divider is not None
+        # Verify it's a BAML implementation
+        assert agent.minutes_divider.__class__.__name__ == "BAMLMinutesDivider"
 
     @pytest.mark.asyncio
     async def test_history_recording_on_extract_speeches(
@@ -187,8 +179,8 @@ class TestMinutesProcessingWithHistory:
             model_name="test-model",
         )
 
-        # Create MinutesDivider - should work without errors
-        divider = MinutesDivider(llm_service=service)
+        # Create BAMLMinutesDivider - should work without errors
+        divider = BAMLMinutesDivider(llm_service=service)
         assert divider.llm_service == service
 
         # Processing should work without history recording

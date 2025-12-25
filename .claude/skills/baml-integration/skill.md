@@ -362,12 +362,17 @@ return SpeakerMatch(
 
 ### BAML Feature Flags in Sagebase
 
+**Note:** 議事録分割、議員団メンバー抽出、政党メンバー抽出は現在BAML専用です。
+Pydantic実装は削除されており、環境変数による切り替えはできません。
+
 ```bash
 # .env または .env.example
-USE_BAML_MINUTES_DIVIDER=true                    # 議事録分割（デフォルト: true）
+# 以下の機能はBAML専用（環境変数不要）：
+# - 議事録分割（Minutes Divider）
+# - 議員団メンバー抽出（Parliamentary Group Member Extractor）
+# - 政党メンバー抽出（Party Member Extractor）
+
 USE_BAML_MEMBER_EXTRACTION=false                 # 会議体メンバー抽出
-USE_BAML_PARLIAMENTARY_GROUP_EXTRACTOR=true      # 議員団メンバー抽出（デフォルト: true）
-USE_BAML_PARTY_MEMBER_EXTRACTOR=true            # 政党メンバー抽出（デフォルト: true）
 USE_BAML_SPEAKER_MATCHING=false                  # 話者マッチング（デフォルト: false）
 USE_BAML_POLITICIAN_MATCHING=false               # 政治家マッチング（デフォルト: false）
 ```

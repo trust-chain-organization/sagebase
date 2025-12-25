@@ -97,20 +97,17 @@ jobs:
       - name: Debug Environment Variables
         run: |
           echo "===== Environment Variables ====="
-          echo "USE_BAML_PARTY_MEMBER_EXTRACTOR: ${USE_BAML_PARTY_MEMBER_EXTRACTOR:-not set}"
-          echo "USE_BAML_PARLIAMENTARY_GROUP_EXTRACTOR: ${USE_BAML_PARLIAMENTARY_GROUP_EXTRACTOR:-not set}"
-          echo "USE_BAML_MINUTES_DIVIDER: ${USE_BAML_MINUTES_DIVIDER:-not set}"
           echo "PYTHONPATH: ${PYTHONPATH:-not set}"
           echo "CI: ${CI:-not set}"
+          echo ""
+          echo "Note: Minutes Divider, Parliamentary Group Member Extractor, and Party Member Extractor"
+          echo "are now BAML-only (no environment variables needed)"
           echo ""
 
       - name: Run BAML Tests Only (with verbose output)
         env:
           CI: true
           PYTHONPATH: ${{ github.workspace }}
-          USE_BAML_PARTY_MEMBER_EXTRACTOR: true
-          USE_BAML_PARLIAMENTARY_GROUP_EXTRACTOR: true
-          USE_BAML_MINUTES_DIVIDER: true
           USE_BAML_SPEAKER_MATCHING: true
           USE_BAML_POLITICIAN_MATCHING: true
         run: |
