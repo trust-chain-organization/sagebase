@@ -367,12 +367,12 @@ Pydantic実装は削除されており、環境変数による切り替えはで
 
 ```bash
 # .env または .env.example
-# 以下の機能はBAML専用（環境変数不要）：
+# 以下の機能はBAML専用（環境変数不要、Pydantic実装削除済み）：
 # - 議事録分割（Minutes Divider）
+# - 会議体メンバー抽出（Conference Member Extractor）
 # - 議員団メンバー抽出（Parliamentary Group Member Extractor）
 # - 政党メンバー抽出（Party Member Extractor）
 
-USE_BAML_MEMBER_EXTRACTION=false                 # 会議体メンバー抽出
 USE_BAML_SPEAKER_MATCHING=false                  # 話者マッチング（デフォルト: false）
 USE_BAML_POLITICIAN_MATCHING=false               # 政治家マッチング（デフォルト: false）
 ```

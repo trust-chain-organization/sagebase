@@ -39,18 +39,30 @@ class BAMLMemberExtractor(IMemberExtractorService):
             - BAML呼び出しは非同期で実行されます
         """
         try:
+            logger.info(
+                f"Starting BAML member extraction for '{conference_name}' "
+                f"(HTML size: {len(html_content)} chars)"
+            )
+
             # HTMLが長すぎる場合は切り詰める（既存実装と同じ制限）
             max_length = 50000
-            if len(html_content) > max_length:
+            original_length = len(html_content)
+            if original_length > max_length:
                 logger.warning(
-                    f"HTML content too long ({len(html_content)} chars), "
-                    f"truncating to {max_length} chars"
+                    f"HTML content too long ({original_length} chars), "
+                    f"truncating to {max_length} chars "
+                    f"(reduction: {original_length - max_length} chars, "
+                    f"{(1 - max_length / original_length) * 100:.1f}%)"
                 )
                 html_content = html_content[:max_length] + "..."
 
             # BAML関数を呼び出し
-            logger.info(f"Calling BAML ExtractMembers for '{conference_name}'")
+            logger.info(
+                f"Calling BAML ExtractMembers for '{conference_name}' "
+                f"(input size: {len(html_content)} chars)"
+            )
             result = await b.ExtractMembers(html_content, conference_name)
+            logger.debug(f"BAML returned {len(result)} raw results")
 
             # DTOに変換して直接返す（型安全性向上）
             members = [
@@ -63,9 +75,20 @@ class BAMLMemberExtractor(IMemberExtractorService):
                 for m in result
             ]
 
-            logger.info(f"BAML extracted {len(members)} members")
+            logger.info(
+                f"BAML extraction completed: {len(members)} members extracted "
+                f"from '{conference_name}'"
+            )
+            if members:
+                logger.debug(
+                    f"Sample member: {members[0].name} "
+                    f"(role: {members[0].role}, party: {members[0].party_name})"
+                )
+
             return members
 
         except Exception as e:
-            logger.error(f"BAML extraction failed: {e}", exc_info=True)
+            logger.error(
+                f"BAML extraction failed for '{conference_name}': {e}", exc_info=True
+            )
             return []

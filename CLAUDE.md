@@ -169,10 +169,10 @@ Sagebaseでは、以下の機能にBAML (Boundary ML)を使用しています。
 - **実装**: `src/infrastructure/external/minutes_divider/baml_minutes_divider.py`
 - **備考**: Pydantic実装は削除済み、BAML実装のみ使用
 
-#### 2. 会議体メンバー抽出（Conference Member Extraction）
+#### 2. 会議体メンバー抽出（Conference Member Extraction） **BAML専用**
 - **BAML定義**: `baml_src/member_extraction.baml`
-- **環境変数**: `USE_BAML_MEMBER_EXTRACTION=true`
 - **実装**: `src/infrastructure/external/conference_member_extractor/baml_extractor.py`
+- **備考**: Pydantic実装は削除済み、BAML実装のみ使用
 
 #### 3. 議員団メンバー抽出（Parliamentary Group Member Extraction） **BAML専用**
 - **BAML定義**: `baml_src/parliamentary_group_member_extractor.baml`
