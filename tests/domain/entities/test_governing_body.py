@@ -1,7 +1,8 @@
 """Tests for GoverningBody entity."""
 
-from src.domain.entities.governing_body import GoverningBody
 from tests.fixtures.entity_factories import create_governing_body
+
+from src.domain.entities.governing_body import GoverningBody
 
 
 class TestGoverningBody:

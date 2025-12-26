@@ -2,10 +2,11 @@
 
 from datetime import datetime
 
+from tests.fixtures.entity_factories import create_extracted_parliamentary_group_member
+
 from src.domain.entities.extracted_parliamentary_group_member import (
     ExtractedParliamentaryGroupMember,
 )
-from tests.fixtures.entity_factories import create_extracted_parliamentary_group_member
 
 
 class TestExtractedParliamentaryGroupMember:

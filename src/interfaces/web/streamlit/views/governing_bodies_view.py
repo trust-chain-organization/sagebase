@@ -1,6 +1,7 @@
 """View for governing body management."""
 
 import streamlit as st
+
 from src.interfaces.web.streamlit.presenters.governing_body_presenter import (
     GoverningBodyPresenter,
 )

@@ -1,6 +1,7 @@
 """Database reset command."""
 
 import subprocess
+
 from typing import Any
 
 from src.interfaces.cli.base import BaseCommand, Command

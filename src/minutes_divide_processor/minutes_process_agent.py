@@ -1,16 +1,17 @@
 import uuid
+
 from typing import Any
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 from langgraph.store.memory import InMemoryStore
 
+# Use relative import for modules within the same package
+from .models import MinutesProcessState, SectionStringList, SpeakerAndSpeechContent
+
 from src.domain.services.interfaces.llm_service import ILLMService
 from src.infrastructure.external.instrumented_llm_service import InstrumentedLLMService
 from src.infrastructure.external.minutes_divider.factory import MinutesDividerFactory
-
-# Use relative import for modules within the same package
-from .models import MinutesProcessState, SectionStringList, SpeakerAndSpeechContent
 
 
 class MinutesProcessAgent:

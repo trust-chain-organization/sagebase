@@ -5,10 +5,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from tests.fixtures.entity_factories import create_extracted_parliamentary_group_member
+
 from src.infrastructure.persistence import (
     extracted_parliamentary_group_member_repository_impl as repo_impl,
 )
-from tests.fixtures.entity_factories import create_extracted_parliamentary_group_member
 
 
 ExtractedParliamentaryGroupMemberRepositoryImpl = (

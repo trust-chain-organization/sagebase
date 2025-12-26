@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import click
+
 from click import Command
 
 from src.infrastructure.exceptions import DatabaseError, PermissionError

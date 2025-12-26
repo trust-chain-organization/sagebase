@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, Mock, mock_open, patch
 
 import pytest
+
 from click.testing import CliRunner
 
 from src.domain.entities.llm_processing_history import (

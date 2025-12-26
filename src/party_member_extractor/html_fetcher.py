@@ -2,14 +2,15 @@
 
 import asyncio
 import logging
+
 from types import TracebackType
 from typing import Any
 
 from playwright.async_api import Browser, BrowserContext, Page, async_playwright
 
-from src.infrastructure.config.settings import get_settings
-
 from .models import WebPageContent
+
+from src.infrastructure.config.settings import get_settings
 
 
 logger = logging.getLogger(__name__)

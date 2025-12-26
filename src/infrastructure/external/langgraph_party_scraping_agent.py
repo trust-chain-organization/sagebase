@@ -1,18 +1,19 @@
 """LangGraph-based implementation of party scraping agent."""
 
 import logging
+
 from dataclasses import replace
 
 from langgraph.graph import END, START, StateGraph
-
-from src.domain.entities.party_scraping_state import PartyScrapingState
-from src.domain.services.interfaces.party_scraping_agent import IPartyScrapingAgent
 
 from .langgraph_state_adapter import (
     LangGraphPartyScrapingState,
     domain_to_langgraph_state,
     langgraph_to_domain_state,
 )
+
+from src.domain.entities.party_scraping_state import PartyScrapingState
+from src.domain.services.interfaces.party_scraping_agent import IPartyScrapingAgent
 
 
 logger = logging.getLogger(__name__)

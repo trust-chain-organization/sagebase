@@ -123,8 +123,9 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
-split-on-trailing-comma = false
+lines-between-types = 1
 lines-after-imports = 2
+forced-separate = ["src"]
 
 [tool.ruff.lint.per-file-ignores]
 # Ignore E501 (line too long) for debug print statements

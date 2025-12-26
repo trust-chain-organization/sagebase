@@ -2,6 +2,7 @@
 
 import os
 import sys
+
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
@@ -34,7 +35,6 @@ if os.getenv("CI"):
         print(f"DEBUG: ❌ baml_client import FAILED in conftest.py: {e}")
     print("=" * 60 + "\n")
 
-from src.common.metrics import setup_metrics  # noqa: E402
 from tests.fixtures.dto_factories import (  # noqa: E402
     create_extracted_speech_dto,
     create_politician_dto,
@@ -52,6 +52,8 @@ from tests.fixtures.entity_factories import (  # noqa: E402
     create_politician,
     create_speaker,
 )
+
+from src.common.metrics import setup_metrics  # noqa: E402
 
 
 @pytest.fixture(scope="session", autouse=True)

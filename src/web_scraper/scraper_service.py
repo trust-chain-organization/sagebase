@@ -2,9 +2,8 @@
 
 import asyncio
 import json
-from pathlib import Path
 
-from src.infrastructure.config import config
+from pathlib import Path
 
 from ..common.logging import get_logger
 from ..infrastructure.persistence.meeting_repository_impl import MeetingRepositoryImpl
@@ -14,6 +13,8 @@ from .base_scraper import BaseScraper
 from .kaigiroku_net_scraper import KaigirokuNetScraper
 from .kokkai_scraper import KokkaiScraper
 from .models import MinutesData
+
+from src.infrastructure.config import config
 
 
 class ScraperService:

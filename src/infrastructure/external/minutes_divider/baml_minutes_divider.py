@@ -7,9 +7,11 @@
 import logging
 import re
 import unicodedata
+
 from typing import Any
 
 from baml_client.async_client import b
+
 from src.domain.interfaces.minutes_divider_service import IMinutesDividerService
 
 # 既存のPydanticモデルを使用（BAML結果をこれに変換）

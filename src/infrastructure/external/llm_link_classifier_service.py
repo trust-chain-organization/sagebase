@@ -3,6 +3,7 @@
 import logging
 
 from baml_client.async_client import b
+
 from src.domain.services.interfaces.llm_link_classifier_service import (
     ILLMLinkClassifierService,
     LinkClassification,

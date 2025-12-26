@@ -6,17 +6,18 @@
 import asyncio
 import logging
 import re
+
 from datetime import datetime
 from typing import Any
 
 from playwright.async_api import Page, async_playwright
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
-from src.infrastructure.config.settings import settings
-
 from .base_scraper import BaseScraper
 from .exceptions import ScraperConnectionError, ScraperParseError
 from .models import MinutesData, SpeakerData
+
+from src.infrastructure.config.settings import settings
 
 
 logger = logging.getLogger(__name__)

@@ -4,8 +4,9 @@ from datetime import datetime
 
 import pytest
 
-from src.domain.entities.extracted_proposal_judge import ExtractedProposalJudge
 from tests.fixtures.entity_factories import create_extracted_proposal_judge
+
+from src.domain.entities.extracted_proposal_judge import ExtractedProposalJudge
 
 
 class TestExtractedProposalJudge:

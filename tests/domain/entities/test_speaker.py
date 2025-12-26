@@ -1,7 +1,8 @@
 """Tests for Speaker entity."""
 
-from src.domain.entities.speaker import Speaker
 from tests.fixtures.entity_factories import create_speaker
+
+from src.domain.entities.speaker import Speaker
 
 
 class TestSpeaker:

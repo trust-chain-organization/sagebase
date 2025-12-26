@@ -1,6 +1,7 @@
 """Direct PDF scraper for downloading and extracting text from PDF URLs"""
 
 import logging
+
 from datetime import datetime
 from urllib.parse import urlparse
 

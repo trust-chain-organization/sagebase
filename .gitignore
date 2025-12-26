@@ -48,3 +48,4 @@ terraform/terraform.rc
 website/public/
 website/resources/
 website/.hugo_build.lock
+.coverage

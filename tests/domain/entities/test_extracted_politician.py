@@ -2,10 +2,11 @@
 
 from datetime import datetime
 
+from tests.fixtures.entity_factories import create_extracted_politician
+
 from src.domain.entities.politician_party_extracted_politician import (
     PoliticianPartyExtractedPolitician,
 )
-from tests.fixtures.entity_factories import create_extracted_politician
 
 
 class TestExtractedPolitician:
