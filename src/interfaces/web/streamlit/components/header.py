@@ -7,7 +7,6 @@
 import os
 
 import streamlit as st
-
 from src.interfaces.web.streamlit.auth import google_sign_in
 
 

@@ -1,7 +1,6 @@
 """View for process execution."""
 
 import streamlit as st
-
 from src.interfaces.web.streamlit.presenters.process_presenter import (
     ProcessPresenter,
 )
