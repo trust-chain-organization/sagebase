@@ -1,7 +1,6 @@
 """ProposalJudge repository implementation using SQLAlchemy."""
 
 import logging
-
 from datetime import datetime
 from typing import Any
 
@@ -15,6 +14,7 @@ from src.domain.repositories.proposal_judge_repository import ProposalJudgeRepos
 from src.domain.repositories.session_adapter import ISessionAdapter
 from src.infrastructure.exceptions import DatabaseError
 from src.infrastructure.persistence.base_repository_impl import BaseRepositoryImpl
+
 
 logger = logging.getLogger(__name__)
 

@@ -3,6 +3,7 @@
 from datetime import date, datetime
 from typing import NewType
 
+
 # Entity ID types
 EntityId = NewType("EntityId", int)
 

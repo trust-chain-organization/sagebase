@@ -12,6 +12,7 @@ from src.domain.repositories.meeting_repository import MeetingRepository
 from src.domain.repositories.minutes_repository import MinutesRepository
 from src.domain.repositories.speaker_repository import SpeakerRepository
 
+
 T = TypeVar("T")
 
 

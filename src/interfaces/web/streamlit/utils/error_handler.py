@@ -6,13 +6,12 @@ including user-friendly error messages and logging.
 
 import functools
 import traceback
-
 from collections.abc import Callable
 from typing import Any, TypeVar
 
 import streamlit as st
-
 from src.common.logging import get_logger
+
 
 T = TypeVar("T")
 

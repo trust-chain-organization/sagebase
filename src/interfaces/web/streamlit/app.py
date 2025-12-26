@@ -7,7 +7,6 @@ following Clean Architecture principles with presenter pattern.
 import os
 
 import streamlit as st
-
 from src.interfaces.web.streamlit.auth import google_sign_in
 from src.interfaces.web.streamlit.components.analytics import inject_google_analytics
 from src.interfaces.web.streamlit.components.header import render_header
@@ -17,9 +16,7 @@ from src.interfaces.web.streamlit.middleware.security_headers import (
 )
 
 # Import new Clean Architecture views
-from src.interfaces.web.streamlit.views.conferences_view import (
-    render_conferences_page,
-)
+from src.interfaces.web.streamlit.views.conferences_view import render_conferences_page
 from src.interfaces.web.streamlit.views.conversations_speakers_view import (
     render_conversations_speakers_page,
 )

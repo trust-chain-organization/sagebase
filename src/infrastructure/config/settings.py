@@ -6,7 +6,6 @@ validation and type safety.
 
 import logging
 import os
-
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -16,6 +15,7 @@ from src.application.exceptions import (
     InvalidConfigException,
     MissingConfigException,
 )
+
 
 logger = logging.getLogger(__name__)
 

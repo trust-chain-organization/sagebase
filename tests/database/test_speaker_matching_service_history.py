@@ -6,6 +6,7 @@
 
 import pytest
 
+
 pytestmark = pytest.mark.skip(reason="Legacy tests - ChainFactory removed")
 
 from collections.abc import Generator
@@ -13,6 +14,7 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 from src.domain.services.speaker_matching_service import SpeakerMatchingService
+
 
 # Type aliases for shorter lines
 MockGen = Generator[MagicMock]

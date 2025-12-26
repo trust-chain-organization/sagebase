@@ -7,7 +7,6 @@
 import logging
 import re
 import unicodedata
-
 from typing import Any
 
 from baml_client.async_client import b
@@ -28,6 +27,7 @@ from src.minutes_divide_processor.models import (
     SpeakerAndSpeechContent,
     SpeakerAndSpeechContentList,
 )
+
 
 logger = logging.getLogger(__name__)
 

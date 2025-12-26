@@ -2,7 +2,6 @@
 
 import logging
 import sys
-
 from collections.abc import Callable
 
 import click
@@ -26,6 +25,7 @@ from src.interfaces.cli.commands.politician_commands import get_politician_comma
 from src.interfaces.cli.commands.prompt_commands import get_prompt_commands
 from src.interfaces.cli.commands.proposal_commands import get_proposal_commands
 from src.interfaces.cli.commands.seed_commands import get_seed_commands
+
 
 # Initialize settings
 settings = get_settings()

@@ -2,11 +2,11 @@
 
 import logging
 import os
-
 from pathlib import Path
 from urllib.parse import urlparse
 
 import aiohttp
+
 
 try:
     import pypdfium2 as pdfium

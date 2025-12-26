@@ -2,11 +2,11 @@
 
 import os
 import sys
-
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
 
 # Add project root to Python path to ensure baml_client can be imported
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

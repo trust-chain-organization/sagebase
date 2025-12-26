@@ -1,7 +1,6 @@
 """SEEDファイル生成モジュールのテスト"""
 
 import io
-
 from unittest.mock import MagicMock, patch
 
 import pytest

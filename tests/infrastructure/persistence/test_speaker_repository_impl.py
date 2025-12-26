@@ -5,7 +5,6 @@ from unittest.mock import MagicMock, patch
 from uuid import UUID
 
 import pytest
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.speaker import Speaker

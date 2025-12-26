@@ -1,7 +1,6 @@
 """Conference member extractor that saves to staging table"""
 
 import logging
-
 from typing import Any
 
 from bs4 import BeautifulSoup
@@ -16,6 +15,7 @@ from src.infrastructure.persistence.extracted_conference_member_repository_impl 
     ExtractedConferenceMemberRepositoryImpl,
 )
 from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
+
 
 logger = logging.getLogger(__name__)
 

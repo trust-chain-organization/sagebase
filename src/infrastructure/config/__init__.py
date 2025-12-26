@@ -37,6 +37,7 @@ from src.infrastructure.config.database import (
 from src.infrastructure.config.sentry import init_sentry
 from src.infrastructure.config.settings import Settings, settings
 
+
 __all__ = [
     # Settings
     "Settings",

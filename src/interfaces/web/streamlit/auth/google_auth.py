@@ -5,11 +5,9 @@
 """
 
 import os
-
 from typing import Any
 
 import requests
-
 from streamlit_oauth import OAuth2Component
 
 import streamlit as st

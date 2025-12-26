@@ -4,7 +4,6 @@ import os
 
 import pandas as pd
 import pytest
-
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
@@ -13,6 +12,7 @@ from src.infrastructure.persistence.async_session_adapter import AsyncSessionAda
 from src.infrastructure.persistence.monitoring_repository_impl import (
     MonitoringRepositoryImpl as MonitoringRepository,
 )
+
 
 # Skip all tests in this module if running in CI environment
 pytestmark = pytest.mark.skipif(

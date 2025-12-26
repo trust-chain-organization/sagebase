@@ -5,7 +5,6 @@
 
 import logging
 import traceback
-
 from collections.abc import Callable
 from typing import Any
 from uuid import uuid4
@@ -40,6 +39,7 @@ from src.infrastructure.exceptions import (
 )
 
 from .models import ErrorResponse
+
 
 logger = logging.getLogger(__name__)
 

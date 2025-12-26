@@ -1,11 +1,11 @@
 """Centralized prompt management for all LLM operations"""
 
 import logging
-
 from typing import TYPE_CHECKING, Any
 
 from langchain import hub
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
+
 
 if TYPE_CHECKING:
     from src.infrastructure.external.versioned_prompt_manager import (

@@ -6,6 +6,7 @@ from src.common.logging import get_logger
 from src.domain.entities import Conference
 from src.domain.repositories.conference_repository import ConferenceRepository
 
+
 logger = get_logger(__name__)
 
 

@@ -43,7 +43,6 @@ class DatabaseCommands(BaseCommand):
         - sagebase database list                       # List all backups
         """
         import sys
-
         from pathlib import Path
 
         # Use new GCS-enabled backup script

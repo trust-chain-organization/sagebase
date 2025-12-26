@@ -1,7 +1,6 @@
 """Use case for extracting proposal judges from web pages."""
 
 import logging
-
 from datetime import datetime
 
 from src.application.dtos.proposal_judge_dto import (
@@ -25,6 +24,7 @@ from src.domain.repositories.proposal_judge_repository import ProposalJudgeRepos
 from src.domain.repositories.proposal_repository import ProposalRepository
 from src.domain.services.interfaces.llm_service import ILLMService
 from src.domain.services.interfaces.web_scraper_service import IWebScraperService
+
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,6 @@
 """Factory for creating different types of LangChain chains"""
 
 import logging
-
 from typing import Any
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -11,6 +10,7 @@ from pydantic import BaseModel
 from src.infrastructure.external.prompt_manager import PromptManager
 
 from .llm_service import LLMService
+
 
 logger = logging.getLogger(__name__)
 

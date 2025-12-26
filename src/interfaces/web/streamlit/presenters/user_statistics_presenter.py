@@ -5,23 +5,20 @@
 
 import asyncio
 import logging
-
 from datetime import datetime
 from uuid import UUID
 
 import pandas as pd
 
 import streamlit as st
-
-from src.application.dtos.user_statistics_dto import (
-    UserStatisticsDTO,
-)
+from src.application.dtos.user_statistics_dto import UserStatisticsDTO
 from src.application.dtos.work_history_dto import WorkType
 from src.application.usecases.get_user_statistics_usecase import (
     GetUserStatisticsUseCase,
 )
 from src.application.usecases.get_work_history_usecase import GetWorkHistoryUseCase
 from src.infrastructure.di.container import Container
+
 
 logger = logging.getLogger(__name__)
 

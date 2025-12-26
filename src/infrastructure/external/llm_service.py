@@ -3,7 +3,6 @@
 import json
 import logging
 import os
-
 from typing import Any, cast
 
 from langchain_core.messages import BaseMessage
@@ -22,9 +21,8 @@ from src.domain.types import (
     LLMSpeakerMatchContext,
     PoliticianDTO,
 )
-from src.infrastructure.external.versioned_prompt_manager import (
-    VersionedPromptManager,
-)
+from src.infrastructure.external.versioned_prompt_manager import VersionedPromptManager
+
 
 logger = logging.getLogger(__name__)
 

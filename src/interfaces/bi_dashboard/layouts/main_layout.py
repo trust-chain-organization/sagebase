@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from dash import dcc, html
 
+
 if TYPE_CHECKING:
     from dash.html import Div
 

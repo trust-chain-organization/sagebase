@@ -6,7 +6,6 @@ BAMLを使用してトークン効率とパース精度を向上。
 
 import logging
 import re
-
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -26,6 +25,7 @@ from src.party_member_extractor.models import (
     PartyMemberList,
     WebPageContent,
 )
+
 
 logger = logging.getLogger(__name__)
 

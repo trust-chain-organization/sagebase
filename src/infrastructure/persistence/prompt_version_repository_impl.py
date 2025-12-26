@@ -23,6 +23,7 @@ from src.domain.repositories.prompt_version_repository import PromptVersionRepos
 from src.domain.repositories.session_adapter import ISessionAdapter
 from src.infrastructure.persistence.base_repository_impl import BaseRepositoryImpl
 
+
 Base = declarative_base()
 
 

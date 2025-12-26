@@ -6,7 +6,6 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from pydantic import BaseModel, Field
 
 from src.infrastructure.external.prompt_loader import PromptLoader

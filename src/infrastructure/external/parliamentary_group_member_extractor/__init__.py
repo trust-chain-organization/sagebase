@@ -10,6 +10,7 @@ from src.infrastructure.external.parliamentary_group_member_extractor.factory im
     ParliamentaryGroupMemberExtractorFactory,
 )
 
+
 __all__ = [
     "ParliamentaryGroupMemberExtractorFactory",
     "BAMLParliamentaryGroupMemberExtractor",

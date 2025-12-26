@@ -5,13 +5,13 @@
 """
 
 import logging
-
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
 from src.domain.repositories.meeting_repository import MeetingRepository
 from src.web_scraper.scraper_service import ScraperService
+
 
 logger = logging.getLogger(__name__)
 

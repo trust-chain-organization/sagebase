@@ -61,9 +61,7 @@ class AnalyzeMatchingHistoryCommand:
             ProcessingType,
         )
         from src.infrastructure.config.async_database import get_async_session
-        from src.infrastructure.persistence import (
-            LLMProcessingHistoryRepositoryImpl,
-        )
+        from src.infrastructure.persistence import LLMProcessingHistoryRepositoryImpl
 
         BaseCommand.show_progress("Fetching speaker matching history...")
 

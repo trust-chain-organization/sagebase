@@ -3,7 +3,6 @@
 from unittest.mock import Mock
 
 import pytest
-
 from sqlalchemy.orm import Session
 
 from src.infrastructure.persistence.async_session_adapter import AsyncSessionAdapter

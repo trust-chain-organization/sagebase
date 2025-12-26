@@ -11,6 +11,7 @@ from src.domain.interfaces.party_member_extractor_service import (
 )
 from src.domain.services.interfaces.llm_service import ILLMService
 
+
 logger = logging.getLogger(__name__)
 
 

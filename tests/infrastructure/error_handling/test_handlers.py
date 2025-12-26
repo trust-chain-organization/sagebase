@@ -2,23 +2,14 @@
 
 from unittest.mock import Mock, patch
 
-from src.application.exceptions import (
-    AuthorizationException,
-    ValidationException,
-)
+from src.application.exceptions import AuthorizationException, ValidationException
 from src.domain.exceptions import (
     BusinessRuleViolationException,
     EntityNotFoundException,
 )
-from src.infrastructure.error_handling.handlers import (
-    ErrorHandler,
-    GlobalErrorHandler,
-)
+from src.infrastructure.error_handling.handlers import ErrorHandler, GlobalErrorHandler
 from src.infrastructure.error_handling.models import ErrorResponse
-from src.infrastructure.exceptions import (
-    DatabaseException,
-    ExternalServiceException,
-)
+from src.infrastructure.exceptions import DatabaseException, ExternalServiceException
 
 
 class TestErrorHandler:

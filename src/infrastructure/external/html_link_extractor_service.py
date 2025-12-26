@@ -1,7 +1,6 @@
 """BeautifulSoup4-based implementation of HTML link extraction."""
 
 import logging
-
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
@@ -10,6 +9,7 @@ from src.domain.services.interfaces.html_link_extractor_service import (
     IHtmlLinkExtractorService,
 )
 from src.domain.value_objects.link import Link
+
 
 logger = logging.getLogger(__name__)
 

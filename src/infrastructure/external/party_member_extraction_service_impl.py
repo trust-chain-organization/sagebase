@@ -16,6 +16,7 @@ from src.interfaces.factories.party_member_extractor_factory import (
     PartyMemberExtractorFactory,
 )
 
+
 logger = logging.getLogger(__name__)
 
 

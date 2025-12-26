@@ -8,9 +8,8 @@ import pytest
 from src.infrastructure.persistence import (
     extracted_parliamentary_group_member_repository_impl as repo_impl,
 )
-from tests.fixtures.entity_factories import (
-    create_extracted_parliamentary_group_member,
-)
+from tests.fixtures.entity_factories import create_extracted_parliamentary_group_member
+
 
 ExtractedParliamentaryGroupMemberRepositoryImpl = (
     repo_impl.ExtractedParliamentaryGroupMemberRepositoryImpl

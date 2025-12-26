@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.llm_processing_history import (

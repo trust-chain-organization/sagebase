@@ -1,7 +1,6 @@
 """User repository implementation."""
 
 import logging
-
 from datetime import datetime
 from typing import Any
 from uuid import UUID
@@ -13,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.domain.entities.user import User
 from src.domain.repositories.session_adapter import ISessionAdapter
 from src.domain.repositories.user_repository import IUserRepository
+
 
 logger = logging.getLogger(__name__)
 

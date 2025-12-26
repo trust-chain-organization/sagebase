@@ -7,9 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.domain.services.baml_speaker_matching_service import (
-    BAMLSpeakerMatchingService,
-)
+from src.domain.services.baml_speaker_matching_service import BAMLSpeakerMatchingService
+
 
 pytestmark = pytest.mark.baml
 

@@ -9,6 +9,7 @@ import os
 from src.domain.repositories.politician_repository import PoliticianRepository
 from src.domain.services.interfaces.llm_service import ILLMService
 
+
 logger = logging.getLogger(__name__)
 
 

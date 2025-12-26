@@ -26,6 +26,7 @@ from src.domain.repositories.parliamentary_group_repository import (
 from src.domain.repositories.politician_repository import PoliticianRepository
 from src.domain.services.interfaces.llm_service import ILLMService
 
+
 # TODO: 旧実装への参照を削除し、新実装のUseCaseに置き換える必要がある
 # from src.parliamentary_group_member_extractor.service import (
 #     ParliamentaryGroupMembershipService,

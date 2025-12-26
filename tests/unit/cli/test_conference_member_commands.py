@@ -4,7 +4,6 @@ from datetime import date
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-
 from click.testing import CliRunner
 
 from src.interfaces.cli.commands.conference_member_commands import (

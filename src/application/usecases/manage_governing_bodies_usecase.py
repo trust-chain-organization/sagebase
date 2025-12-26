@@ -6,6 +6,7 @@ from src.common.logging import get_logger
 from src.domain.entities import GoverningBody
 from src.domain.repositories.governing_body_repository import GoverningBodyRepository
 
+
 logger = get_logger(__name__)
 
 

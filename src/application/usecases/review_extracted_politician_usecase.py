@@ -21,6 +21,7 @@ from src.domain.repositories.extracted_politician_repository import (
 )
 from src.domain.repositories.political_party_repository import PoliticalPartyRepository
 
+
 logger = logging.getLogger(__name__)
 
 

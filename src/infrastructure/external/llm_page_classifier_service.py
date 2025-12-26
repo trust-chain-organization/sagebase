@@ -8,6 +8,7 @@ from src.domain.services.interfaces.page_classifier_service import (
 )
 from src.domain.value_objects.page_classification import PageClassification, PageType
 
+
 logger = logging.getLogger(__name__)
 
 # Maximum length of HTML content to send to LLM for classification

@@ -8,6 +8,7 @@ import logging
 
 from src.domain.interfaces.member_extractor_service import IMemberExtractorService
 
+
 logger = logging.getLogger(__name__)
 
 

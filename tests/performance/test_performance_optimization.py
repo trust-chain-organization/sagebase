@@ -1,7 +1,6 @@
 """Tests for performance optimization features."""
 
 import asyncio
-
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest

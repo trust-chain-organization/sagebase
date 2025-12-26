@@ -3,7 +3,6 @@
 import logging
 import os
 import time
-
 from typing import Any, TypeVar
 
 from langchain_core.language_models import BaseChatModel
@@ -29,6 +28,7 @@ from src.infrastructure.external.llm_errors import (
 )
 from src.infrastructure.external.prompt_loader import PromptLoader
 from src.infrastructure.external.prompt_manager import PromptManager
+
 
 logger = logging.getLogger(__name__)
 

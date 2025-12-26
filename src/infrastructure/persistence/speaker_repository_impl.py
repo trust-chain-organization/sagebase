@@ -16,6 +16,7 @@ from src.domain.repositories.session_adapter import ISessionAdapter
 from src.domain.repositories.speaker_repository import SpeakerRepository
 from src.infrastructure.persistence.base_repository_impl import BaseRepositoryImpl
 
+
 # Time interval functions for timeline statistics
 INTERVAL_FUNCTIONS = {
     "day": "DATE(updated_at)",

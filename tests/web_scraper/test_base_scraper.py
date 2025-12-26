@@ -1,7 +1,6 @@
 """Unit tests for base_scraper module"""
 
 import logging
-
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 

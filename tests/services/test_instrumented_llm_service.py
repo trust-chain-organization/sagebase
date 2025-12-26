@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-
 from langchain.schema import HumanMessage
 
 from src.services.instrumented_llm_service import InstrumentedLLMService

@@ -1,10 +1,7 @@
 """View for process execution."""
 
 import streamlit as st
-
-from src.interfaces.web.streamlit.presenters.process_presenter import (
-    ProcessPresenter,
-)
+from src.interfaces.web.streamlit.presenters.process_presenter import ProcessPresenter
 
 
 def render_processes_page() -> None:

@@ -9,9 +9,7 @@ from src.domain.repositories.prompt_version_repository import PromptVersionRepos
 from src.domain.services.interfaces.llm_service import ILLMService
 from src.infrastructure.external.instrumented_llm_service import InstrumentedLLMService
 from src.infrastructure.external.llm_service import GeminiLLMService
-from src.infrastructure.external.versioned_prompt_manager import (
-    VersionedPromptManager,
-)
+from src.infrastructure.external.versioned_prompt_manager import VersionedPromptManager
 from src.infrastructure.persistence.llm_processing_history_repository_impl import (
     LLMProcessingHistoryRepositoryImpl,
 )

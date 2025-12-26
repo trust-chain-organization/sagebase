@@ -20,6 +20,7 @@ from src.domain.entities.politician import Politician
 from src.domain.entities.prompt_version import PromptVersion
 from src.domain.entities.speaker import Speaker
 
+
 __all__ = [
     "BaseEntity",
     "Conference",

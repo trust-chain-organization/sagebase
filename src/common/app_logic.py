@@ -6,12 +6,10 @@ Provides common application logic with proper error handling and type safety.
 
 import logging
 import os
-
 from collections.abc import Callable
 from typing import Any, TypeVar
 
 import src.infrastructure.config.config as config
-
 from src.application.exceptions import (
     ConfigurationError,
     PDFProcessingError,
@@ -23,6 +21,7 @@ from src.infrastructure.exceptions import (
     FileNotFoundException as PolibaseFileNotFoundError,
 )
 from src.infrastructure.utilities.text_extractor import extract_text_from_pdf
+
 
 logger = logging.getLogger(__name__)
 

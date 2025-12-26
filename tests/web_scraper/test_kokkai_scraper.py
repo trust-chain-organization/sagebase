@@ -8,7 +8,6 @@ from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 from src.web_scraper.exceptions import ScraperConnectionError, ScraperParseError

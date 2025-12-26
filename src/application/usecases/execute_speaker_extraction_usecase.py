@@ -5,7 +5,6 @@
 """
 
 import logging
-
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -15,6 +14,7 @@ from src.domain.repositories.conversation_repository import ConversationReposito
 from src.domain.repositories.minutes_repository import MinutesRepository
 from src.domain.repositories.speaker_repository import SpeakerRepository
 from src.domain.services.speaker_domain_service import SpeakerDomainService
+
 
 logger = logging.getLogger(__name__)
 

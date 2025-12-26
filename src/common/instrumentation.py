@@ -3,16 +3,12 @@
 import asyncio
 import functools
 import time
-
 from collections.abc import Callable
 from typing import Any, TypeVar, cast
 
 from src.common.logging import LogContext, get_logger
-from src.common.metrics import (
-    create_counter,
-    create_histogram,
-    record_error,
-)
+from src.common.metrics import create_counter, create_histogram, record_error
+
 
 logger = get_logger(__name__)
 

@@ -28,6 +28,7 @@ from src.application.dtos.speaker_dto import (
     UpdateSpeakerDTO,
 )
 
+
 __all__ = [
     # Conference DTOs
     "AffiliationDTO",

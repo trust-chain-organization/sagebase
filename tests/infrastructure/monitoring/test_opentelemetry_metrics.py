@@ -1,18 +1,12 @@
 """OpenTelemetryメトリクスの単体テスト."""
 
 import time
-
 from unittest.mock import patch
 
 import pytest
-
 from opentelemetry.metrics import get_meter_provider
 
-from src.common.instrumentation import (
-    MetricsContext,
-    count_calls,
-    measure_time,
-)
+from src.common.instrumentation import MetricsContext, count_calls, measure_time
 from src.common.metrics import (
     CommonMetrics,
     create_counter,

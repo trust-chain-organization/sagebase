@@ -5,10 +5,10 @@ BAMLPartyMemberExtractorの動作を検証します。
 """
 
 import sys
-
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
 
 # baml_clientモジュールをモック
 sys.modules["baml_client"] = MagicMock()

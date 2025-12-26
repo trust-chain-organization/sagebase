@@ -5,7 +5,6 @@ and recursive navigation capabilities (PBI-004).
 """
 
 import logging
-
 from dataclasses import replace
 
 from langgraph.graph import END, START, StateGraph
@@ -30,6 +29,7 @@ from .langgraph_state_adapter import (
     domain_to_langgraph_state,
     langgraph_to_domain_state,
 )
+
 
 logger = logging.getLogger(__name__)
 

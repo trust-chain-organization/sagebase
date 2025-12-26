@@ -1,7 +1,6 @@
 """Presenter for process execution."""
 
 import subprocess
-
 from typing import Any
 
 from src.application.usecases.execute_processes_usecase import (

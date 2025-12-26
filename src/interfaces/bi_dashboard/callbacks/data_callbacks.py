@@ -7,10 +7,7 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 import plotly.graph_objects as go
-
 from dash import Input, Output, html
-from layouts.main_layout import create_summary_card
-
 from data.data_loader import (
     get_activity_trend_data,
     get_coverage_stats,
@@ -18,6 +15,8 @@ from data.data_loader import (
     get_prefecture_coverage,
     get_speaker_matching_data,
 )
+from layouts.main_layout import create_summary_card
+
 
 if TYPE_CHECKING:
     from dash import Dash

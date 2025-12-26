@@ -3,13 +3,9 @@
 from pathlib import Path
 
 import click
-
 from click import Command
 
-from src.infrastructure.exceptions import (
-    DatabaseError,
-    PermissionError,
-)
+from src.infrastructure.exceptions import DatabaseError, PermissionError
 from src.interfaces.cli.base import BaseCommand
 from src.seed_generator import generate_all_seeds
 

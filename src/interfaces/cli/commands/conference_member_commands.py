@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-
 from datetime import date, datetime
 from typing import Any
 
@@ -36,6 +35,7 @@ from src.infrastructure.persistence.politician_repository_impl import (
 from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
 from src.interfaces.cli.base import BaseCommand
 from src.interfaces.cli.progress import ProgressTracker
+
 
 logger = logging.getLogger(__name__)
 

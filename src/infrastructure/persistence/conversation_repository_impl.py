@@ -1,7 +1,6 @@
 """Conversation repository implementation."""
 
 import logging
-
 from datetime import datetime
 from typing import Any, TypedDict
 
@@ -15,6 +14,7 @@ from src.domain.repositories.session_adapter import ISessionAdapter
 from src.domain.services.speaker_matching_service import SpeakerMatchingService
 from src.infrastructure.persistence.base_repository_impl import BaseRepositoryImpl
 from src.minutes_divide_processor.models import SpeakerAndSpeechContent
+
 
 logger = logging.getLogger(__name__)
 

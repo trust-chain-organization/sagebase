@@ -4,11 +4,11 @@ from datetime import datetime
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-
 from click.testing import CliRunner
 
 from src.domain.entities.prompt_version import PromptVersion
 from src.interfaces.cli.commands.prompt_commands import PromptCommands
+
 
 # Common patch paths
 ASYNC_SESSION_PATH = "src.infrastructure.config.async_database.get_async_session"

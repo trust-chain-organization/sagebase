@@ -6,7 +6,6 @@
 import asyncio
 import logging
 import re
-
 from datetime import datetime
 from typing import Any
 
@@ -18,6 +17,7 @@ from src.infrastructure.config.settings import settings
 from .base_scraper import BaseScraper
 from .exceptions import ScraperConnectionError, ScraperParseError
 from .models import MinutesData, SpeakerData
+
 
 logger = logging.getLogger(__name__)
 

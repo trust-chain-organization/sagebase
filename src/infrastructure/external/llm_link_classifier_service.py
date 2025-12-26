@@ -11,6 +11,7 @@ from src.domain.services.interfaces.llm_link_classifier_service import (
 )
 from src.domain.value_objects.link import Link
 
+
 logger = logging.getLogger(__name__)
 
 

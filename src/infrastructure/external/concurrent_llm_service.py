@@ -1,7 +1,6 @@
 """Concurrent LLM service with rate limiting and parallel processing."""
 
 import asyncio
-
 from collections.abc import Awaitable, Callable
 from typing import Any, TypeVar
 
@@ -12,6 +11,7 @@ from src.domain.types.llm import (
     LLMMatchResult,
     LLMSpeakerMatchContext,
 )
+
 
 T = TypeVar("T")
 

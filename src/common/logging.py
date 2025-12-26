@@ -2,12 +2,11 @@
 
 import logging
 import sys
-
 from typing import Any, cast
 
 import structlog
-
 from structlog.contextvars import bind_contextvars, clear_contextvars
+
 
 try:
     import sentry_sdk

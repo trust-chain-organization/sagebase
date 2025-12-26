@@ -4,7 +4,6 @@ LLMを活用した発言者と政治家の高精度マッチングサービス
 
 import logging
 import re
-
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -12,6 +11,7 @@ from pydantic import BaseModel, Field
 from src.domain.exceptions import ExternalServiceException
 from src.domain.repositories.politician_repository import PoliticianRepository
 from src.domain.services.interfaces.llm_service import ILLMService
+
 
 logger = logging.getLogger(__name__)
 

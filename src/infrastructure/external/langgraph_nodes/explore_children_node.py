@@ -1,7 +1,6 @@
 """LangGraph node for exploring child page links."""
 
 import logging
-
 from collections.abc import Awaitable, Callable
 
 from src.domain.services.interfaces.link_analyzer_service import ILinkAnalyzerService
@@ -10,6 +9,7 @@ from src.infrastructure.external.langgraph_state_adapter import (
     LangGraphPartyScrapingStateOptional,
 )
 from src.party_member_extractor.utils.url_normalizer import normalize_url
+
 
 logger = logging.getLogger(__name__)
 

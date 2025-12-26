@@ -2,7 +2,6 @@
 
 import logging
 import time
-
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,6 +10,7 @@ from typing import Any
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
+
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,6 @@
 import asyncio
 
 import streamlit as st
-
 from src.application.usecases.authenticate_user_usecase import AuthenticateUserUseCase
 from src.application.usecases.match_speakers_usecase import MatchSpeakersUseCase
 from src.infrastructure.di.container import Container

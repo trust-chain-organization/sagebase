@@ -19,6 +19,7 @@ from src.domain.repositories.extracted_politician_repository import (
     ExtractedPoliticianRepository,
 )
 
+
 logger = logging.getLogger(__name__)
 
 

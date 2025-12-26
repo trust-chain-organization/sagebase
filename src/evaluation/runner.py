@@ -3,7 +3,6 @@
 import json
 import logging
 import os
-
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +12,7 @@ from src.interfaces.factories.party_member_extractor_factory import (
 )
 
 from .metrics import EvaluationMetrics, MetricsCalculator
+
 
 logger = logging.getLogger(__name__)
 

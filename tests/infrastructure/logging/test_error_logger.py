@@ -1,7 +1,6 @@
 """Tests for ErrorLogger."""
 
 import logging
-
 from unittest.mock import MagicMock, patch
 
 import pytest

@@ -12,6 +12,7 @@ import sys
 # ログ設定を初期化
 from src.common.logging import setup_logging
 
+
 # Cloud Run環境では構造化ログ（JSON形式）を使用
 is_cloud_run = os.getenv("CLOUD_RUN", "false").lower() == "true"
 log_level = os.getenv("LOG_LEVEL", "INFO")

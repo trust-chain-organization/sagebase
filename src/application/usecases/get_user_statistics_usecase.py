@@ -4,7 +4,6 @@
 """
 
 import logging
-
 from collections import defaultdict
 from datetime import date, datetime
 from uuid import UUID
@@ -16,6 +15,7 @@ from src.application.dtos.user_statistics_dto import (
 )
 from src.application.dtos.work_history_dto import WorkType
 from src.application.usecases.get_work_history_usecase import GetWorkHistoryUseCase
+
 
 logger = logging.getLogger(__name__)
 

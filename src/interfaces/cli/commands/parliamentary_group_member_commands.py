@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-
 from datetime import date, datetime
 
 import click
@@ -39,6 +38,7 @@ from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
 from src.infrastructure.persistence.speaker_repository_impl import SpeakerRepositoryImpl
 from src.interfaces.cli.base import BaseCommand
 from src.interfaces.cli.progress import ProgressTracker
+
 
 logger = logging.getLogger(__name__)
 

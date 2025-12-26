@@ -5,7 +5,6 @@ handling UI state and coordinating with use cases.
 """
 
 import builtins
-
 from typing import Any
 
 import pandas as pd

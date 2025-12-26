@@ -9,6 +9,7 @@ import os
 from src.domain.repositories.speaker_repository import SpeakerRepository
 from src.domain.services.interfaces.llm_service import ILLMService
 
+
 logger = logging.getLogger(__name__)
 
 

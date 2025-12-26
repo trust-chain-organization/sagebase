@@ -9,6 +9,7 @@ from src.common.logging import get_logger
 from src.common.metrics import CommonMetrics, create_histogram
 from src.services.llm_service import LLMService
 
+
 logger = get_logger(__name__)
 
 

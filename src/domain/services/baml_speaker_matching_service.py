@@ -6,7 +6,6 @@
 
 import logging
 import re
-
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -15,6 +14,7 @@ from baml_client.async_client import b
 from src.domain.exceptions import ExternalServiceException
 from src.domain.repositories.speaker_repository import SpeakerRepository
 from src.domain.services.interfaces.llm_service import ILLMService
+
 
 logger = logging.getLogger(__name__)
 

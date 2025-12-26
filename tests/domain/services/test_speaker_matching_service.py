@@ -7,9 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from src.domain.exceptions import ExternalServiceException
-from src.domain.services.speaker_matching_service import (
-    SpeakerMatchingService,
-)
+from src.domain.services.speaker_matching_service import SpeakerMatchingService
 
 
 class TestSpeakerMatchingService:

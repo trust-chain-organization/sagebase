@@ -1,7 +1,6 @@
 """Domain service for proposal judge extraction and matching."""
 
 import re
-
 from typing import Any
 
 

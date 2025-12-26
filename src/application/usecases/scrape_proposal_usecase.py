@@ -14,6 +14,7 @@ from src.domain.services.interfaces.proposal_scraper_service import (
 )
 from src.domain.types.scraper_types import ScrapedProposal
 
+
 logger = logging.getLogger(__name__)
 
 

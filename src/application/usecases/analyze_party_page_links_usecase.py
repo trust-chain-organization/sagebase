@@ -14,9 +14,8 @@ from src.domain.services.interfaces.llm_link_classifier_service import (
     ILLMLinkClassifierService,
     LinkType,
 )
-from src.domain.services.link_analysis_domain_service import (
-    LinkAnalysisDomainService,
-)
+from src.domain.services.link_analysis_domain_service import LinkAnalysisDomainService
+
 
 logger = logging.getLogger(__name__)
 

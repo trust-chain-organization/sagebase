@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from enum import Enum
 
+
 # Default confidence threshold for classification decisions
 DEFAULT_CONFIDENCE_THRESHOLD = 0.7
 

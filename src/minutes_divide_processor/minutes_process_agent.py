@@ -1,5 +1,4 @@
 import uuid
-
 from typing import Any
 
 from langgraph.checkpoint.memory import MemorySaver
@@ -11,11 +10,7 @@ from src.infrastructure.external.instrumented_llm_service import InstrumentedLLM
 from src.infrastructure.external.minutes_divider.factory import MinutesDividerFactory
 
 # Use relative import for modules within the same package
-from .models import (
-    MinutesProcessState,
-    SectionStringList,
-    SpeakerAndSpeechContent,
-)
+from .models import MinutesProcessState, SectionStringList, SpeakerAndSpeechContent
 
 
 class MinutesProcessAgent:

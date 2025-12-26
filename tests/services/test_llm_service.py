@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from pydantic import BaseModel
 
 from src.infrastructure.external.llm_errors import (

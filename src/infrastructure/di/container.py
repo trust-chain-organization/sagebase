@@ -6,7 +6,6 @@ and manages the application-wide dependency injection.
 """
 
 import os
-
 from enum import Enum
 from typing import Any
 

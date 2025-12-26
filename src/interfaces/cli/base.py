@@ -2,7 +2,6 @@
 
 import asyncio
 import sys
-
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import wraps
@@ -12,13 +11,9 @@ import click
 
 from src.application.exceptions import ConfigurationError, ProcessingError
 from src.domain.exceptions import PolibaseError
-from src.infrastructure.exceptions import (
-    APIKeyError,
-    RecordNotFoundError,
-)
-from src.infrastructure.exceptions import (
-    ConnectionError as InfraConnectionError,
-)
+from src.infrastructure.exceptions import APIKeyError, RecordNotFoundError
+from src.infrastructure.exceptions import ConnectionError as InfraConnectionError
+
 
 ValidationError = ProcessingError  # Alias for backward compatibility
 

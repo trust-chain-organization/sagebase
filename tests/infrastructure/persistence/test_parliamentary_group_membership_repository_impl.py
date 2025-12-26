@@ -5,12 +5,12 @@ from unittest.mock import MagicMock
 from uuid import UUID
 
 import pytest
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure.persistence import (
     parliamentary_group_membership_repository_impl as pgm_repo,
 )
+
 
 ParliamentaryGroupMembershipRepositoryImpl = (
     pgm_repo.ParliamentaryGroupMembershipRepositoryImpl

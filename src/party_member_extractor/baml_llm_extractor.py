@@ -7,18 +7,17 @@
 import asyncio
 import logging
 import re
-
 from typing import Any
 from urllib.parse import urlparse
 
 import nest_asyncio
-
 from bs4 import BeautifulSoup, Tag
 
 from baml_client.async_client import b
 
 from ..infrastructure.persistence.llm_history_helper import SyncLLMHistoryHelper
 from .models import PartyMemberInfo, PartyMemberList, WebPageContent
+
 
 # Apply nest_asyncio to allow nested event loops
 nest_asyncio.apply()

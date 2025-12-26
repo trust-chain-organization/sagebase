@@ -5,4 +5,5 @@ from src.application.queries.politician_statistics_query import (
     PoliticianStatisticsQuery,
 )
 
+
 __all__ = ["PoliticianStatisticsQuery", "PartyStatistics"]

@@ -2,7 +2,6 @@
 
 import json
 import logging
-
 from datetime import date
 from typing import Any
 
@@ -14,6 +13,7 @@ from src.domain.entities.meeting import Meeting
 from src.domain.repositories.meeting_repository import MeetingRepository
 from src.domain.repositories.session_adapter import ISessionAdapter
 from src.infrastructure.persistence.base_repository_impl import BaseRepositoryImpl
+
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,6 @@
 """OpenTelemetryメトリクスの設定と共通ユーティリティ."""
 
 import os
-
 from typing import Any
 
 from opentelemetry import metrics
@@ -12,6 +11,7 @@ from opentelemetry.sdk.resources import Resource
 from prometheus_client import start_http_server
 
 from src.common.logging import get_logger
+
 
 logger = get_logger(__name__)
 

@@ -6,6 +6,7 @@ from src.common.logging import get_logger
 from src.domain.entities import Politician
 from src.domain.repositories.politician_repository import PoliticianRepository
 
+
 logger = get_logger(__name__)
 
 

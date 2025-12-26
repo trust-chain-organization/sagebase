@@ -12,13 +12,10 @@ from datetime import date
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.meeting import Meeting
-from src.infrastructure.persistence.meeting_repository_impl import (
-    MeetingRepositoryImpl,
-)
+from src.infrastructure.persistence.meeting_repository_impl import MeetingRepositoryImpl
 
 
 @pytest.fixture

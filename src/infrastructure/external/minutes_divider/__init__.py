@@ -8,6 +8,7 @@
 from .baml_minutes_divider import BAMLMinutesDivider
 from .factory import MinutesDividerFactory
 
+
 __all__ = [
     "BAMLMinutesDivider",
     "MinutesDividerFactory",
