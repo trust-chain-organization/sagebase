@@ -6,10 +6,12 @@ Provides common application logic with proper error handling and type safety.
 
 import logging
 import os
+
 from collections.abc import Callable
 from typing import Any, TypeVar
 
 import src.infrastructure.config.config as config
+
 from src.application.exceptions import (
     ConfigurationError,
     PDFProcessingError,

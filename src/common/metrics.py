@@ -1,6 +1,7 @@
 """OpenTelemetryメトリクスの設定と共通ユーティリティ."""
 
 import os
+
 from typing import Any
 
 from opentelemetry import metrics

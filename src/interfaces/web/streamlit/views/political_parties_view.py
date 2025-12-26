@@ -7,6 +7,7 @@ using the presenter pattern for business logic.
 from typing import Any
 
 import streamlit as st
+
 from src.interfaces.web.streamlit.presenters.political_party_presenter import (
     PoliticalPartyPresenter,
 )

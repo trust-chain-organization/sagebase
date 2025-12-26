@@ -1,6 +1,7 @@
 """View for politician management."""
 
 import streamlit as st
+
 from src.interfaces.web.streamlit.presenters.politician_presenter import (
     PoliticianPresenter,
 )

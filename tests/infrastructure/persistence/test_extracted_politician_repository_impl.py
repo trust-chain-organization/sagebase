@@ -5,6 +5,7 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.politician_party_extracted_politician import (

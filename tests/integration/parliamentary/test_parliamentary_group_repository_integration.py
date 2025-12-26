@@ -8,6 +8,7 @@ implementation using entity-based patterns.
 from datetime import date, timedelta
 
 import pytest
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 

@@ -1,6 +1,7 @@
 """議員団管理ビューのテスト"""
 
 import inspect
+
 from unittest.mock import MagicMock, patch
 
 import pytest

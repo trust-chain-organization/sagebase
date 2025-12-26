@@ -3,6 +3,7 @@
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+
 from click.testing import CliRunner
 
 from src.interfaces.cli.commands.politician_commands import PoliticianCommands

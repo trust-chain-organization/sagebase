@@ -1,6 +1,7 @@
 """Unit tests for date_parser module"""
 
 import logging
+
 from datetime import datetime
 from unittest.mock import MagicMock
 

@@ -5,6 +5,7 @@ Clean Architectureの原則に従い、依存性の注入とファクトリー�
 """
 
 import logging
+
 from typing import Any
 
 logger = logging.getLogger(__name__)

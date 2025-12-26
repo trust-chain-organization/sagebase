@@ -6,6 +6,7 @@
 import pandas as pd
 
 import streamlit as st
+
 from src.application.dtos.work_history_dto import WorkType
 from src.interfaces.web.streamlit.auth import google_sign_in
 from src.interfaces.web.streamlit.presenters.user_statistics_presenter import (

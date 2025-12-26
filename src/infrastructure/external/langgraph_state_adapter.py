@@ -1,6 +1,7 @@
 """Adapter to convert between domain state and LangGraph state."""
 
 import copy
+
 from dataclasses import asdict
 from typing import Annotated, Any
 

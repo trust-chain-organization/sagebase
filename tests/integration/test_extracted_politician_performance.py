@@ -1,6 +1,7 @@
 """Performance tests for extracted politician approval and conversion."""
 
 import time
+
 from unittest.mock import AsyncMock
 
 import pytest

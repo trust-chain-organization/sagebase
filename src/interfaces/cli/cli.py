@@ -2,6 +2,7 @@
 
 import logging
 import sys
+
 from collections.abc import Callable
 
 import click

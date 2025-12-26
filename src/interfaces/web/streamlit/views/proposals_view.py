@@ -5,6 +5,7 @@ using the presenter pattern for business logic.
 """
 
 import streamlit as st
+
 from src.domain.entities.extracted_proposal_judge import ExtractedProposalJudge
 from src.domain.entities.proposal import Proposal
 from src.domain.entities.proposal_judge import ProposalJudge

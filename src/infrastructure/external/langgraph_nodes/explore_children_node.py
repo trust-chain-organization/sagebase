@@ -1,6 +1,7 @@
 """LangGraph node for exploring child page links."""
 
 import logging
+
 from collections.abc import Awaitable, Callable
 
 from src.domain.services.interfaces.link_analyzer_service import ILinkAnalyzerService

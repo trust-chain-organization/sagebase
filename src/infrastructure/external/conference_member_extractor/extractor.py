@@ -1,6 +1,7 @@
 """Conference member extractor that saves to staging table"""
 
 import logging
+
 from typing import Any
 
 from bs4 import BeautifulSoup
