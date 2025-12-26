@@ -8,7 +8,6 @@ from datetime import date
 from typing import Any
 
 import streamlit as st
-
 from src.interfaces.web.streamlit.presenters.meeting_presenter import MeetingPresenter
 from src.interfaces.web.streamlit.utils.error_handler import handle_ui_error
 

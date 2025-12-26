@@ -5,8 +5,8 @@ from datetime import date
 from typing import Any, cast
 
 import pandas as pd
-import streamlit as st
 
+import streamlit as st
 from src.application.usecases.authenticate_user_usecase import AuthenticateUserUseCase
 from src.infrastructure.di.container import Container
 from src.interfaces.web.streamlit.auth import google_sign_in

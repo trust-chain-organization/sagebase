@@ -3,7 +3,6 @@
 from datetime import datetime, timedelta
 
 import streamlit as st
-
 from src.interfaces.web.streamlit.presenters.extracted_politician_presenter import (
     ExtractedPoliticianPresenter,
 )

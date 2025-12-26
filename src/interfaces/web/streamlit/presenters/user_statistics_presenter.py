@@ -9,8 +9,8 @@ from datetime import datetime
 from uuid import UUID
 
 import pandas as pd
-import streamlit as st
 
+import streamlit as st
 from src.application.dtos.user_statistics_dto import (
     UserStatisticsDTO,
 )
