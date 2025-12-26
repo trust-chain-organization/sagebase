@@ -5,9 +5,11 @@ This module handles data retrieval from PostgreSQL database.
 
 import asyncio
 import os
+
 from typing import Any
 
 import pandas as pd
+
 from sqlalchemy import create_engine, text
 
 from src.infrastructure.di.container import get_container, init_container

@@ -1,6 +1,7 @@
 """Tests for Party Member HTML Fetcher"""
 
 import warnings
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

@@ -6,10 +6,12 @@ settings and integrations.
 
 import logging
 import os
+
 from collections.abc import Callable
 from typing import Any, Literal, TypeVar, cast
 
 import sentry_sdk
+
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from sentry_sdk.types import Event

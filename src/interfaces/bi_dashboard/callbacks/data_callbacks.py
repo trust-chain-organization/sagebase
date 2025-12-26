@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 import plotly.graph_objects as go
+
 from dash import Input, Output, html
 from data.data_loader import (
     get_activity_trend_data,

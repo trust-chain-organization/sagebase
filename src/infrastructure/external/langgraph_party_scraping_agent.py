@@ -1,6 +1,7 @@
 """LangGraph-based implementation of party scraping agent."""
 
 import logging
+
 from dataclasses import replace
 
 from langgraph.graph import END, START, StateGraph

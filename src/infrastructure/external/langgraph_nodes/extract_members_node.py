@@ -1,6 +1,7 @@
 """LangGraph node for extracting party members from a page."""
 
 import logging
+
 from collections.abc import Awaitable, Callable
 
 from src.domain.services.interfaces.web_scraper_service import IWebScraperService

@@ -1,9 +1,11 @@
 """Tests for ConversationRepositoryImpl."""
 
 import asyncio
+
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 

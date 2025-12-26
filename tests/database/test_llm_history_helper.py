@@ -1,6 +1,7 @@
 """Tests for LLM history helper."""
 
 import json
+
 from collections.abc import Generator
 from datetime import UTC, datetime
 from typing import Any

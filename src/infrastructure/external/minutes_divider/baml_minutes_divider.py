@@ -7,6 +7,7 @@
 import logging
 import re
 import unicodedata
+
 from typing import Any
 
 from baml_client.async_client import b

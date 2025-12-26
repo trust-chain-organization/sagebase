@@ -1,6 +1,7 @@
 """kaigiroku.net議事録システムスクレーパー"""
 
 import asyncio
+
 from datetime import datetime
 from urllib.parse import parse_qs, urlparse
 

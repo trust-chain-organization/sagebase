@@ -1,6 +1,7 @@
 """Tests for Circuit Breaker implementation."""
 
 import asyncio
+
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 

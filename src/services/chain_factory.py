@@ -1,6 +1,7 @@
 """Factory for creating different types of LangChain chains"""
 
 import logging
+
 from typing import Any
 
 from langchain_core.prompts import ChatPromptTemplate

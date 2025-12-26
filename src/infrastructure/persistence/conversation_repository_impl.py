@@ -1,6 +1,7 @@
 """Conversation repository implementation."""
 
 import logging
+
 from datetime import datetime
 from typing import Any, TypedDict
 

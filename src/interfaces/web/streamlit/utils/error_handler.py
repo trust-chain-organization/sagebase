@@ -6,6 +6,7 @@ including user-friendly error messages and logging.
 
 import functools
 import traceback
+
 from collections.abc import Callable
 from typing import Any, TypeVar
 

@@ -6,6 +6,7 @@
 import contextvars
 import functools
 import logging
+
 from collections.abc import Callable
 from contextlib import contextmanager
 from typing import Any, TypeVar
@@ -137,6 +138,7 @@ def with_log_context(**default_context: Any) -> Callable[[T], T]:
 
         # 非同期関数か同期関数かで適切なラッパーを返す
         import asyncio
+
         from typing import cast
 
         if asyncio.iscoroutinefunction(func):
