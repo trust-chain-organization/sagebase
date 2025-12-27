@@ -88,7 +88,7 @@ class ScraperService:
         """
         # 会議情報を取得
         meeting_repo = RepositoryAdapter(MeetingRepositoryImpl)
-        meeting = meeting_repo.get_by_id(meeting_id)
+        meeting = await meeting_repo.get_by_id(meeting_id)
 
         if not meeting:
             self.logger.error(f"Meeting not found with ID: {meeting_id}")
