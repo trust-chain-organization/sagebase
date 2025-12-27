@@ -1,5 +1,7 @@
 """CLI commands for LLM evaluation"""
 
+import asyncio
+
 import click
 
 from ..base import BaseCommand, with_error_handling
@@ -87,10 +89,13 @@ class EvaluationCommands(BaseCommand):
         EvaluationCommands.show_progress("Starting evaluation...")
 
         try:
-            metrics = runner.run_evaluation(
-                task_type=task,
-                dataset_path=dataset,
-                run_all=run_all,
+            # Run async evaluation
+            metrics = asyncio.run(
+                runner.run_evaluation(
+                    task_type=task,
+                    dataset_path=dataset,
+                    run_all=run_all,
+                )
             )
 
             # Display results

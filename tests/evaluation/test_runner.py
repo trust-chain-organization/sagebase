@@ -4,7 +4,7 @@ import json
 import tempfile
 
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -78,7 +78,8 @@ class TestEvaluationRunner:
         finally:
             Path(tmp_path).unlink()
 
-    def test_execute_test_case_minutes_division(self):
+    @pytest.mark.asyncio
+    async def test_execute_test_case_minutes_division(self):
         """Test executing minutes division test case"""
         # Create runner directly without fixture to ensure use_real_llm=False
         with patch.dict("os.environ", {"GOOGLE_API_KEY": ""}, clear=False):
@@ -93,12 +94,13 @@ class TestEvaluationRunner:
                 },
             }
 
-            result = runner.execute_test_case("minutes_division", test_case)
+            result = await runner.execute_test_case("minutes_division", test_case)
 
             assert "speaker_and_speech_content_list" in result
             assert len(result["speaker_and_speech_content_list"]) == 1
 
-    def test_execute_test_case_speaker_matching(self):
+    @pytest.mark.asyncio
+    async def test_execute_test_case_speaker_matching(self):
         """Test executing speaker matching test case"""
         # Create runner directly without fixture to ensure use_real_llm=False
         with patch.dict("os.environ", {"GOOGLE_API_KEY": ""}, clear=False):
@@ -111,14 +113,18 @@ class TestEvaluationRunner:
                 },
             }
 
-            result = runner.execute_test_case("speaker_matching", test_case)
+            result = await runner.execute_test_case("speaker_matching", test_case)
 
             assert "results" in result
             assert len(result["results"]) == 1
 
+    @pytest.mark.asyncio
     @patch("src.evaluation.runner.EvaluationRunner.load_dataset")
-    @patch("src.evaluation.runner.EvaluationRunner.execute_test_case")
-    def test_run_evaluation_single_task(
+    @patch(
+        "src.evaluation.runner.EvaluationRunner.execute_test_case",
+        new_callable=AsyncMock,
+    )
+    async def test_run_evaluation_single_task(
         self, mock_execute, mock_load, runner, sample_dataset
     ):
         """Test running evaluation for a single task"""
@@ -129,7 +135,7 @@ class TestEvaluationRunner:
             ]
         }
 
-        metrics = runner.run_evaluation(
+        metrics = await runner.run_evaluation(
             task_type="minutes_division", dataset_path="test.json"
         )
 
@@ -138,9 +144,13 @@ class TestEvaluationRunner:
         mock_load.assert_called_once_with("test.json")
         mock_execute.assert_called_once()
 
+    @pytest.mark.asyncio
     @patch("src.evaluation.runner.EvaluationRunner.load_dataset")
-    @patch("src.evaluation.runner.EvaluationRunner.execute_test_case")
-    def test_run_evaluation_all_tasks(self, mock_execute, mock_load, runner):
+    @patch(
+        "src.evaluation.runner.EvaluationRunner.execute_test_case",
+        new_callable=AsyncMock,
+    )
+    async def test_run_evaluation_all_tasks(self, mock_execute, mock_load, runner):
         """Test running evaluation for all tasks"""
         mock_load.return_value = {
             "task_type": "minutes_division",
@@ -148,26 +158,30 @@ class TestEvaluationRunner:
         }
         mock_execute.return_value = {}
 
-        metrics = runner.run_evaluation(run_all=True)
+        metrics = await runner.run_evaluation(run_all=True)
 
         # Should attempt to run all 4 task types
         assert mock_load.call_count == 4
         assert len(metrics) == 4
 
-    def test_run_evaluation_no_task_specified(self, runner):
+    @pytest.mark.asyncio
+    async def test_run_evaluation_no_task_specified(self, runner):
         """Test running evaluation without specifying task"""
         with pytest.raises(ValueError) as exc_info:
-            runner.run_evaluation()
+            await runner.run_evaluation()
 
         assert "Either specify task_type or use run_all=True" in str(exc_info.value)
 
+    @pytest.mark.asyncio
     @patch("src.evaluation.runner.EvaluationRunner.load_dataset")
     @patch("builtins.print")
-    def test_run_evaluation_dataset_not_found(self, mock_print, mock_load, runner):
+    async def test_run_evaluation_dataset_not_found(
+        self, mock_print, mock_load, runner
+    ):
         """Test running evaluation with missing dataset"""
         mock_load.side_effect = FileNotFoundError("Dataset not found")
 
-        metrics = runner.run_evaluation(task_type="minutes_division")
+        metrics = await runner.run_evaluation(task_type="minutes_division")
 
         assert len(metrics) == 0
         mock_print.assert_called()
