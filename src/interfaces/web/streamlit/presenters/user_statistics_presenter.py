@@ -12,7 +12,9 @@ from uuid import UUID
 import pandas as pd
 import streamlit as st
 
-from src.application.dtos.user_statistics_dto import UserStatisticsDTO
+from src.application.dtos.user_statistics_dto import (
+    UserStatisticsDTO,
+)
 from src.application.dtos.work_history_dto import WorkType
 from src.application.usecases.get_user_statistics_usecase import (
     GetUserStatisticsUseCase,

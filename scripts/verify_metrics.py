@@ -8,7 +8,9 @@ import asyncio
 import random
 import sys
 import time
+
 from pathlib import Path
+
 
 # プロジェクトのルートディレクトリをPythonパスに追加
 project_root = Path(__file__).parent.parent
@@ -29,6 +31,7 @@ from src.common.metrics import (  # noqa: E402
 # from src.database.instrumented_repository import InstrumentedRepository  # noqa: E402
 # Removed after migration
 from src.services.instrumented_llm_service import InstrumentedLLMService  # noqa: E402
+
 
 # ロギングとメトリクスの設定
 setup_logging()

@@ -17,20 +17,10 @@ from src.domain.interfaces.parliamentary_group_member_extractor_service import (
 from src.domain.repositories.extracted_parliamentary_group_member_repository import (
     ExtractedParliamentaryGroupMemberRepository,
 )
-from src.domain.repositories.parliamentary_group_membership_repository import (
-    ParliamentaryGroupMembershipRepository,
-)
 from src.domain.repositories.parliamentary_group_repository import (
     ParliamentaryGroupRepository,
 )
-from src.domain.repositories.politician_repository import PoliticianRepository
-from src.domain.services.interfaces.llm_service import ILLMService
 
-
-# TODO: 旧実装への参照を削除し、新実装のUseCaseに置き換える必要がある
-# from src.parliamentary_group_member_extractor.service import (
-#     ParliamentaryGroupMembershipService,
-# )
 
 logger = get_logger(__name__)
 
@@ -116,25 +106,16 @@ class ExtractMembersInputDto:
 
 
 @dataclass
-class MemberMatchingResult:
-    """Member matching result."""
-
-    extracted_member: ExtractedParliamentaryGroupMemberDTO
-    politician_id: int | None = None
-    politician_name: str | None = None
-    confidence_score: float = 0.0
-    matching_reason: str = ""
-
-
-@dataclass
 class ExtractMembersOutputDto:
-    """Output DTO for extracting members."""
+    """議員団メンバー抽出結果のDTO。
+
+    Note: マッチングとメンバーシップ作成は別のUseCaseで行われます：
+    - MatchParliamentaryGroupMembersUseCase: 抽出メンバーと政治家のマッチング
+    - CreateParliamentaryGroupMembershipsUseCase: メンバーシップの作成
+    """
 
     success: bool
     extracted_members: list[ExtractedParliamentaryGroupMemberDTO] | None = None
-    matching_results: list[MemberMatchingResult] | None = None
-    created_count: int = 0
-    skipped_count: int = 0
     error_message: str | None = None
     errors: list[str] | None = None
 
@@ -156,9 +137,6 @@ class ManageParliamentaryGroupsUseCase:
         self,
         parliamentary_group_repository: ParliamentaryGroupRepository,
         member_extractor: IParliamentaryGroupMemberExtractorService | None = None,
-        politician_repository: PoliticianRepository | None = None,
-        membership_repository: ParliamentaryGroupMembershipRepository | None = None,
-        llm_service: ILLMService | None = None,
         extracted_member_repository: ExtractedParliamentaryGroupMemberRepository
         | None = None,
     ):
@@ -167,38 +145,11 @@ class ManageParliamentaryGroupsUseCase:
         Args:
             parliamentary_group_repository: Repository instance (can be sync or async)
             member_extractor: Member extractor service instance (injected)
-            politician_repository: Politician repository instance
-            membership_repository: Membership repository instance
-            llm_service: LLM service instance
             extracted_member_repository: Extracted member repository instance
         """
         self.parliamentary_group_repository = parliamentary_group_repository
         self.extractor = member_extractor  # Injected instead of created by Factory
-        self.politician_repository = politician_repository
-        self.membership_repository = membership_repository
-        self.llm_service = llm_service
         self.extracted_member_repository = extracted_member_repository
-
-        # Initialize membership service if all dependencies are available
-        # TODO: 旧実装のParliamentaryGroupMembershipServiceは削除予定
-        # 新実装のUseCaseを使用するように書き直す必要がある
-        # if all(
-        #     [
-        #         politician_repository,
-        #         parliamentary_group_repository,
-        #         membership_repository,
-        #         llm_service,
-        #     ]
-        # ):
-        #     self.membership_service = ParliamentaryGroupMembershipService(
-        #         llm_service=llm_service,
-        #         politician_repo=politician_repository,
-        #         group_repo=parliamentary_group_repository,
-        #         membership_repo=membership_repository,
-        #     )
-        # else:
-        #     self.membership_service = None
-        self.membership_service = None  # 旧実装は使用しない
 
     async def list_parliamentary_groups(
         self, input_dto: ParliamentaryGroupListInputDto
@@ -317,10 +268,14 @@ class ManageParliamentaryGroupsUseCase:
     async def extract_members(
         self, input_dto: ExtractMembersInputDto
     ) -> ExtractMembersOutputDto:
-        """Extract members from parliamentary group URL."""
+        """議員団URLからメンバーを抽出する。
+
+        Note: このメソッドはメンバーの抽出のみを行います。
+        マッチングとメンバーシップ作成は以下の別のUseCaseで実行してください：
+        - MatchParliamentaryGroupMembersUseCase: 抽出メンバーと政治家のマッチング
+        - CreateParliamentaryGroupMembershipsUseCase: メンバーシップの作成
+        """
         try:
-            # Check if services are available
-            # Note: membership_service is deprecated, only check extractor
             if not self.extractor:
                 return ExtractMembersOutputDto(
                     success=False,
@@ -369,18 +324,9 @@ class ManageParliamentaryGroupsUseCase:
                 except Exception as e:
                     logger.error(f"Failed to save extracted members to database: {e}")
 
-            # Note: マッチングとメンバーシップ作成は削除されました
-            # 代わりに、以下の新実装UseCaseを使用してください：
-            # 1. MatchParliamentaryGroupMembersUseCase - マッチング
-            # 2. CreateParliamentaryGroupMembershipsUseCase - メンバーシップ作成
-
-            # 抽出のみを行い、結果を返す
             return ExtractMembersOutputDto(
                 success=True,
                 extracted_members=extraction_result.extracted_members,
-                matching_results=None,  # マッチングは別のUseCaseで実行
-                created_count=0,
-                skipped_count=0,
             )
 
         except Exception as e:

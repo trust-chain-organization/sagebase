@@ -8,8 +8,10 @@ beyond the SQL migration script.
 import asyncio
 import logging
 import sys
+
 from datetime import datetime
 from pathlib import Path
+
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -24,6 +26,7 @@ from src.infrastructure.persistence.extracted_politician_repository_impl import 
 from src.infrastructure.persistence.politician_repository_impl import (
     PoliticianRepositoryImpl,
 )
+
 
 logging.basicConfig(
     level=logging.INFO,

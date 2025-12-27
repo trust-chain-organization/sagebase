@@ -3,7 +3,9 @@
 
 import sys
 import time
+
 from pathlib import Path
+
 
 # プロジェクトのルートディレクトリをPythonパスに追加
 project_root = Path(__file__).parent.parent
@@ -15,6 +17,7 @@ from src.common.metrics import (  # noqa: E402
     create_counter,
     setup_metrics,
 )
+
 
 # ロギングとメトリクスの設定
 setup_logging()

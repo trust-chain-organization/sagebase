@@ -28,26 +28,6 @@ class TestManageParliamentaryGroupsUseCase:
         return repo
 
     @pytest.fixture
-    def mock_politician_repository(self):
-        """Create mock politician repository."""
-        return AsyncMock()
-
-    @pytest.fixture
-    def mock_membership_repository(self):
-        """Create mock membership repository."""
-        return AsyncMock()
-
-    @pytest.fixture
-    def mock_llm_service(self):
-        """Create mock LLM service."""
-        return AsyncMock()
-
-    @pytest.fixture
-    def mock_extracted_member_repository(self):
-        """Create mock extracted member repository."""
-        return AsyncMock()
-
-    @pytest.fixture
     def use_case(self, mock_parliamentary_group_repository):
         """Create ManageParliamentaryGroupsUseCase instance."""
         return ManageParliamentaryGroupsUseCase(

@@ -3,6 +3,7 @@ Generate SEED data for governing_bodies table from city_and_prefecture_code.csv
 """
 
 import csv
+
 from pathlib import Path
 
 

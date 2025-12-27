@@ -63,15 +63,11 @@ class ParliamentaryGroupPresenter(BasePresenter[list[ParliamentaryGroup]]):
         # Initialize member extractor using Factory
         self.member_extractor = ParliamentaryGroupMemberExtractorFactory.create()
 
-        # Initialize use case with all required dependencies
-        # (including injected extractor)
+        # Initialize use case with required dependencies
         # Type: ignore - RepositoryAdapter duck-types as repository protocol
         self.use_case = ManageParliamentaryGroupsUseCase(
             parliamentary_group_repository=self.parliamentary_group_repo,  # type: ignore[arg-type]
             member_extractor=self.member_extractor,  # Injected extractor
-            politician_repository=self.politician_repo,  # type: ignore[arg-type]
-            membership_repository=self.membership_repo,  # type: ignore[arg-type]
-            llm_service=self.llm_service,
             extracted_member_repository=self.extracted_member_repo,  # type: ignore[arg-type]
         )
         self.session = SessionManager()
