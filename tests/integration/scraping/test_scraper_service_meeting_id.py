@@ -54,7 +54,7 @@ async def test_fetch_from_meeting_id_success(
     with patch("src.web_scraper.scraper_service.RepositoryAdapter") as mock_repo_class:
         # Mock the repository
         mock_repo = Mock()
-        mock_repo.get_by_id.return_value = mock_meeting
+        mock_repo.get_by_id = AsyncMock(return_value=mock_meeting)
         mock_repo_class.return_value = mock_repo
 
         # Mock fetch_from_url
@@ -77,7 +77,7 @@ async def test_fetch_from_meeting_id_not_found(scraper_service):
     with patch("src.web_scraper.scraper_service.RepositoryAdapter") as mock_repo_class:
         # Mock the repository to return None
         mock_repo = Mock()
-        mock_repo.get_by_id.return_value = None
+        mock_repo.get_by_id = AsyncMock(return_value=None)
         mock_repo_class.return_value = mock_repo
 
         # Execute
@@ -105,7 +105,7 @@ async def test_fetch_from_meeting_id_no_url(scraper_service):
         mock_meeting.created_at = datetime(2024, 1, 1)
         mock_meeting.updated_at = datetime(2024, 1, 1)
         mock_repo = Mock()
-        mock_repo.get_by_id.return_value = mock_meeting
+        mock_repo.get_by_id = AsyncMock(return_value=mock_meeting)
         mock_repo_class.return_value = mock_repo
 
         # Execute
@@ -124,7 +124,7 @@ async def test_fetch_from_meeting_id_with_cache_disabled(
     with patch("src.web_scraper.scraper_service.RepositoryAdapter") as mock_repo_class:
         # Mock the repository
         mock_repo = Mock()
-        mock_repo.get_by_id.return_value = mock_meeting
+        mock_repo.get_by_id = AsyncMock(return_value=mock_meeting)
         mock_repo_class.return_value = mock_repo
 
         # Mock fetch_from_url
@@ -147,7 +147,7 @@ async def test_fetch_from_meeting_id_scraping_failure(scraper_service, mock_meet
     with patch("src.web_scraper.scraper_service.RepositoryAdapter") as mock_repo_class:
         # Mock the repository
         mock_repo = Mock()
-        mock_repo.get_by_id.return_value = mock_meeting
+        mock_repo.get_by_id = AsyncMock(return_value=mock_meeting)
         mock_repo_class.return_value = mock_repo
 
         # Mock fetch_from_url to return None (failure)
