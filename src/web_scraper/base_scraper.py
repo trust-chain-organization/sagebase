@@ -1,6 +1,7 @@
 """Base scraper class for council minutes extraction"""
 
 import logging
+
 from abc import ABC, abstractmethod
 from datetime import datetime
 

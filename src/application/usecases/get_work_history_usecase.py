@@ -4,6 +4,7 @@
 """
 
 import logging
+
 from datetime import datetime
 from typing import Any
 from uuid import UUID
@@ -14,6 +15,7 @@ from src.domain.repositories.parliamentary_group_membership_repository import (
 )
 from src.domain.repositories.speaker_repository import SpeakerRepository
 from src.domain.repositories.user_repository import IUserRepository
+
 
 logger = logging.getLogger(__name__)
 

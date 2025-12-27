@@ -3,11 +3,13 @@
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure.persistence import (
     extracted_parliamentary_group_member_repository_impl as epgmr_impl,
 )
+
 
 ExtractedParliamentaryGroupMemberRepositoryImpl = (
     epgmr_impl.ExtractedParliamentaryGroupMemberRepositoryImpl

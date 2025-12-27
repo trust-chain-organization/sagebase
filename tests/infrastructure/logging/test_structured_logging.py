@@ -1,6 +1,7 @@
 """構造化ログの単体テスト."""
 
 import json
+
 from io import StringIO
 from unittest.mock import patch
 

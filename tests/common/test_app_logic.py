@@ -16,9 +16,7 @@ from src.common.app_logic import (
     setup_environment,
     validate_database_connection,
 )
-from src.infrastructure.exceptions import (
-    DatabaseError,
-)
+from src.infrastructure.exceptions import DatabaseError
 from src.infrastructure.exceptions import (
     FileNotFoundException as PolibaseFileNotFoundError,
 )

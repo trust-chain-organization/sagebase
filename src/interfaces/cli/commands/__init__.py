@@ -12,6 +12,7 @@ from .scraping_commands import get_scraping_commands
 from .seed_commands import get_seed_commands
 from .ui_commands import get_ui_commands
 
+
 __all__ = [
     "get_minutes_commands",
     "get_scraping_commands",

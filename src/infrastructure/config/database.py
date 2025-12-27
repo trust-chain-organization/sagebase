@@ -6,6 +6,7 @@ Provides database connection and session management with proper error handling.
 
 import logging
 import os
+
 from collections.abc import Generator
 from contextlib import contextmanager
 
@@ -15,6 +16,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.infrastructure.exceptions import ConnectionError, DatabaseError
+
 
 load_dotenv()
 

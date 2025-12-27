@@ -4,9 +4,7 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from src.application.dtos.link_analysis_dto import (
-    AnalyzeLinksInputDTO,
-)
+from src.application.dtos.link_analysis_dto import AnalyzeLinksInputDTO
 from src.application.usecases.analyze_party_page_links_usecase import (
     AnalyzePartyPageLinksUseCase,
 )

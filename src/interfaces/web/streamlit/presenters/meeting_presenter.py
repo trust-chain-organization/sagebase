@@ -5,6 +5,7 @@ handling UI state and coordinating with repositories.
 """
 
 import builtins
+
 from typing import Any
 
 import pandas as pd
@@ -43,16 +44,10 @@ from src.infrastructure.persistence.conversation_repository_impl import (
 from src.infrastructure.persistence.governing_body_repository_impl import (
     GoverningBodyRepositoryImpl,
 )
-from src.infrastructure.persistence.meeting_repository_impl import (
-    MeetingRepositoryImpl,
-)
-from src.infrastructure.persistence.minutes_repository_impl import (
-    MinutesRepositoryImpl,
-)
+from src.infrastructure.persistence.meeting_repository_impl import MeetingRepositoryImpl
+from src.infrastructure.persistence.minutes_repository_impl import MinutesRepositoryImpl
 from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
-from src.infrastructure.persistence.speaker_repository_impl import (
-    SpeakerRepositoryImpl,
-)
+from src.infrastructure.persistence.speaker_repository_impl import SpeakerRepositoryImpl
 from src.infrastructure.persistence.unit_of_work_impl import UnitOfWorkImpl
 from src.interfaces.web.streamlit.dto.base import FormStateDTO, WebResponseDTO
 from src.interfaces.web.streamlit.presenters.base import CRUDPresenter
@@ -120,9 +115,7 @@ class MeetingPresenter(CRUDPresenter[list[Meeting]]):
         from src.infrastructure.persistence.minutes_repository_impl import (
             MinutesRepositoryImpl,
         )
-        from src.infrastructure.persistence.repository_adapter import (
-            RepositoryAdapter,
-        )
+        from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
 
         # Get all meetings
         meetings = self.meeting_repo.get_all()

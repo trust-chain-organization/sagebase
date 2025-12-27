@@ -3,6 +3,7 @@
 import asyncio
 import inspect
 import logging
+
 from collections.abc import Callable
 from datetime import UTC
 from typing import Any
@@ -23,6 +24,7 @@ from src.domain.types import (
     LLMSpeakerMatchContext,
     PoliticianDTO,
 )
+
 
 logger = logging.getLogger(__name__)
 
@@ -338,6 +340,7 @@ class InstrumentedLLMService(ILLMService):
         # If we have a history repository and this looks like minutes processing
         if self._history_repository and self._input_reference_type == "meeting":
             import uuid
+
             from datetime import datetime
 
             # Generate a process ID

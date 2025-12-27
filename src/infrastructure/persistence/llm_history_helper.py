@@ -2,12 +2,14 @@
 
 import json
 import logging
+
 from datetime import UTC, datetime
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from src.infrastructure.config.settings import settings
+
 
 logger = logging.getLogger(__name__)
 

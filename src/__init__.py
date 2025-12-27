@@ -36,6 +36,7 @@ from src.infrastructure.exceptions import (
     URLException,
 )
 
+
 __all__ = [
     # Base exception
     "PolibaseError",

@@ -13,6 +13,7 @@ from langchain_core.runnables import Runnable
 from langchain_core.runnables.config import RunnableConfig
 from pydantic import BaseModel
 
+
 T = TypeVar("T", bound=BaseModel)
 
 

@@ -5,9 +5,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from src.application.usecases.authenticate_user_usecase import (
-    AuthenticateUserUseCase,
-)
+from src.application.usecases.authenticate_user_usecase import AuthenticateUserUseCase
 from src.domain.entities.user import User
 from src.domain.repositories.user_repository import IUserRepository
 

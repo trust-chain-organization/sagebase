@@ -2,9 +2,11 @@
 
 import asyncio
 import time
+
 from typing import Any
 
 import click
+
 from sqlalchemy import text
 
 from ..base import BaseCommand, with_error_handling

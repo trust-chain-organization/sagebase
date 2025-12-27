@@ -2,8 +2,9 @@
 
 from datetime import datetime
 
-from src.domain.entities.extracted_conference_member import ExtractedConferenceMember
 from tests.fixtures.entity_factories import create_extracted_conference_member
+
+from src.domain.entities.extracted_conference_member import ExtractedConferenceMember
 
 
 class TestExtractedConferenceMember:

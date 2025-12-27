@@ -11,6 +11,7 @@ from src.domain.services.baml_politician_matching_service import (
     BAMLPoliticianMatchingService,
 )
 
+
 pytestmark = pytest.mark.baml
 
 

@@ -5,6 +5,7 @@ The tools act as an adapter between the LangGraph framework and our use cases.
 """
 
 import logging
+
 from typing import Any
 
 from langchain_core.tools import tool
@@ -17,6 +18,7 @@ from src.application.usecases.analyze_party_page_links_usecase import (
     AnalyzePartyPageLinksUseCase,
 )
 from src.infrastructure.di.container import get_container
+
 
 logger = logging.getLogger(__name__)
 

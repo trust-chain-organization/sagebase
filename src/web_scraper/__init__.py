@@ -15,6 +15,7 @@ from .kaigiroku_net_scraper import KaigirokuNetScraper
 from .models import MinutesData, SpeakerData
 from .scraper_service import ScraperService
 
+
 __all__ = [
     # Base classes
     "BaseScraper",

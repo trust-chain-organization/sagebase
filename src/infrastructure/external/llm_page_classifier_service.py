@@ -3,10 +3,12 @@
 import logging
 
 from baml_client.async_client import b
+
 from src.domain.services.interfaces.page_classifier_service import (
     IPageClassifierService,
 )
 from src.domain.value_objects.page_classification import PageClassification, PageType
+
 
 logger = logging.getLogger(__name__)
 

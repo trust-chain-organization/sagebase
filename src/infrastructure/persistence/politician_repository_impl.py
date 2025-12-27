@@ -1,6 +1,7 @@
 """Politician repository implementation (async-only)."""
 
 import logging
+
 from typing import Any
 
 from sqlalchemy import text
@@ -12,6 +13,7 @@ from src.domain.entities.politician import Politician
 from src.domain.repositories.politician_repository import PoliticianRepository
 from src.domain.repositories.session_adapter import ISessionAdapter
 from src.infrastructure.persistence.base_repository_impl import BaseRepositoryImpl
+
 
 logger = logging.getLogger(__name__)
 

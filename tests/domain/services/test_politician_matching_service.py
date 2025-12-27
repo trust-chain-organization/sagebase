@@ -13,6 +13,7 @@ from src.domain.services.politician_matching_service import (
     PoliticianMatchingService,
 )
 
+
 # Test constants
 POLITICIAN_MATCH_THRESHOLD = 0.7
 HIGH_CONFIDENCE = 0.9

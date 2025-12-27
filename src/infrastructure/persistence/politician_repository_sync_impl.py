@@ -6,6 +6,7 @@ synchronous methods for backward compatibility with sync code.
 
 import asyncio
 import logging
+
 from dataclasses import asdict
 from typing import Any
 
@@ -13,13 +14,11 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from src.application.dtos.politician_dto import (
-    CreatePoliticianDTO,
-    UpdatePoliticianDTO,
-)
+from src.application.dtos.politician_dto import CreatePoliticianDTO, UpdatePoliticianDTO
 from src.infrastructure.persistence.politician_repository_impl import (
     PoliticianRepositoryImpl,
 )
+
 
 logger = logging.getLogger(__name__)
 

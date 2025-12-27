@@ -3,6 +3,7 @@
 import asyncio
 
 import click
+
 from sqlalchemy import text
 
 from src.domain.services.data_coverage_domain_service import DataCoverageDomainService

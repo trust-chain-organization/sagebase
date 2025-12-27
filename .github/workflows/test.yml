@@ -218,6 +218,15 @@ jobs:
 
       - name: Check code style
         run: |
+          echo "=== Ruff Version ==="
+          uv run ruff --version
+          echo "=== PyProject Isort Config ==="
+          cat pyproject.toml | grep -A 10 "isort"
+          echo "=== Current File Content (first 20 lines) ==="
+          head -20 src/interfaces/web/streamlit/auth/google_auth.py
+          echo "=== Ruff Suggests (--diff) ==="
+          uv run ruff check src/interfaces/web/streamlit/auth/google_auth.py --diff || true
+          echo "=== Ruff Check ==="
           uv run ruff check src/ tests/
 
       - name: Run type checking

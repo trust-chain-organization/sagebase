@@ -1,6 +1,7 @@
 """Domain entity for party scraping state (framework-independent)."""
 
 import copy
+
 from collections import deque
 from dataclasses import dataclass, field
 from urllib.parse import urlparse, urlunparse

@@ -1,18 +1,19 @@
 """kaigiroku.net議事録システムスクレーパー"""
 
 import asyncio
+
 from datetime import datetime
 from urllib.parse import parse_qs, urlparse
 
 from bs4 import BeautifulSoup
 from playwright.async_api import Page, async_playwright
 
-from src.infrastructure.config.settings import get_settings
-
 from .base_scraper import BaseScraper
 from .extractors import ContentExtractor, SpeakerExtractor
 from .handlers import FileHandler, PDFHandler
 from .models import MinutesData, SpeakerData
+
+from src.infrastructure.config.settings import get_settings
 
 
 class KaigirokuNetScraper(BaseScraper):

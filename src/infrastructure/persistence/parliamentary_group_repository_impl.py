@@ -5,16 +5,16 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from .parliamentary_group_membership_repository_impl import (
+    ParliamentaryGroupMembershipRepositoryImpl,
+)
+
 from src.domain.entities.parliamentary_group import ParliamentaryGroup
 from src.domain.repositories.parliamentary_group_repository import (
     ParliamentaryGroupRepository as IParliamentaryGroupRepository,
 )
 from src.domain.repositories.session_adapter import ISessionAdapter
 from src.infrastructure.persistence.base_repository_impl import BaseRepositoryImpl
-
-from .parliamentary_group_membership_repository_impl import (
-    ParliamentaryGroupMembershipRepositoryImpl,
-)
 
 
 class ParliamentaryGroupModel:

@@ -6,6 +6,7 @@
 import asyncio
 import functools
 import logging
+
 from collections.abc import Callable
 from typing import Any
 
@@ -31,6 +32,7 @@ from src.infrastructure.exceptions import (
     RateLimitException,
     TimeoutException,
 )
+
 
 logger = logging.getLogger(__name__)
 

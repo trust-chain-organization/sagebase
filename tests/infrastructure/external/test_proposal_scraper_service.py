@@ -1,6 +1,7 @@
 """Unit tests for ProposalScraperService."""
 
 import json
+
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, create_autospec, patch
 
@@ -8,9 +9,7 @@ import pytest
 
 from src.domain.services.interfaces.llm_service import ILLMService
 from src.domain.types.scraper_types import ScrapedProposal
-from src.infrastructure.external.proposal_scraper_service import (
-    ProposalScraperService,
-)
+from src.infrastructure.external.proposal_scraper_service import ProposalScraperService
 
 
 class TestProposalScraperService:

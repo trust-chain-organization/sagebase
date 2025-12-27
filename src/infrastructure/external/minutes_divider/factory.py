@@ -5,9 +5,11 @@ Clean Architectureの原則に従い、依存性の注入とファクトリー�
 """
 
 import logging
+
 from typing import Any
 
 from src.domain.interfaces.minutes_divider_service import IMinutesDividerService
+
 
 logger = logging.getLogger(__name__)
 

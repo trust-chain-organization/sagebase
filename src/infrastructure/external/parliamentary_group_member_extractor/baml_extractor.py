@@ -5,11 +5,13 @@ BAMLを使用してトークン効率とパース精度を向上。
 """
 
 import logging
+
 from datetime import datetime
 
 from bs4 import BeautifulSoup
 
 from baml_client.async_client import b
+
 from src.domain.dtos.parliamentary_group_member_dto import (
     ExtractedParliamentaryGroupMemberDTO,
     ParliamentaryGroupMemberExtractionResultDTO,
@@ -18,6 +20,7 @@ from src.domain.interfaces.parliamentary_group_member_extractor_service import (
     IParliamentaryGroupMemberExtractorService,
 )
 from src.party_member_extractor.html_fetcher import PartyMemberPageFetcher
+
 
 logger = logging.getLogger(__name__)
 

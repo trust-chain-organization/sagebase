@@ -12,6 +12,7 @@ Track migration in a separate issue.
 """
 
 import logging
+
 from typing import Any
 
 from langchain_core.tools import tool
@@ -21,6 +22,7 @@ from src.interfaces.factories.party_member_extractor_factory import (
     PartyMemberExtractorFactory,
 )
 from src.party_member_extractor.models import WebPageContent
+
 
 logger = logging.getLogger(__name__)
 

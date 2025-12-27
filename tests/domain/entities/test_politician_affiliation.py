@@ -2,8 +2,9 @@
 
 from datetime import date
 
-from src.domain.entities.politician_affiliation import PoliticianAffiliation
 from tests.fixtures.entity_factories import create_politician_affiliation
+
+from src.domain.entities.politician_affiliation import PoliticianAffiliation
 
 
 class TestPoliticianAffiliation:

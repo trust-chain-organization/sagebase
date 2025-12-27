@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 from src.domain.entities.conversation import Conversation
 from src.domain.entities.minutes import Minutes
 
+
 if TYPE_CHECKING:
     from src.application.dtos.minutes_dto import ExtractedSpeechDTO
 

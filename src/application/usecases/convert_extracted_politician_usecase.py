@@ -16,6 +16,7 @@ from src.domain.repositories.extracted_politician_repository import (
 from src.domain.repositories.politician_repository import PoliticianRepository
 from src.domain.repositories.speaker_repository import SpeakerRepository
 
+
 logger = logging.getLogger(__name__)
 
 

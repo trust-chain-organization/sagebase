@@ -7,4 +7,5 @@ from src.infrastructure.external.conference_member_extractor.extractor import (
     ConferenceMemberExtractor,
 )
 
+
 __all__ = ["ConferenceMemberExtractor"]

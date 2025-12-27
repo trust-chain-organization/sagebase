@@ -1,6 +1,7 @@
 """Performance tests for extracted politician approval and conversion."""
 
 import time
+
 from unittest.mock import AsyncMock
 
 import pytest
@@ -8,9 +9,7 @@ import pytest
 from src.application.dtos.convert_extracted_politician_dto import (
     ConvertExtractedPoliticianInputDTO,
 )
-from src.application.dtos.review_extracted_politician_dto import (
-    BulkReviewInputDTO,
-)
+from src.application.dtos.review_extracted_politician_dto import BulkReviewInputDTO
 from src.application.usecases.convert_extracted_politician_usecase import (
     ConvertExtractedPoliticianUseCase,
 )

@@ -6,11 +6,13 @@ party member scraping workflow.
 """
 
 import logging
+
 from typing import Any
 
 from langchain_core.messages import HumanMessage
 
 from ..utils.url_normalizer import normalize_url
+
 
 logger = logging.getLogger(__name__)
 

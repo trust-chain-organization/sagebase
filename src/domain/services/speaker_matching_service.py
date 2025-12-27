@@ -2,6 +2,7 @@
 
 import logging
 import re
+
 from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
@@ -9,6 +10,7 @@ from pydantic import BaseModel, Field
 from src.domain.exceptions import ExternalServiceException
 from src.domain.repositories.speaker_repository import SpeakerRepository
 from src.domain.services.interfaces.llm_service import ILLMService
+
 
 if TYPE_CHECKING:
     pass

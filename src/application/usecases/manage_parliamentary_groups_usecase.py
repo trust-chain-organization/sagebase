@@ -21,6 +21,7 @@ from src.domain.repositories.parliamentary_group_repository import (
     ParliamentaryGroupRepository,
 )
 
+
 logger = get_logger(__name__)
 
 

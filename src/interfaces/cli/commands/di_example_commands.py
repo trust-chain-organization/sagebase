@@ -6,14 +6,12 @@ This module shows how to integrate the DI container with CLI commands.
 
 import asyncio
 import sys
+
 from typing import Any
 
 import click
 
-from src.infrastructure.di.container import (
-    ApplicationContainer,
-    init_container,
-)
+from src.infrastructure.di.container import ApplicationContainer, init_container
 
 
 @click.command()
@@ -106,9 +104,7 @@ def scrape_politicians_with_di(
 
         # Execute the use case
         async def run_scrape():
-            from src.application.dtos.politician_dto import (
-                ScrapePoliticiansInputDTO,
-            )
+            from src.application.dtos.politician_dto import ScrapePoliticiansInputDTO
 
             if all_parties:
                 # Get all parties from repository

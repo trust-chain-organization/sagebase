@@ -1,6 +1,7 @@
 """Tests for LLM history helper."""
 
 import json
+
 from collections.abc import Generator
 from datetime import UTC, datetime
 from typing import Any
@@ -9,6 +10,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from src.infrastructure.persistence.llm_history_helper import SyncLLMHistoryHelper
+
 
 # Type aliases for shorter lines
 MockGen = Generator[MagicMock]

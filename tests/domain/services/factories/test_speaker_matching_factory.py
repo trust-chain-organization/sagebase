@@ -11,6 +11,7 @@ from src.domain.services.factories.speaker_matching_factory import (
     SpeakerMatchingServiceFactory,
 )
 
+
 pytestmark = pytest.mark.baml
 
 

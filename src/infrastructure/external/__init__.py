@@ -8,6 +8,7 @@ from src.infrastructure.external.web_scraper_service import (
     PlaywrightScraperService,
 )
 
+
 __all__ = [
     # Interfaces
     "ILLMService",

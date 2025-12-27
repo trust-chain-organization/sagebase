@@ -13,9 +13,8 @@ from src.infrastructure.persistence.prompt_version_repository_impl import (
     PromptVersionRepositoryImpl,
 )
 from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
-from src.infrastructure.persistence.speaker_repository_impl import (
-    SpeakerRepositoryImpl,
-)
+from src.infrastructure.persistence.speaker_repository_impl import SpeakerRepositoryImpl
+
 
 __all__ = [
     "AsyncSessionAdapter",

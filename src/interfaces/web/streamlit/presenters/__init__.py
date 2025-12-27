@@ -9,6 +9,7 @@ from .political_party_presenter import PoliticalPartyPresenter
 from .politician_presenter import PoliticianPresenter
 from .process_presenter import ProcessPresenter
 
+
 __all__ = [
     "ConferencePresenter",
     "GoverningBodyPresenter",

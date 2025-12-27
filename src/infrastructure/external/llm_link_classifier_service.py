@@ -3,6 +3,7 @@
 import logging
 
 from baml_client.async_client import b
+
 from src.domain.services.interfaces.llm_link_classifier_service import (
     ILLMLinkClassifierService,
     LinkClassification,
@@ -10,6 +11,7 @@ from src.domain.services.interfaces.llm_link_classifier_service import (
     LinkType,
 )
 from src.domain.value_objects.link import Link
+
 
 logger = logging.getLogger(__name__)
 

@@ -23,6 +23,7 @@ from src.domain.services.interfaces.unit_of_work import IUnitOfWork
 from src.domain.services.speaker_domain_service import SpeakerDomainService
 from src.domain.value_objects.speaker_speech import SpeakerSpeech
 
+
 logger = get_logger(__name__)
 
 

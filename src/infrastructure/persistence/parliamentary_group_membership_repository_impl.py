@@ -24,6 +24,7 @@ from src.infrastructure.persistence.sqlalchemy_models import (
     ParliamentaryGroupMembershipModel,
 )
 
+
 # Time interval functions for timeline statistics
 INTERVAL_FUNCTIONS = {
     "day": "DATE(created_at)",

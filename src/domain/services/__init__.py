@@ -9,6 +9,7 @@ from src.domain.services.parliamentary_group_domain_service import (
 from src.domain.services.politician_domain_service import PoliticianDomainService
 from src.domain.services.speaker_domain_service import SpeakerDomainService
 
+
 __all__ = [
     "ConferenceDomainService",
     "DataCoverageDomainService",

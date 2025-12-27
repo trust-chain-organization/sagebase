@@ -11,6 +11,7 @@ import pypdfium2 as pdfium
 
 from src.application.exceptions import PDFProcessingError, TextExtractionError
 
+
 logger = logging.getLogger(__name__)
 
 

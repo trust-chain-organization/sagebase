@@ -19,6 +19,7 @@ Usage Examples:
 import asyncio
 import logging
 import types
+
 from collections.abc import Coroutine
 from contextlib import asynccontextmanager
 from typing import Any, TypeVar
@@ -27,6 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import Session
 
 from src.infrastructure.config.database import DATABASE_URL
+
 
 T = TypeVar("T")
 logger = logging.getLogger(__name__)

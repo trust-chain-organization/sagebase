@@ -1,6 +1,7 @@
 """Conference repository implementation using SQLAlchemy."""
 
 import logging
+
 from datetime import datetime
 from typing import Any
 
@@ -18,6 +19,7 @@ from src.infrastructure.exceptions import (
     UpdateError,
 )
 from src.infrastructure.persistence.base_repository_impl import BaseRepositoryImpl
+
 
 logger = logging.getLogger(__name__)
 

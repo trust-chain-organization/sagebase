@@ -9,6 +9,7 @@ from src.domain.services.interfaces.minutes_processing_service import (
 from src.domain.value_objects.speaker_speech import SpeakerSpeech
 from src.minutes_divide_processor.minutes_process_agent import MinutesProcessAgent
 
+
 logger = structlog.get_logger(__name__)
 
 

@@ -19,6 +19,7 @@ from src.domain.repositories.llm_processing_history_repository import (
 from src.domain.repositories.session_adapter import ISessionAdapter
 from src.infrastructure.persistence.base_repository_impl import BaseRepositoryImpl
 
+
 Base = declarative_base()
 
 

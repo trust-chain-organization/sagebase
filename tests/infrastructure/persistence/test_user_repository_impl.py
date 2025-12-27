@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID, uuid4
 
 import pytest
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.user import User

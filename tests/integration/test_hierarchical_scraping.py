@@ -20,6 +20,7 @@ from src.infrastructure.external.langgraph_party_scraping_agent_with_classificat
     LangGraphPartyScrapingAgentWithClassification,
 )
 
+
 # fmt: on
 
 

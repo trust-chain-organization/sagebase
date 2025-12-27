@@ -10,6 +10,7 @@ from src.infrastructure.external.langgraph_state_adapter import (
     LangGraphPartyScrapingStateOptional,
 )
 
+
 logger = logging.getLogger(__name__)
 
 

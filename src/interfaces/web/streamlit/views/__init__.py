@@ -11,6 +11,7 @@ from .political_parties_view import render_political_parties_page
 from .politicians_view import render_politicians_page
 from .processes_view import render_processes_page
 
+
 __all__ = [
     "render_conferences_page",
     "render_conversations_page",

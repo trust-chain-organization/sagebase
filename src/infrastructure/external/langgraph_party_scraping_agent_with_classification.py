@@ -5,9 +5,20 @@ and recursive navigation capabilities (PBI-004).
 """
 
 import logging
+
 from dataclasses import replace
 
 from langgraph.graph import END, START, StateGraph
+
+from .langgraph_nodes.decision_node import should_explore_children
+from .langgraph_nodes.explore_children_node import create_explore_children_node
+from .langgraph_nodes.extract_members_node import create_extract_members_node
+from .langgraph_nodes.page_classifier_node import create_page_classifier_node
+from .langgraph_state_adapter import (
+    LangGraphPartyScrapingState,
+    domain_to_langgraph_state,
+    langgraph_to_domain_state,
+)
 
 from src.domain.entities.party_scraping_state import PartyScrapingState
 from src.domain.services.interfaces.link_analyzer_service import ILinkAnalyzerService
@@ -20,15 +31,6 @@ from src.domain.services.party_member_extraction_service import (
     IPartyMemberExtractionService,
 )
 
-from .langgraph_nodes.decision_node import should_explore_children
-from .langgraph_nodes.explore_children_node import create_explore_children_node
-from .langgraph_nodes.extract_members_node import create_extract_members_node
-from .langgraph_nodes.page_classifier_node import create_page_classifier_node
-from .langgraph_state_adapter import (
-    LangGraphPartyScrapingState,
-    domain_to_langgraph_state,
-    langgraph_to_domain_state,
-)
 
 logger = logging.getLogger(__name__)
 

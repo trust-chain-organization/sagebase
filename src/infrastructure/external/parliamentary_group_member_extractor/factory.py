@@ -9,6 +9,7 @@ from src.domain.interfaces.parliamentary_group_member_extractor_service import (
     IParliamentaryGroupMemberExtractorService,
 )
 
+
 logger = logging.getLogger(__name__)
 
 

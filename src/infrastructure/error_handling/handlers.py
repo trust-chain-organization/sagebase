@@ -5,9 +5,12 @@
 
 import logging
 import traceback
+
 from collections.abc import Callable
 from typing import Any
 from uuid import uuid4
+
+from .models import ErrorResponse
 
 from src.application.exceptions import (
     AuthorizationException,
@@ -38,7 +41,6 @@ from src.infrastructure.exceptions import (
     TimeoutException,
 )
 
-from .models import ErrorResponse
 
 logger = logging.getLogger(__name__)
 

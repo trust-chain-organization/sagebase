@@ -12,6 +12,7 @@ from src.application.usecases.analyze_party_page_links_usecase import (
 )
 from src.domain.services.interfaces.link_analyzer_service import ILinkAnalyzerService
 
+
 logger = logging.getLogger(__name__)
 
 

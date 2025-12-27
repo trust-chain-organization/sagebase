@@ -12,6 +12,7 @@ from src.domain.services.interfaces.proposal_scraper_service import (
 )
 from src.domain.services.interfaces.web_scraper_service import IWebScraperService
 
+
 __all__ = [
     "ILLMService",
     "IMinutesProcessingService",
