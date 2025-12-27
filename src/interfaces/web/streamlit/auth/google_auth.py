@@ -9,13 +9,8 @@ import os
 from typing import Any
 
 import requests
-<<<<<<< HEAD
-
-from streamlit_oauth import OAuth2Component
-
-=======
->>>>>>> f6794a0 (fix: 同じセクション内のimportとfrom importの間の空行を削除)
 import streamlit as st
+
 from streamlit_oauth import OAuth2Component
 
 
