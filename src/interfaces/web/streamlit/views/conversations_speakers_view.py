@@ -68,8 +68,22 @@ def render_matching_tab() -> None:
     if st.button("マッチング実行", type="primary"):
         with st.spinner("マッチング処理を実行中..."):
             try:
-                # Get container and use cases
+                # Import services directly (same pattern as meeting_presenter.py)
+                from src.domain.services.speaker_domain_service import (
+                    SpeakerDomainService,
+                )
+                from src.infrastructure.external.llm_service import GeminiLLMService
+
+                # Get container for repositories
                 container = Container()
+
+                # Initialize services with default values
+                llm_service = (
+                    GeminiLLMService()
+                )  # Uses defaults, implements ILLMService
+                speaker_domain_service = SpeakerDomainService()
+
+                # Initialize use cases
                 auth_usecase = AuthenticateUserUseCase(
                     user_repository=container.repositories.user_repository()
                 )
@@ -77,8 +91,8 @@ def render_matching_tab() -> None:
                     speaker_repository=container.repositories.speaker_repository(),
                     politician_repository=container.repositories.politician_repository(),
                     conversation_repository=container.repositories.conversation_repository(),
-                    speaker_domain_service=container.services.speaker_domain_service(),
-                    llm_service=container.services.llm_service(),
+                    speaker_domain_service=speaker_domain_service,
+                    llm_service=llm_service,
                 )
 
                 # Authenticate user and get user_id

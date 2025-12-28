@@ -184,25 +184,21 @@ Sagebaseでは、以下の機能にBAML (Boundary ML)を使用しています。
 - **実装**: `src/party_member_extractor/baml_llm_extractor.py`
 - **備考**: Pydantic実装は削除済み、BAML実装のみ使用
 
-#### 5. 話者マッチング（Speaker Matching） **NEW**
+#### 5. 話者マッチング（Speaker Matching） **BAML専用**
 - **BAML定義**: `baml_src/speaker_matching.baml`
-- **環境変数**: `USE_BAML_SPEAKER_MATCHING=true` （デフォルト: false）
 - **実装**: `src/domain/services/baml_speaker_matching_service.py`
-- **ファクトリー**: `src/domain/services/factories/speaker_matching_factory.py`
+- **備考**: Pydantic実装は削除済み、BAML実装のみ使用
 - **ハイブリッドアプローチ**: ルールベースマッチング（高速パス）+ BAMLマッチング
 
-#### 6. 政治家マッチング（Politician Matching） **NEW**
+#### 6. 政治家マッチング（Politician Matching） **BAML専用**
 - **BAML定義**: `baml_src/politician_matching.baml`
-- **環境変数**: `USE_BAML_POLITICIAN_MATCHING=true` （デフォルト: false）
 - **実装**: `src/domain/services/baml_politician_matching_service.py`
-- **ファクトリー**: `src/domain/services/factories/politician_matching_factory.py`
+- **備考**: Pydantic実装は削除済み、BAML実装のみ使用
 - **ハイブリッドアプローチ**: ルールベースマッチング（高速パス）+ BAMLマッチング
 
 ### Implementation Pattern
-- **Factory Pattern**: 環境変数に基づいて適切な実装を注入
 - **High-Speed Path**: ルールベースマッチング（完全一致、部分一致）で信頼度0.9以上の場合はLLMをスキップ
 - **LLM Matching**: 複雑なケースのみBAMLを使用してマッチング
-- **Interface**: 既存コードとの互換性を保証
 
 ### トークン削減効果
 - **議事録分割**: 約10-15%削減
