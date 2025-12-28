@@ -286,7 +286,8 @@ class MonitoringRepositoryImpl:
             JOIN governing_bodies gb ON c.governing_body_id = gb.id
             LEFT JOIN meetings m ON c.id = m.conference_id
             LEFT JOIN politician_affiliations pa ON c.id = pa.conference_id
-            LEFT JOIN conversations conv ON m.id = conv.meeting_id
+            LEFT JOIN minutes min ON m.id = min.meeting_id
+            LEFT JOIN conversations conv ON min.id = conv.minutes_id
             GROUP BY c.id, c.name, gb.name
             ORDER BY meeting_count DESC
         """)
@@ -345,7 +346,8 @@ class MonitoringRepositoryImpl:
                     DATE(m.date) as date,
                     COUNT(c.id) as count
                 FROM conversations c
-                JOIN meetings m ON c.meeting_id = m.id
+                JOIN minutes min ON c.minutes_id = min.id
+                JOIN meetings m ON min.meeting_id = m.id
                 WHERE m.date >= CURRENT_DATE - INTERVAL ':days days'
                 GROUP BY DATE(m.date)
             ),
@@ -392,7 +394,8 @@ class MonitoringRepositoryImpl:
                     DATE(m.date) as date,
                     COUNT(c.id) as count
                 FROM conversations c
-                JOIN meetings m ON c.meeting_id = m.id
+                JOIN minutes min ON c.minutes_id = min.id
+                JOIN meetings m ON min.meeting_id = m.id
                 WHERE m.date >= CURRENT_DATE - INTERVAL '{period_days} days'
                 GROUP BY DATE(m.date)
             ),
@@ -491,7 +494,8 @@ class MonitoringRepositoryImpl:
                 LEFT JOIN conferences c ON gb.id = c.governing_body_id
                 LEFT JOIN meetings m ON c.id = m.conference_id
                 LEFT JOIN politician_affiliations pa ON c.id = pa.conference_id
-                LEFT JOIN conversations conv ON m.id = conv.meeting_id
+                LEFT JOIN minutes min ON m.id = min.meeting_id
+                LEFT JOIN conversations conv ON min.id = conv.minutes_id
                 WHERE gb.type IN ('都道府県', '市町村')
                 GROUP BY gb.id, gb.name, gb.type,
                     gb.organization_code, gb.organization_type
@@ -559,7 +563,7 @@ class MonitoringRepositoryImpl:
                 type,
                 total,
                 with_data,
-                ROUND(CAST(with_data AS REAL) / total * 100, 2)
+                ROUND(CAST(CAST(with_data AS REAL) / total * 100 AS NUMERIC), 2)
                     as coverage_percentage
             FROM coverage
         """)

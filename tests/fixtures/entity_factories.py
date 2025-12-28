@@ -42,8 +42,7 @@ def create_conference(**kwargs: Any) -> Conference:
         "id": 1,
         "governing_body_id": 1,
         "name": "議会全体",
-        "description": "議会全体会議",
-        "is_active": True,
+        "type": "地方議会全体",
         "members_introduction_url": None,
     }
     defaults.update(kwargs)
@@ -96,11 +95,11 @@ def create_politician(**kwargs: Any) -> Politician:
     defaults = {
         "id": 1,
         "name": "山田太郎",
-        "speaker_id": 1,
         "political_party_id": None,
         "furigana": None,
         "district": None,
         "profile_page_url": None,
+        "party_position": None,
     }
     defaults.update(kwargs)
     return Politician(**defaults)
