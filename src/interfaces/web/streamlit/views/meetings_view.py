@@ -229,16 +229,44 @@ def render_meeting_row(
                 presenter.set_editing_mode(display_row["ID"])
                 st.rerun()
 
+            # セッションステートのキーを定義
+            confirm_key = f"confirm_delete_{meeting_id}"
+
+            # 削除ボタン
             if st.button(
                 "削除",
                 key=f"delete_{meeting_id}",
                 type="secondary",
                 use_container_width=True,
             ):
-                if st.checkbox(
-                    "本当に削除しますか？", key=f"confirm_delete_{meeting_id}"
-                ):
-                    delete_meeting(presenter, display_row["ID"])
+                # 確認待ち状態をセット
+                st.session_state[confirm_key] = True
+
+            # 確認待ち状態の場合、確認UI を表示
+            if st.session_state.get(confirm_key, False):
+                st.warning("⚠️ 本当に削除しますか？")
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    if st.button(
+                        "削除実行",
+                        key=f"execute_delete_{meeting_id}",
+                        type="primary",
+                        use_container_width=True,
+                    ):
+                        delete_meeting(presenter, display_row["ID"])
+                        # 確認状態をクリア
+                        st.session_state[confirm_key] = False
+
+                with col2:
+                    if st.button(
+                        "キャンセル",
+                        key=f"cancel_delete_{meeting_id}",
+                        use_container_width=True,
+                    ):
+                        # 確認状態をクリア
+                        st.session_state[confirm_key] = False
+                        st.rerun()
 
     # Add divider between records
     st.divider()
