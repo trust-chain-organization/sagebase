@@ -25,6 +25,33 @@ calculate_port_offset() {
     echo $(( hash * 10 ))
 }
 
+# config.tomlを作成/更新する関数
+update_config_toml() {
+    local streamlit_port=$1
+
+    cat > .streamlit/config.toml << EOF
+[server]
+# Enable CORS for OAuth2 callback
+enableCORS = false
+enableXsrfProtection = false
+
+# Headless mode (for Docker)
+headless = true
+
+# Server address
+address = "0.0.0.0"
+port = 8501
+
+# Allow websocket origins for OAuth2 callback
+enableWebsocketCompression = false
+
+[browser]
+serverAddress = "localhost"
+serverPort = $streamlit_port
+EOF
+    echo "   ✅ Updated .streamlit/config.toml with port $streamlit_port"
+}
+
 # Calculate offset for this worktree
 OFFSET=$(calculate_port_offset "$WORKTREE_NAME")
 
@@ -54,15 +81,8 @@ if [ ! -f .streamlit/secrets.toml ] && [ -f "$MAIN_WORKTREE/.streamlit/secrets.t
     echo "✅ Copied and updated .streamlit/secrets.toml with port $STREAMLIT_PORT"
     echo "   Redirect URI: http://localhost:$STREAMLIT_PORT/oauth2callback"
 
-    # Also update config.toml if it exists
-    if [ -f .streamlit/config.toml ]; then
-        if [ "$(uname)" = "Darwin" ]; then
-            sed -i '' "s/serverPort = [0-9]*/serverPort = $STREAMLIT_PORT/g" .streamlit/config.toml
-        else
-            sed -i "s/serverPort = [0-9]*/serverPort = $STREAMLIT_PORT/g" .streamlit/config.toml
-        fi
-        echo "   Updated .streamlit/config.toml with port $STREAMLIT_PORT"
-    fi
+    # Update config.toml (create if not exists)
+    update_config_toml $STREAMLIT_PORT
 
     exit 0
 fi
@@ -87,15 +107,8 @@ if [ -f .streamlit/secrets.toml ]; then
         fi
         echo "   ✅ Updated redirect URI to: http://localhost:$STREAMLIT_PORT/oauth2callback"
 
-        # Also update config.toml if it exists
-        if [ -f .streamlit/config.toml ]; then
-            if [ "$(uname)" = "Darwin" ]; then
-                sed -i '' "s/serverPort = [0-9]*/serverPort = $STREAMLIT_PORT/g" .streamlit/config.toml
-            else
-                sed -i "s/serverPort = [0-9]*/serverPort = $STREAMLIT_PORT/g" .streamlit/config.toml
-            fi
-            echo "   ✅ Updated .streamlit/config.toml with port $STREAMLIT_PORT"
-        fi
+        # Update config.toml (create if not exists)
+        update_config_toml $STREAMLIT_PORT
 
         exit 0
     fi
@@ -154,27 +167,7 @@ EOF
     echo "   Redirect URI: http://localhost:$STREAMLIT_PORT/oauth2callback"
 
     # Create or update config.toml
-    cat > .streamlit/config.toml << EOF
-[server]
-# Enable CORS for OAuth2 callback
-enableCORS = false
-enableXsrfProtection = false
-
-# Headless mode (for Docker)
-headless = true
-
-# Server address
-address = "0.0.0.0"
-port = 8501
-
-# Allow websocket origins for OAuth2 callback
-enableWebsocketCompression = false
-
-[browser]
-serverAddress = "localhost"
-serverPort = $STREAMLIT_PORT
-EOF
-    echo "   Created .streamlit/config.toml"
+    update_config_toml $STREAMLIT_PORT
 
     echo ""
     echo "⚠️  Next steps:"
