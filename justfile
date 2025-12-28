@@ -127,6 +127,24 @@ bi-dashboard-up: _setup_worktree
 bi-dashboard-down: _setup_worktree
 	docker compose {{compose_cmd}} stop bi-dashboard
 
+# Launch Website (Hugo) on port 1313
+website: _setup_worktree
+	#!/bin/bash
+	echo "Starting Website (Hugo)..."
+	docker compose {{compose_cmd}} up website --build
+	echo "Access at: http://localhost:1313"
+
+# Launch Website in background
+website-up: _setup_worktree
+	#!/bin/bash
+	docker compose {{compose_cmd}} up -d website --build
+	echo "Website started in background"
+	echo "Access at: http://localhost:1313"
+
+# Stop Website
+website-down: _setup_worktree
+	docker compose {{compose_cmd}} stop website
+
 # Process meeting minutes
 process-minutes: _setup_worktree
 	docker compose {{compose_cmd}} exec sagebase uv run sagebase process-minutes

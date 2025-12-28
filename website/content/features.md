@@ -1,453 +1,246 @@
 ---
-title: "主要機能紹介"
+title: "提供データ詳細"
 date: 2025-01-16
 draft: false
-description: "Sagebaseの4つの主要機能と技術的特徴を詳しくご紹介します"
+ShowBreadCrumbs: false
 ---
 
-# 主要機能紹介
-
-Sagebase（セージベース）は、日本の政治活動を追跡・分析するための先進的なアプリケーションです。本ページでは、Sagebaseの主要な4つの機能と、それを支える技術的特徴をご紹介します。
-
----
-
-## 📄 1. 議事録自動処理
-
-### 概要
-
-会議の議事録（PDFやテキスト）から発言を自動的に抽出・構造化し、データベースに保存します。手作業では膨大な時間がかかる議事録の処理を、効率的に自動化します。
-
-### 価値提案
-
-- **時間削減**: 数百ページの議事録を数分で処理
-- **高精度**: LangGraphによる多段階処理で正確な発言抽出
-- **スケーラビリティ**: 全国1,966自治体の議事録に対応可能
-
-### 技術特徴
-
-- **LangGraph**: 複雑なワークフローを状態機械として管理
-- **Google Gemini API**: 最新のLLMで高精度なテキスト解析
-- **Google Cloud Storage**: PDFファイルを安全に保管
-- **非同期処理**: 大量の議事録を効率的に並列処理
-
-### 処理フロー
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant CLI as CLI Command
-    participant UseCase as ProcessMinutesUseCase
-    participant Storage as IStorageService
-    participant LLM as ILLMService
-    participant DomainSvc as MinutesDomainService
-    participant MeetingRepo as IMeetingRepository
-    participant ConvRepo as IConversationRepository
-    participant DB as Database
-
-    User->>CLI: sagebase process-minutes --meeting-id 123
-    activate CLI
-
-    CLI->>UseCase: execute(meeting_id=123)
-    activate UseCase
-
-    %% Fetch PDF/Text from GCS
-    UseCase->>MeetingRepo: get_meeting(123)
-    activate MeetingRepo
-    MeetingRepo->>DB: SELECT * FROM meetings WHERE id=123
-    DB-->>MeetingRepo: meeting data (with gcs_text_uri)
-    MeetingRepo-->>UseCase: Meeting entity
-    deactivate MeetingRepo
-
-    UseCase->>Storage: download_text(gcs_text_uri)
-    activate Storage
-    Storage-->>UseCase: raw text content
-    deactivate Storage
-
-    %% LLM Processing
-    UseCase->>LLM: divide_into_speeches(raw_text)
-    activate LLM
-    Note over LLM: Uses Gemini API<br/>with prompt template
-    LLM-->>UseCase: speeches_data (JSON)
-    deactivate LLM
-
-    %% Domain Logic
-    UseCase->>DomainSvc: create_conversations(speeches_data, meeting_id)
-    activate DomainSvc
-
-    loop For each speech
-        DomainSvc->>DomainSvc: validate speech data
-        DomainSvc->>DomainSvc: create Conversation entity
-    end
-
-    DomainSvc-->>UseCase: List[Conversation]
-    deactivate DomainSvc
-
-    %% Save to Database
-    UseCase->>ConvRepo: save_batch(conversations)
-    activate ConvRepo
-
-    loop For each conversation
-        ConvRepo->>DB: INSERT INTO conversations
-        DB-->>ConvRepo: saved
-    end
-
-    ConvRepo-->>UseCase: success
-    deactivate ConvRepo
-
-    %% Update meeting status
-    UseCase->>MeetingRepo: update_processing_status(meeting_id, "completed")
-    activate MeetingRepo
-    MeetingRepo->>DB: UPDATE meetings SET status='completed'
-    DB-->>MeetingRepo: updated
-    MeetingRepo-->>UseCase: success
-    deactivate MeetingRepo
-
-    UseCase-->>CLI: ProcessingResult(success=True, conversations_count=50)
-    deactivate UseCase
-
-    CLI-->>User: ✓ Processed 50 conversations from meeting 123
-    deactivate CLI
-```
+Sagebase（政治ベース）は、日本の政治議論を構造化データとして提供するオープンデータプラットフォームです。本ページでは、提供しているデータの詳細をご紹介します。
 
 ---
 
-## 👥 2. 政治家データベース（全国1,966自治体対応）
+## 📊 提供データ一覧
 
-### 概要
+### 1. 議会議論データ
 
-日本全国の政治家情報を網羅的に管理します。国会議員から都道府県議、市町村議まで、1,966すべての自治体をカバーします。
+国会および全国1,966の地方議会における議論を、構造化データとして提供します。
 
-### 価値提案
+### 2. 議案賛否データ（準備中）
 
-- **網羅性**: 全国すべての自治体（国、47都道府県、1,918市町村）
-- **最新性**: 政党ウェブサイトから自動的にデータを収集・更新
-- **正確性**: 組織コードによる自治体の一意識別
-
-### 技術特徴
-
-- **Web Scraping**: Playwrightによる動的サイト対応
-- **マスターデータ管理**: governing_bodiesテーブルで全自治体を管理
-- **段階的処理**: 議員抽出→レビュー→承認のワークフロー
-- **重複排除**: ドメインサービスによる政治家の自動重複検出
-
-### データカバレッジ
-
-- **国**: 1自治体（日本国政府）
-- **都道府県**: 47自治体
-- **市町村**: 1,918自治体（全市町村対応）
-- **合計**: 1,966自治体
+議案の詳細情報と、その議案に対する議員・政党の賛否記録を提供予定です。
 
 ---
 
-## 🤖 3. LLMベース発言者マッチング
+## 💬 議会議論データ
 
-### 概要
+### データの概要
 
-議事録中の発言者名を実際の政治家に自動的に紐付けます。従来の単純な文字列マッチングでは困難だった日本語特有の表記揺れに対応します。
+**「誰が、いつ、何を発言したのか」**を、国会および全国すべての地方議会で記録しています。
 
-### 価値提案
+単なる発言の羅列ではなく、**議論の文脈を保持した構造化データ**として提供することで、政治家の発言を正しく理解できる形式になっています。
 
-- **高精度マッチング**: LLMによる文脈理解で90%以上の精度
-- **表記揺れ対応**: 敬称、漢字バリエーション、名前の順序などに対応
-- **信頼性**: 信頼度スコアによる自動/手動判定の切り分け
+### 提供するデータ項目
 
-### 技術特徴
+#### 発言者情報
 
-- **ハイブリッドアプローチ**: ルールベース + LLMの組み合わせ
-- **段階的マッチング**:
-  1. 名前の正規化
-  2. 候補者検索（名前・政党・期間）
-  3. LLMによるファジーマッチング
-  4. 信頼度評価
-- **信頼度閾値**:
-  - 高（≥0.9）: 自動リンク
-  - 中（0.7-0.9）: 自動リンク + ログ記録
-  - 低（0.5-0.7）: 手動レビュー
-  - 極低（<0.5）: マッチなし
+- **発言者名**: 議事録に記載された発言者の氏名
+- **政治家との紐付け**: 実際の政治家プロフィールとの関連付け
+- **所属政党（発言時点）**: その発言が行われた時点での所属政党
+- **役職・肩書き**: 発言時の役職（例：〇〇委員長、〇〇大臣）
 
-### マッチングフロー
+#### 発言内容
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant CLI as CLI Command
-    participant UseCase as MatchSpeakersUseCase
-    participant MatchingSvc as SpeakerMatchingService
-    participant DomainSvc as SpeakerDomainService
-    participant LLM as ILLMService
-    participant SpeakerRepo as ISpeakerRepository
-    participant PoliticianRepo as IPoliticianRepository
-    participant ConvRepo as IConversationRepository
-    participant DB as Database
+- **発言全文**: 議事録に記録された発言内容の全文
+- **発言日時**: いつ発言されたのか（会議の開催日時）
+- **会議情報**: どの議会のどの会議での発言か
+  - 議会名（例：衆議院、東京都議会、横浜市議会）
+  - 会議名（例：本会議、予算委員会）
+  - 会議の種類（定例会、臨時会など）
 
-    User->>CLI: sagebase update-speakers --use-llm
-    activate CLI
+#### 議論の文脈情報
 
-    CLI->>UseCase: execute(use_llm=True)
-    activate UseCase
+政治ベースでは、**発言単位ではなく、議論全体の流れ**を把握できるデータ構造を提供しています。
 
-    %% Fetch unlinked conversations
-    UseCase->>ConvRepo: get_unlinked_conversations()
-    activate ConvRepo
-    ConvRepo->>DB: SELECT * FROM conversations WHERE speaker_id IS NULL
-    DB-->>ConvRepo: unlinked conversations
-    ConvRepo-->>UseCase: List[Conversation]
-    deactivate ConvRepo
+- **前後の発言**: ある発言の前後にどのような発言があったのか
+- **議論の流れ**: 質疑応答の一連の流れ
+- **発言順序**: 会議内での発言の順番
 
-    loop For each conversation
-        UseCase->>DomainSvc: normalize_speaker_name(conversation.speaker_text)
-        activate DomainSvc
-        DomainSvc-->>UseCase: normalized_name
-        deactivate DomainSvc
+これにより、発言を文脈から切り離さずに理解することができます。
 
-        %% Try to find existing speaker
-        UseCase->>SpeakerRepo: find_by_name(normalized_name)
-        activate SpeakerRepo
-        SpeakerRepo->>DB: SELECT * FROM speakers WHERE name=?
-        DB-->>SpeakerRepo: speaker or None
-        SpeakerRepo-->>UseCase: Optional[Speaker]
-        deactivate SpeakerRepo
+### データのカバレッジ
 
-        alt Speaker not found
-            %% Create new speaker
-            UseCase->>DomainSvc: create_speaker(normalized_name, conversation)
-            activate DomainSvc
-            DomainSvc->>DomainSvc: extract party name
-            DomainSvc->>DomainSvc: extract position
-            DomainSvc-->>UseCase: new Speaker entity
-            deactivate DomainSvc
+- **国会**: 衆議院・参議院のすべての会議
+- **都道府県議会**: 47都道府県すべて
+- **市区町村議会**: 1,918市区町村すべて
+- **合計**: 1,966の議会
 
-            UseCase->>SpeakerRepo: save(speaker)
-            activate SpeakerRepo
-            SpeakerRepo->>DB: INSERT INTO speakers
-            DB-->>SpeakerRepo: speaker_id
-            SpeakerRepo-->>UseCase: saved Speaker
-            deactivate SpeakerRepo
-        end
+### データの特徴
 
-        %% Match speaker to politician (LLM-based)
-        UseCase->>MatchingSvc: match_speaker_to_politician(speaker)
-        activate MatchingSvc
+#### 1. 時系列での追跡が可能
 
-        MatchingSvc->>PoliticianRepo: search_candidates(speaker.name, speaker.party)
-        activate PoliticianRepo
-        PoliticianRepo->>DB: SELECT * FROM politicians WHERE...
-        DB-->>PoliticianRepo: candidate politicians
-        PoliticianRepo-->>MatchingSvc: List[Politician]
-        deactivate PoliticianRepo
+特定の政治家について、過去の発言を時系列で追跡できます。
 
-        alt Has candidates
-            MatchingSvc->>LLM: fuzzy_match(speaker, candidates)
-            activate LLM
-            Note over LLM: LLM determines<br/>best match with<br/>confidence score
-            LLM-->>MatchingSvc: match_result (politician_id, confidence)
-            deactivate LLM
+**活用例**:
+- 「〇〇議員は過去に環境問題についてどのような発言をしてきたか」
+- 「△△大臣の答弁の変化を時系列で確認したい」
 
-            alt confidence >= 0.7
-                MatchingSvc->>SpeakerRepo: link_to_politician(speaker_id, politician_id)
-                activate SpeakerRepo
-                SpeakerRepo->>DB: UPDATE speakers SET politician_id=?
-                DB-->>SpeakerRepo: updated
-                SpeakerRepo-->>MatchingSvc: success
-                deactivate SpeakerRepo
-            else confidence < 0.7
-                Note over MatchingSvc: Low confidence<br/>requires manual review
-            end
-        end
+#### 2. 所属政党の変遷も記録
 
-        MatchingSvc-->>UseCase: matching result
-        deactivate MatchingSvc
+政治家が政党を移籍した場合でも、**その発言時点での所属政党**を記録しています。
 
-        %% Link conversation to speaker
-        UseCase->>ConvRepo: update_speaker_link(conversation_id, speaker_id)
-        activate ConvRepo
-        ConvRepo->>DB: UPDATE conversations SET speaker_id=?
-        DB-->>ConvRepo: updated
-        ConvRepo-->>UseCase: success
-        deactivate ConvRepo
-    end
+**活用例**:
+- 「A党に所属していた時期の発言と、B党に移籍した後の発言を比較したい」
+- 「政党別の政策スタンスの違いを分析したい」
 
-    UseCase-->>CLI: MatchingResult(linked=45, created_speakers=12, matched_politicians=8)
-    deactivate UseCase
+#### 3. 議論全体の文脈を保持
 
-    CLI-->>User: ✓ Linked 45 conversations, created 12 speakers, matched 8 politicians
-    deactivate CLI
-```
+発言を単独で切り出すのではなく、前後の発言との関係性を保持しています。
 
-### なぜLLMマッチングが必要か？
-
-日本語の議事録には様々な表記揺れがあります：
-
-- **敬称**: 山田太郎君、山田議員、山田太郎
-- **順序**: 太郎山田 vs 山田太郎
-- **漢字バリエーション**: 齊藤 vs 斉藤 vs 斎藤
-
-従来の文字列マッチングではこれらの揺れに対応できませんが、LLMは文脈を理解して正確にマッチングできます。
+**活用例**:
+- 「質問に対してどのような答弁がなされたのか」
+- 「議論がどのように展開されたのか」
+- 「ある発言が、どのような文脈で語られたのか」
 
 ---
 
-## 📊 4. BIダッシュボード
+## 📋 議案賛否データ（準備中）
 
-### 概要
+### データの概要
 
-Plotly Dashを使用したインタラクティブなデータカバレッジ可視化ツールです。全国の自治体におけるデータ収集状況をリアルタイムで確認できます。
+**議案の詳細情報と、誰が（どの政党が）その議案に賛成・反対したのか**を記録したデータを提供予定です。
 
-### 価値提案
+### 提供予定のデータ項目
 
-- **視覚的理解**: 円グラフ、棒グラフ、テーブルで直感的に把握
-- **リアルタイム更新**: 最新のデータベース情報を即座に反映
-- **詳細分析**: 都道府県別、組織タイプ別のカバレッジ比較
+#### 議案の詳細情報
 
-### 主な機能
+- **議案名**: 議案のタイトル
+- **議案内容**: 議案の概要・詳細
+- **提出者**: 誰が提出した議案か（議員名、政党名）
+- **審議経過**: どのような審議を経たか
+- **採決日**: いつ採決が行われたのか
+- **採決結果**: 可決/否決
 
-1. **全体カバレッジ率**: 円グラフでデータ取得状況を可視化
-2. **組織タイプ別カバレッジ**: 国/都道府県/市町村別の棒グラフ
-3. **都道府県別カバレッジ**: 上位10都道府県の詳細テーブル
-4. **リアルタイム更新**: 更新ボタンでデータを再取得
+#### 議員ごとの賛否記録
 
-### 技術スタック
+- **議員名**: 賛否を表明した議員の氏名
+- **所属政党（採決時点）**: 採決時の所属政党
+- **賛否**: 賛成/反対/棄権/欠席
+- **会議情報**: どの会議での採決だったか
 
-- **Dash 2.14.2**: Plotlyのダッシュボードフレームワーク
-- **Plotly 5.18.0**: インタラクティブグラフライブラリ
-- **Pandas 2.1.4**: データ処理
-- **SQLAlchemy 2.0.23**: ORMとデータベース接続
+#### 政党ごとの賛否傾向
 
-### アクセス方法
+- **政党別の賛否**: 各政党がどのように賛否を表明したか
+- **党議拘束の有無**: 党として統一した賛否だったか
+- **賛否の分かれた議案**: 党内で意見が分かれた案件
 
-```bash
-# Docker Composeで起動
-docker compose -f docker/docker-compose.yml up -d bi-dashboard
+### データの特徴
 
-# ブラウザでアクセス
-# http://localhost:8050
-```
+#### 1. 議案の全体像を把握
 
----
+議案そのものの情報（内容、提出者、審議経過、可決/否決）を包括的に提供します。
 
-## 🏗️ 技術的特徴
+**活用例**:
+- 「この法案はどのような内容で、誰が提出し、可決されたのか」
+- 「環境関連の議案がどれだけ提出され、何が可決されているか」
 
-Sagebaseは、保守性と拡張性を重視した**Clean Architecture**に基づいて設計されています。
+#### 2. 議員個人の賛否履歴を追跡
 
-### Clean Architectureの4層構造
+特定の議員について、過去の賛否記録を一覧で確認できます。
 
-```mermaid
-graph TB
-    subgraph interfaces["🖥️ Interfaces Layer"]
-        direction LR
-        CLI["CLI Commands<br/>(src/interfaces/cli/)"]
-        WEB["Streamlit UI<br/>(src/interfaces/web/)"]
-    end
+**活用例**:
+- 「〇〇議員は環境関連の議案にどう賛否してきたか」
+- 「選挙公約と実際の賛否の一致度を検証したい」
 
-    subgraph application["⚙️ Application Layer"]
-        direction LR
-        UC["Use Cases (21)<br/>ProcessMinutesUseCase<br/>MatchSpeakersUseCase<br/>ScrapePoliticiansUseCase"]
-        DTO["DTOs (16)<br/>Data Transfer Objects"]
-    end
+#### 3. 政党間の違いを可視化
 
-    subgraph domain["🎯 Domain Layer (Core)"]
-        direction TB
-        ENT["Entities (21)<br/>Politician, Speaker<br/>Meeting, Conference"]
-        DS["Domain Services (18)<br/>SpeakerDomainService<br/>PoliticianDomainService"]
-        RI["Repository Interfaces (22)<br/>BaseRepository<br/>ISessionAdapter"]
-        SI["Service Interfaces (8)<br/>ILLMService<br/>IStorageService"]
+同じ議案に対して、各政党がどのように賛否を表明したかを比較できます。
 
-        ENT --- DS
-        DS --- RI
-        DS --- SI
-    end
+**活用例**:
+- 「A党とB党は同じ議案に対してどう賛否したか」
+- 「各政党の政策スタンスの違いを定量的に分析したい」
 
-    subgraph infrastructure["🔧 Infrastructure Layer"]
-        direction TB
-        PERSIST["Persistence (22+)<br/>BaseRepositoryImpl<br/>AsyncSessionAdapter"]
-        EXT["External Services<br/>GeminiLLMService<br/>GCSStorageService<br/>WebScraperService"]
-        SUPPORT["Support<br/>DI Container<br/>Logging, Monitoring"]
+#### 4. 議案ごとの詳細分析が可能
 
-        PERSIST --- EXT
-        EXT --- SUPPORT
-    end
+特定の議案について、誰が賛成し、誰が反対したのかを詳細に分析できます。
 
-    %% Dependencies (arrows point FROM dependent TO dependency)
-    CLI --> UC
-    WEB --> UC
-    UC --> DS
-    UC --> RI
-    UC --> SI
-
-    PERSIST -.implements.-> RI
-    EXT -.implements.-> SI
-
-    %% Styling
-    classDef interfaceStyle fill:#e1f5ff,stroke:#01579b,stroke-width:2px
-    classDef applicationStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef domainStyle fill:#f3e5f5,stroke:#4a148c,stroke-width:3px
-    classDef infrastructureStyle fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
-
-    class interfaces interfaceStyle
-    class application applicationStyle
-    class domain domainStyle
-    class infrastructure infrastructureStyle
-
-    %% Notes
-    note1["Note: Solid arrows = direct dependencies<br/>Dotted arrows = implements interface"]
-
-    style note1 fill:#fff9c4,stroke:#f57f17,stroke-width:1px
-```
-
-### 主要な設計原則
-
-1. **依存性逆転の原則**: 依存関係は内側（Domain層）に向かう
-   - Interfaces → Application → Domain ← Infrastructure
-
-2. **Domain層の独立性**: ビジネスロジックはフレームワークに依存しない
-   - 純粋なPythonコードのみ
-   - 外部サービスはインターフェースで抽象化
-
-3. **テスタビリティ**: 各層を独立してテスト可能
-   - Domain層は外部サービスなしでテスト
-   - Infrastructure層は簡単に差し替え可能
-
-### その他の技術的特徴
-
-- **型安全性**: Python型ヒントとpyrightによる静的型チェック
-- **コード品質**: Ruffによる自動フォーマットとリント
-- **非同期処理**: async/awaitによる高パフォーマンス
-- **コンテナ化**: Docker Composeによる一貫した開発環境
-- **CI/CD**: GitHub Actionsによる自動テスト・デプロイ
+**活用例**:
+- 「この重要法案に対する各議員の立場はどうだったか」
+- 「党議拘束がかかっていない議案での賛否傾向を調べたい」
 
 ---
 
-## 💡 ユースケース
-
-Sagebaseは、様々なユーザーに価値を提供します。
+## 🎯 データの活用例
 
 ### 研究者向け
 
-- **学術研究**: 政治家の発言パターンや投票行動の分析
-- **データセット構築**: 構造化された議事録データのエクスポート
-- **時系列分析**: 長期的な政治動向の追跡
+- **政治行動の実証研究**: 発言や賛否パターンの統計分析
+- **政策分析**: 特定テーマに関する議論と議案の推移を追跡
+- **比較研究**: 地域間・政党間の比較分析
 
 ### ジャーナリスト向け
 
-- **ファクトチェック**: 政治家の過去の発言を迅速に検索
-- **記事作成**: データに基づいた政治報道の作成
-- **透明性の向上**: 政治活動の可視化と公開
+- **ファクトチェック**: 過去の発言や賛否記録の検証
+- **調査報道**: 政治家の発言と賛否の一貫性を検証
+- **データジャーナリズム**: データに基づいた報道記事の作成
 
-### 市民向け
+### 市民活動家向け
 
-- **情報アクセス**: 地元議員の活動を簡単に確認
-- **政治参加**: データに基づいた投票判断
-- **監視**: 政治家の公約と実際の行動の比較
+- **政治監視**: 地元議員の活動状況の把握
+- **政策提言**: エビデンスに基づいた提言活動
+- **説明責任の追及**: 公約と実際の賛否の比較
+
+### アプリケーション開発者向け
+
+- **政治情報アプリ**: 議員情報や議案賛否記録を表示するアプリ開発
+- **検索サービス**: 発言内容・議案内容の全文検索サービス
+- **可視化ツール**: 議論や賛否傾向を可視化するツール
 
 ---
 
-## まとめ
+## 📈 データ品質へのこだわり
 
-Sagebaseは、最新のLLM技術とクリーンアーキテクチャを組み合わせることで、政治活動の透明性向上に貢献します。全国1,966自治体をカバーする包括的なデータベースと、高精度な自動処理機能により、研究者・ジャーナリスト・市民すべてに価値を提供します。
+### 1. 正確性
 
-### さらに詳しく
+議事録という公式記録をソースとしており、高い信頼性を確保しています。
 
-- [Sagebaseについて](/about)
-- [GitHubリポジトリ](https://github.com/trust-chain-organization/sagebase)
-- [お問い合わせ](/contact)
+### 2. 網羅性
+
+国会から全国すべての地方議会まで、包括的にカバーしています。
+
+### 3. 構造化
+
+検索・分析しやすい構造化データとして提供しています。
+
+### 4. 文脈の保持
+
+発言を文脈から切り離さず、議論全体の流れを理解できる形式です。
+
+### 5. 時点情報の記録
+
+発言時点や採決時点での所属政党など、時点情報を正確に記録しています。
+
+---
+
+## 🔍 データへのアクセス方法
+
+政治ベースのデータは、主要なデータプラットフォームで**公開データセット**として提供します。
+
+### BigQuery Analytics Hub
+
+Google Cloud Platform（GCP）のBigQuery Analytics Hubで、公開データセットとして提供します。
+
+- **メリット**:
+  - SQLで直接クエリ可能
+  - 大規模データの高速処理
+  - GCPの他サービスとの連携が容易
+  - 無料で利用可能（クエリ実行コストのみ）
+
+### Snowflake Marketplace
+
+Snowflake Marketplaceで、公開データセットとして提供します。
+
+- **メリット**:
+  - SQLで直接クエリ可能
+  - Snowflakeユーザーは即座にアクセス可能
+  - データのコピー不要（Zero-Copy Cloning）
+  - エンタープライズグレードのセキュリティ
+
+### 提供時期
+
+現在、データセットの整備とプラットフォームへの公開準備を進めています。公開開始時期については、本ページで順次お知らせいたします。
+
+---
+
+## 📞 お問い合わせ
+
+データの利用方法や詳細については、[お問い合わせページ](/contact)からご連絡ください。

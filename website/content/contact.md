@@ -2,10 +2,8 @@
 title: "お問い合わせ"
 date: 2025-01-16
 draft: false
-description: "Sagebaseに関するお問い合わせはこちらから"
+ShowBreadCrumbs: false
 ---
-
-# お問い合わせ
 
 Sagebaseに関するご質問、ご意見、ご提案がございましたら、お気軽にお問い合わせください。
 
