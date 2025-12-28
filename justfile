@@ -10,9 +10,11 @@ _setup_worktree:
 			# Also setup Streamlit secrets with the correct port
 			./scripts/setup-streamlit-secrets.sh
 		fi
-	elif [ -f docker/docker-compose.override.yml ] && [ -f .streamlit/secrets.toml ]; then
-		# Update secrets.toml if port changed
-		./scripts/setup-streamlit-secrets.sh
+	elif [ -f docker/docker-compose.override.yml ]; then
+		# Update config.toml if it doesn't exist or if secrets.toml exists
+		if [ ! -f .streamlit/config.toml ] || [ -f .streamlit/secrets.toml ]; then
+			./scripts/setup-streamlit-secrets.sh
+		fi
 	fi
 
 # Get compose command based on override file existence
