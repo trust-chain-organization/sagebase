@@ -620,3 +620,65 @@ class TestMeetingRepositoryImpl:
         assert isinstance(entity, Meeting)
         assert entity.id == 1
         assert entity.conference_id == 10
+
+    def test_to_entity_with_none(self, repository: MeetingRepositoryImpl) -> None:
+        """Test _to_entity raises ValueError when model is None."""
+        with pytest.raises(ValueError, match="Cannot convert None to Meeting entity"):
+            repository._to_entity(None)
+
+    @pytest.mark.asyncio
+    async def test_get_by_conference_empty(
+        self,
+        repository: MeetingRepositoryImpl,
+        mock_session: MagicMock,
+    ) -> None:
+        """Test get_by_conference returns empty list when no meetings exist."""
+        mock_result = MagicMock()
+        mock_result.all = MagicMock(return_value=[])
+        mock_session.execute.return_value = mock_result
+
+        result = await repository.get_by_conference(10)
+
+        assert result == []
+        mock_session.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_delete_not_found(
+        self,
+        repository: MeetingRepositoryImpl,
+        mock_session: MagicMock,
+    ) -> None:
+        """Test delete returns False when meeting not found."""
+        # Mock count check (no related minutes)
+        mock_count_result = MagicMock()
+        mock_count_result.scalar = MagicMock(return_value=0)
+
+        # Mock delete result (rowcount=0, not found)
+        mock_delete_result = MagicMock()
+        mock_delete_result.rowcount = 0
+
+        mock_session.execute.side_effect = [mock_count_result, mock_delete_result]
+
+        result = await repository.delete(999)
+
+        assert result is False
+        assert mock_session.execute.call_count == 2
+        mock_session.commit.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_delete_with_related_minutes(
+        self,
+        repository: MeetingRepositoryImpl,
+        mock_session: MagicMock,
+    ) -> None:
+        """Test delete fails when meeting has related minutes."""
+        # Mock count check (has related minutes)
+        mock_count_result = MagicMock()
+        mock_count_result.scalar = MagicMock(return_value=5)
+        mock_session.execute.return_value = mock_count_result
+
+        result = await repository.delete(1)
+
+        assert result is False
+        mock_session.execute.assert_called_once()
+        mock_session.commit.assert_not_called()
