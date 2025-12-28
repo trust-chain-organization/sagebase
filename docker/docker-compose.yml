@@ -117,5 +117,17 @@ services:
       timeout: 5s
       retries: 5
 
+  website:
+    build:
+      context: ../website
+      dockerfile: Dockerfile
+    container_name: sagebase-website
+    volumes:
+      - ../website:/site
+    ports:
+      - "1313:1313" # Hugo開発サーバー用ポート
+    stdin_open: true
+    tty: true
+
 volumes:
   postgres_data:
