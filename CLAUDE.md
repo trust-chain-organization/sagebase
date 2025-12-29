@@ -108,10 +108,29 @@ Sagebaseプロジェクトでは、以下のスキルが自動的にアクティ
 ## Documentation
 
 ### Architecture & Development
+
+**📖 Overview Documents**:
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: Complete system architecture
 - **[CLEAN_ARCHITECTURE_MIGRATION.md](docs/CLEAN_ARCHITECTURE_MIGRATION.md)**: Migration progress
 - **[DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)**: Development workflows
 - **[TESTING_GUIDE.md](docs/TESTING_GUIDE.md)**: Testing strategies
+
+**📁 Architecture Decision Records (ADR)** - `docs/ADR/`:
+アーキテクチャに関する重要な意思決定の記録を保管
+
+- ADR作成ルール: `NNNN-kebab-case-title.md`形式、必須セクション（Status, Context, Decision, Consequences）
+- 既存のADR:
+  - [0001-clean-architecture-adoption.md](docs/ADR/0001-clean-architecture-adoption.md): Clean Architecture採用の経緯
+  - [0002-baml-for-llm-outputs.md](docs/ADR/0002-baml-for-llm-outputs.md): BAML採用の経緯
+  - [0003-repository-pattern.md](docs/ADR/0003-repository-pattern.md): Repository Pattern採用
+
+**📁 Layer Guides** - `docs/architecture/`:
+Clean Architectureの各層の詳細な実装ガイドを保管（責務、実装例、落とし穴、チェックリスト）
+
+- [DOMAIN_LAYER.md](docs/architecture/DOMAIN_LAYER.md): エンティティ、リポジトリIF、ドメインサービス
+- [APPLICATION_LAYER.md](docs/architecture/APPLICATION_LAYER.md): ユースケース、DTO、トランザクション管理
+- [INFRASTRUCTURE_LAYER.md](docs/architecture/INFRASTRUCTURE_LAYER.md): リポジトリ実装、外部サービス
+- [INTERFACE_LAYER.md](docs/architecture/INTERFACE_LAYER.md): CLI、Streamlit UI、プレゼンター
 
 ### Database & Domain
 - **[DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md)**: Database structure

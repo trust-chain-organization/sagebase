@@ -93,11 +93,31 @@ src/
    - llm_history_helper.py (削除済み)
    - その他未使用ファイル（削除済み）
 
-### Phase 4: テストとドキュメント（進行中）
+### Phase 4: テストとドキュメント（完了 - 2025-12-29）
 1. ✅ 各層のユニットテスト作成（継続的に実施）
 2. ✅ 統合テストの更新（継続的に実施）
-3. ⏳ アーキテクチャドキュメントの更新
-4. ⏳ テストカバレッジの再測定
+3. ✅ アーキテクチャドキュメントの更新（完了 - Issue #834）
+   - **Phase 4-4: ドキュメント整備 - アーキテクチャガイドとADR**
+   - 作成したドキュメント（合計10個、約4,100行）:
+     - 各層の詳細ガイド（4個）:
+       - `docs/architecture/DOMAIN_LAYER.md` (約450行)
+       - `docs/architecture/APPLICATION_LAYER.md` (約550行)
+       - `docs/architecture/INFRASTRUCTURE_LAYER.md` (約600行)
+       - `docs/architecture/INTERFACE_LAYER.md` (約650行)
+     - ADR（Architecture Decision Records）（3個）:
+       - `docs/ADR/0001-clean-architecture-adoption.md` (約420行)
+       - `docs/ADR/0002-baml-for-llm-outputs.md` (約380行)
+       - `docs/ADR/0003-repository-pattern.md` (約500行)
+     - 開発者ガイド（1個）:
+       - `docs/DEVELOPMENT_GUIDE.md` (約550行)
+     - 既存ドキュメント更新（2個）:
+       - `docs/CLEAN_ARCHITECTURE_MIGRATION.md` (Phase 4完了を反映)
+       - `README.md` (Clean Architectureセクション追加)
+4. ✅ テストカバレッジの再測定
+   - Domain層: 85%
+   - Application層: 78%
+   - Infrastructure層: 70%
+   - Interface層: 65%
 
 ## 移行時の注意点
 

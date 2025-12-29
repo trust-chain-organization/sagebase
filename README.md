@@ -122,6 +122,54 @@ Sagebaseは以下の設計原則に基づいて構築されています：
    - 処理の成功/失敗、使用モデル、トークン使用量などを追跡
    - A/Bテストや改善のためのプロンプト履歴分析が可能
 
+## 🏗️ アーキテクチャ
+
+Sagebaseは**Clean Architecture**を採用しており、ビジネスロジックをフレームワークや外部システムから完全に独立させています。
+
+### 4層構造
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Interface Layer (CLI, Streamlit UI)                         │
+│  - ユーザーインターフェース、エントリーポイント                │
+└───────────────────────┬─────────────────────────────────────┘
+                        │ 依存
+┌───────────────────────▼─────────────────────────────────────┐
+│ Application Layer (Use Cases, DTOs)                         │
+│  - ビジネスフローの調整、トランザクション管理                  │
+└───────────────────────┬─────────────────────────────────────┘
+                        │ 依存
+┌───────────────────────▼─────────────────────────────────────┐
+│ Domain Layer (Entities, Domain Services, Repositories)      │
+│  - ビジネスロジック、ビジネスルール（フレームワーク非依存）      │
+└───────────────────────▲─────────────────────────────────────┘
+                        │ 実装
+┌───────────────────────┴─────────────────────────────────────┐
+│ Infrastructure Layer (Repository Impl, External Services)   │
+│  - データベースアクセス、外部サービス統合                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 主な利点
+
+- **テスト容易性**: ドメインロジックを外部依存なしで単体テスト可能
+- **保守性**: 責務が明確で、変更の影響範囲が限定的
+- **柔軟性**: LLMプロバイダーやデータベースの変更がビジネスロジックに影響しない
+
+### ドキュメント
+
+- **[DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)** - 新規開発者向けガイド
+- **各層の詳細ガイド**:
+  - [DOMAIN_LAYER.md](docs/architecture/DOMAIN_LAYER.md) - エンティティ、リポジトリ、ドメインサービス
+  - [APPLICATION_LAYER.md](docs/architecture/APPLICATION_LAYER.md) - ユースケース、DTO
+  - [INFRASTRUCTURE_LAYER.md](docs/architecture/INFRASTRUCTURE_LAYER.md) - リポジトリ実装、外部サービス
+  - [INTERFACE_LAYER.md](docs/architecture/INTERFACE_LAYER.md) - CLI、Streamlit UI
+- **ADR（アーキテクチャ決定記録）**:
+  - [ADR 0001: Clean Architecture採用](docs/ADR/0001-clean-architecture-adoption.md)
+  - [ADR 0002: BAML for LLM Outputs](docs/ADR/0002-baml-for-llm-outputs.md)
+  - [ADR 0003: リポジトリパターン](docs/ADR/0003-repository-pattern.md)
+- **[CLEAN_ARCHITECTURE_MIGRATION.md](docs/CLEAN_ARCHITECTURE_MIGRATION.md)** - 移行の進捗状況
+
 ### コマンドリファレンス
 
 📚 **すべてのコマンドの詳細は [COMMANDS.md](COMMANDS.md) を参照してください。**
