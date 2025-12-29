@@ -145,6 +145,16 @@ class MinutesProcessAgent:
         if not isinstance(processed_minutes, str):
             raise TypeError("processed_minutes must be a string")
 
+        # ReActエージェントには初期メッセージが必要
+        from langchain_core.messages import HumanMessage
+
+        initial_message = HumanMessage(
+            content=(
+                f"この議事録から発言部分の開始境界を検出してください。"
+                f"テキスト長: {len(processed_minutes)}文字"
+            )
+        )
+
         # サブグラフを実行（状態変換: MinutesProcessState → SpeechExtractionAgentState）
         # SpeechExtractionAgent.compile()で取得したサブグラフを invoke
         compiled_subgraph = self.speech_extraction_agent.compile()
@@ -154,7 +164,7 @@ class MinutesProcessAgent:
                 "boundary_candidates": [],
                 "verified_boundaries": [],
                 "current_position": 0,
-                "messages": [],
+                "messages": [initial_message],
                 "remaining_steps": 10,  # MAX_REACT_STEPS
                 "error_message": None,
             }
