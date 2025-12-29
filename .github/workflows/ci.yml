@@ -180,8 +180,8 @@ jobs:
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_db
         run: |
-          # Run initial schema setup
-          PGPASSWORD=test psql -h localhost -U test -d test_db -f database/01_schema.sql
+          # Run initial schema setup for CI
+          PGPASSWORD=test psql -h localhost -U test -d test_db -f database/init_ci.sql
           # Run all migrations
           for migration in database/migrations/*.sql; do
             echo "Running migration: $migration"
