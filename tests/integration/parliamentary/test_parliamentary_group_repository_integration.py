@@ -5,6 +5,8 @@ repositories work correctly with the new Clean Architecture
 implementation using entity-based patterns.
 """
 
+import os
+
 from datetime import date, timedelta
 
 import pytest
@@ -20,6 +22,13 @@ from src.infrastructure.persistence.parliamentary_group_membership_repository_im
 )
 from src.infrastructure.persistence.parliamentary_group_repository_impl import (
     ParliamentaryGroupRepositoryImpl as ParliamentaryGroupRepository,
+)
+
+
+# Skip all tests in this module if NOT running in CI environment
+pytestmark = pytest.mark.skipif(
+    os.getenv("CI") != "true",
+    reason="Integration tests require database connection available in CI only",
 )
 
 

@@ -198,7 +198,7 @@ jobs:
           TESTING: "true"
           CI: "true"
         run: |
-          uv run pytest tests/integration/persistence/ tests/integration/database/ tests/integration/test_repository_adapter.py -v
+          uv run pytest tests/integration/persistence/ tests/integration/database/ tests/integration/parliamentary*/ tests/integration/test_repository_adapter.py -v
 
   # Lane 6: Integration - Scraping (~5-7分)
   integration-scraping:
@@ -305,4 +305,4 @@ jobs:
           GOOGLE_API_KEY: "test-api-key-not-used"
           CI: "true"
         run: |
-          uv run pytest tests/integration/cli/ tests/integration/parliamentary*/ tests/integration/test_*.py --ignore=tests/integration/scraping --ignore=tests/integration/persistence --ignore=tests/integration/database --ignore=tests/integration/llm -v
+          uv run pytest tests/integration/cli/ tests/integration/test_*.py --ignore=tests/integration/scraping --ignore=tests/integration/persistence --ignore=tests/integration/database --ignore=tests/integration/llm --ignore=tests/integration/parliamentary -v
