@@ -63,6 +63,58 @@ class ParliamentaryGroupMembershipModel(Base):
         )
 
 
+class UserModel(Base):
+    """SQLAlchemy model for users table (minimal definition for FK support)."""
+
+    __tablename__ = "users"
+
+    user_id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    email: Mapped[str] = mapped_column(String(255))
+
+    def __repr__(self) -> str:
+        return f"<UserModel(user_id={self.user_id}, email={self.email})>"
+
+
+class PoliticianModel(Base):
+    """SQLAlchemy model for politicians table (minimal definition for FK support)."""
+
+    __tablename__ = "politicians"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(200))
+
+    def __repr__(self) -> str:
+        return f"<PoliticianModel(id={self.id}, name={self.name})>"
+
+
+class ParliamentaryGroupModel(Base):
+    """SQLAlchemy model for parliamentary_groups table."""
+
+    __tablename__ = "parliamentary_groups"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255))
+    conference_id: Mapped[int] = mapped_column(Integer)
+    url: Mapped[str | None] = mapped_column(String(500))
+    description: Mapped[str | None] = mapped_column()
+    is_active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<ParliamentaryGroupModel("
+            f"id={self.id}, "
+            f"name={self.name}, "
+            f"conference_id={self.conference_id}"
+            f")>"
+        )
+
+
 class ExtractedParliamentaryGroupMemberModel(Base):
     """SQLAlchemy model for extracted_parliamentary_group_members table."""
 
