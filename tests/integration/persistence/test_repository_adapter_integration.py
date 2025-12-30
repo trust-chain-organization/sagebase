@@ -351,14 +351,13 @@ async def test_repository_adapter_async_transaction_rollback(test_db_session):
     Issue #839: トランザクション内でエラーが発生した場合、
     ロールバックされることを確認。
 
-    注: 他のテストで作成されたmeetingが残っている可能性があるため、
-    絶対件数ではなく相対件数（前後の差分）で検証する。
+    注: 作成したエンティティのIDで検証することで、
+    他のテストの影響を受けずにrollback動作を確認できる。
     """
     repo = RepositoryAdapter(MeetingRepositoryImpl)
 
     try:
-        # テスト前のmeeting件数を記録
-        before_count = len(await repo.get_all())
+        created_id = None
 
         with pytest.raises(ValueError):
             async with repo.transaction():
@@ -372,17 +371,18 @@ async def test_repository_adapter_async_transaction_rollback(test_db_session):
                 meeting.created_at = datetime.now(UTC)
                 meeting.updated_at = datetime.now(UTC)
 
-                await repo.create(meeting)
+                created = await repo.create(meeting)
+                created_id = created.id
 
                 # 意図的にエラーを発生させる
                 raise ValueError("Test rollback")
 
-        # ロールバック後、件数が変わっていないことを確認
-        after_count = len(await repo.get_all())
-        assert after_count == before_count, (
-            f"トランザクションがロールバックされているべき: "
-            f"before={before_count}, after={after_count}"
-        )
+        # ロールバック後、作成したmeetingが存在しないことを確認
+        if created_id is not None:
+            retrieved = await repo.get_by_id(created_id)
+            assert retrieved is None, (
+                f"ID {created_id} のmeetingはロールバックされているべき"
+            )
 
     finally:
         repo.close()
