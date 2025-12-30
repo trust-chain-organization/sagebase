@@ -96,8 +96,8 @@ def setup_master_data():
 def test_db_session():
     """テスト用のデータベースセッションを作成
 
-    各テストの前後でデータベースをクリーンアップします。
     マスターデータ(governing_body, conference)はmodule-scopeのfixtureで作成済み。
+    cleanup処理は個別テストで必要に応じて実行（パフォーマンス優先）。
     """
     engine = create_engine(DATABASE_URL)
     connection = engine.connect()
@@ -106,23 +106,7 @@ def test_db_session():
     session_factory = sessionmaker(bind=connection)
     session = session_factory()
 
-    # 既存のテストデータをクリーンアップ（TRUNCATEは重いのでDELETEを使用）
-    try:
-        session.execute(text("DELETE FROM meetings WHERE id > 0"))
-        session.commit()
-    except Exception as e:
-        print(f"Cleanup failed (setup): {e}")
-        session.rollback()
-
     yield session
-
-    # テストデータを削除（クリーンアップ）
-    try:
-        session.execute(text("DELETE FROM meetings WHERE id > 0"))
-        session.commit()
-    except Exception as e:
-        print(f"Cleanup failed (teardown): {e}")
-        session.rollback()
 
     session.close()
     transaction.rollback()
