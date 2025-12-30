@@ -21,7 +21,9 @@ def render_conversations_speakers_page() -> None:
     st.markdown("発言記録と発言者の情報を管理します")
 
     # Create tabs
-    tabs = st.tabs(["発言者一覧", "発言マッチング", "統計情報", "ツールテスト"])
+    tabs = st.tabs(
+        ["発言者一覧", "発言マッチング", "統計情報", "ツールテスト", "Agentテスト"]
+    )
 
     with tabs[0]:
         render_speakers_list_tab()
@@ -34,6 +36,9 @@ def render_conversations_speakers_page() -> None:
 
     with tabs[3]:
         render_tools_test_tab()
+
+    with tabs[4]:
+        render_agent_test_tab()
 
 
 def render_speakers_list_tab() -> None:
@@ -572,6 +577,173 @@ def render_judge_confidence_test() -> None:
 
                 with st.expander("エラー詳細"):
                     st.code(traceback.format_exc())
+
+
+def render_agent_test_tab() -> None:
+    """Test SpeakerMatchingAgent."""
+    st.subheader("🤖 名寄せAgentテスト")
+
+    st.markdown("""
+    ### SpeakerMatchingAgent の動作確認
+
+    LangGraphのReActエージェントを使用した発言者-政治家マッチングをテストします。
+    エージェントは3つのツールを使って反復的にマッチングを行います。
+
+    **使用するツール:**
+    1. `evaluate_matching_candidates`: 候補評価
+    2. `search_additional_info`: 追加情報検索
+    3. `judge_confidence`: 確信度判定
+    """)
+
+    # Input form
+    st.markdown("### 入力")
+    speaker_name = st.text_input(
+        "発言者名",
+        value="田中太郎",
+        help="マッチング対象の発言者名を入力してください",
+        key="agent_test_speaker_name",
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        meeting_date = st.date_input(
+            "会議開催日（オプション）",
+            value=None,
+            help="会議開催日を指定すると、所属情報を考慮します",
+            key="agent_test_meeting_date",
+        )
+
+    with col2:
+        conference_id = st.number_input(
+            "会議体ID（オプション）",
+            value=None,
+            min_value=1,
+            help="会議体IDを指定すると、所属情報を考慮します",
+            key="agent_test_conference_id",
+        )
+
+    # Advanced settings
+    with st.expander("⚙️ 詳細設定"):
+        st.info(
+            "エージェントの設定（現在は固定値）\n\n"
+            "- MAX_REACT_STEPS: 10\n"
+            "- 確信度閾値: 0.8"
+        )
+
+    if st.button("🚀 Agentを実行", type="primary", key="agent_button"):
+        if not speaker_name:
+            st.warning("発言者名を入力してください")
+            return
+
+        with st.spinner("エージェントを実行中..."):
+            try:
+                # Get container for repositories
+                container = Container()
+
+                # Create LLM service
+                from langchain_google_genai import ChatGoogleGenerativeAI
+
+                from src.infrastructure.external import (
+                    langgraph_speaker_matching_agent as agent_module,
+                )
+
+                llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp")
+
+                # Create agent
+                agent = agent_module.SpeakerMatchingAgent(
+                    llm=llm,
+                    speaker_repo=container.repositories.speaker_repository(),
+                    politician_repo=container.repositories.politician_repository(),
+                    affiliation_repo=container.repositories.politician_affiliation_repository(),
+                )
+
+                # Prepare input
+                agent_input = {"speaker_name": speaker_name}
+
+                if meeting_date:
+                    agent_input["meeting_date"] = meeting_date.isoformat()
+
+                if conference_id:
+                    pass  # conference_id is handled in match_speaker call
+
+                # Execute agent
+                result = asyncio.run(
+                    agent.match_speaker(
+                        speaker_name=speaker_name,
+                        meeting_date=meeting_date.isoformat() if meeting_date else None,
+                        conference_id=int(conference_id) if conference_id else None,
+                    )
+                )
+
+                # Display results
+                st.markdown("### 🎯 マッチング結果")
+
+                if result.get("error_message"):
+                    st.error(f"エラー: {result['error_message']}")
+                elif result["matched"]:
+                    # Success case
+                    st.success("✅ マッチング成功！")
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric(
+                            "マッチした政治家",
+                            result.get("politician_name", "Unknown"),
+                        )
+                    with col2:
+                        confidence = result.get("confidence", 0.0)
+                        st.metric("確信度", f"{confidence:.2f}")
+
+                    # Reason
+                    st.markdown("### 判定理由")
+                    st.info(result.get("reason", ""))
+
+                    # Show politician details
+                    with st.expander("📋 政治家詳細"):
+                        st.json(
+                            {
+                                "politician_id": result.get("politician_id"),
+                                "politician_name": result.get("politician_name"),
+                                "confidence": result.get("confidence"),
+                            }
+                        )
+
+                else:
+                    # No match case
+                    st.warning("⚠️ マッチする政治家が見つかりませんでした")
+                    st.info(result.get("reason", ""))
+
+                # Show full result
+                with st.expander("🔍 詳細結果（JSON）"):
+                    st.json(result)
+
+            except Exception as e:
+                st.error(f"エラーが発生しました: {e}")
+                import traceback
+
+                with st.expander("エラー詳細"):
+                    st.code(traceback.format_exc())
+
+    # Usage example
+    st.markdown("---")
+    st.markdown("""
+    ### 💡 使い方
+
+    1. **発言者名** を入力（例: 田中太郎）
+    2. 必要に応じて **会議開催日** と **会議体ID** を入力
+    3. **「🚀 Agentを実行」** ボタンをクリック
+    4. エージェントが自動的にツールを使ってマッチングを行います
+
+    **動作の流れ:**
+    1. エージェントが候補評価ツールで政治家候補を取得
+    2. 上位候補の追加情報を検索
+    3. 確信度判定ツールで最終判定
+    4. 確信度0.8以上ならマッチング成功
+
+    **注意:**
+    - エージェントの実行には数秒〜十数秒かかることがあります
+    - LLM API（Gemini）を使用するため、API キーが必要です
+    """)
 
 
 def main() -> None:
