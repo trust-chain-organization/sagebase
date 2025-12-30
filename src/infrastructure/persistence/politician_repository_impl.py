@@ -395,8 +395,8 @@ class PoliticianRepositoryImpl(BaseRepositoryImpl[Politician], PoliticianReposit
     async def get_all_for_matching(self) -> list[dict[str, Any]]:
         """Get all politicians for matching purposes."""
         query = text("""
-            SELECT p.id, p.name, p.position, p.prefecture,
-                   p.electoral_district, pp.name as party_name
+            SELECT p.id, p.name, p.party_position, p.district,
+                   pp.name as party_name
             FROM politicians p
             LEFT JOIN political_parties pp ON p.political_party_id = pp.id
             ORDER BY p.name
@@ -408,10 +408,9 @@ class PoliticianRepositoryImpl(BaseRepositoryImpl[Politician], PoliticianReposit
             {
                 "id": row.id,
                 "name": row.name,
-                "position": row.position,
-                "prefecture": row.prefecture,
-                "electoral_district": row.electoral_district,
-                "party_name": row.party_name,
+                "party_position": row.party_position,
+                "district": row.district,
+                "party": row.party_name,
             }
             for row in rows
         ]

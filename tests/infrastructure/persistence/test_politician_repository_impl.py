@@ -435,7 +435,7 @@ class TestPoliticianRepositoryImpl:
 
         assert len(result) == 1
         assert result[0]["name"] == "山田太郎"
-        assert result[0]["party_name"] == "自民党"
+        assert result[0]["party"] == "自民党"
         mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio

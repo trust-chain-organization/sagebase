@@ -132,3 +132,7 @@ class MinutesProcessState(BaseModel):
     )
     section_list_length: int = Field(default=0, description="分割できたsectionnの数")
     index: int = Field(default=1, description="現在処理しているsection数")
+    boundary_extraction_result_memory_id: str = Field(
+        default="",
+        description="発言境界抽出結果（SpeechExtractionAgent）を保存したメモリID",
+    )

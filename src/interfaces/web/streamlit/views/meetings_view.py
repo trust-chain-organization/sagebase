@@ -175,7 +175,8 @@ def render_meeting_row(
         import asyncio
 
         meeting_id = display_row["ID"]
-        status = asyncio.run(presenter.check_meeting_status(meeting_id))
+        loop = asyncio.get_event_loop()
+        status = loop.run_until_complete(presenter.check_meeting_status(meeting_id))
 
         # Create popover menu for all actions
         with st.popover("⚙️ 操作", use_container_width=True):
@@ -543,7 +544,8 @@ def execute_scrape(
 
     try:
         with st.spinner("スクレイピング中..."):
-            result = asyncio.run(
+            loop = asyncio.get_event_loop()
+            result = loop.run_until_complete(
                 presenter.scrape_meeting(meeting_id, force_rescrape=is_already_scraped)
             )
 
@@ -578,7 +580,8 @@ def execute_extract_minutes(
 
     try:
         with st.spinner("発言抽出中..."):
-            result = asyncio.run(
+            loop = asyncio.get_event_loop()
+            result = loop.run_until_complete(
                 presenter.extract_minutes(meeting_id, force_reprocess=has_conversations)
             )
 
@@ -613,7 +616,8 @@ def execute_extract_speakers(
 
     try:
         with st.spinner("発言者抽出中..."):
-            result = asyncio.run(
+            loop = asyncio.get_event_loop()
+            result = loop.run_until_complete(
                 presenter.extract_speakers(
                     meeting_id, force_reprocess=has_speakers_linked
                 )
