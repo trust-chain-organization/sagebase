@@ -23,13 +23,26 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (14)
+# Generated classes (16)
 # #########################################################################
 
 class AttendeesMapping(BaseModel):
     attendees_mapping: typing.Optional[typing.Dict[str, typing.Optional[str]]] = None
     regular_attendees: typing.List[str]
     confidence: typing.Optional[float] = None
+
+class ConfidenceJudgement(BaseModel):
+    confidence: typing.Optional[float] = None
+    confidence_level: typing.Optional[str] = None
+    should_match: typing.Optional[bool] = None
+    reason: typing.Optional[str] = None
+    contributing_factors: typing.List["ContributingFactor"]
+    recommendation: typing.Optional[str] = None
+
+class ContributingFactor(BaseModel):
+    factor: typing.Optional[str] = None
+    impact: typing.Optional[float] = None
+    description: typing.Optional[str] = None
 
 class ExtractedMember(BaseModel):
     name: typing.Optional[str] = None

@@ -20,7 +20,7 @@ from .globals import DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIM
 class TypeBuilder(type_builder.TypeBuilder):
     def __init__(self):
         super().__init__(classes=set(
-          ["AttendeesMapping","ExtractedMember","ExtractedPartyMember","LinkClassification","MinutesBoundary","PageClassification","ParliamentaryGroupMember","PoliticianMatch","RedividedSectionInfo","Resume","SectionInfo","SectionString","SpeakerAndSpeechContent","SpeakerMatch",]
+          ["AttendeesMapping","ConfidenceJudgement","ContributingFactor","ExtractedMember","ExtractedPartyMember","LinkClassification","MinutesBoundary","PageClassification","ParliamentaryGroupMember","PoliticianMatch","RedividedSectionInfo","Resume","SectionInfo","SectionString","SpeakerAndSpeechContent","SpeakerMatch",]
         ), enums=set(
           []
         ), runtime=DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME)
@@ -31,12 +31,20 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
     # #########################################################################
-    # Generated classes 14
+    # Generated classes 16
     # #########################################################################
 
     @property
     def AttendeesMapping(self) -> "AttendeesMappingViewer":
         return AttendeesMappingViewer(self)
+
+    @property
+    def ConfidenceJudgement(self) -> "ConfidenceJudgementViewer":
+        return ConfidenceJudgementViewer(self)
+
+    @property
+    def ContributingFactor(self) -> "ContributingFactorViewer":
+        return ContributingFactorViewer(self)
 
     @property
     def ExtractedMember(self) -> "ExtractedMemberViewer":
@@ -98,7 +106,7 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
 # #########################################################################
-# Generated classes 14
+# Generated classes 16
 # #########################################################################
 
 class AttendeesMappingAst:
@@ -144,6 +152,112 @@ class AttendeesMappingProperties:
     @property
     def confidence(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("confidence"))
+
+
+
+
+class ConfidenceJudgementAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("ConfidenceJudgement")
+        self._properties: typing.Set[str] = set([  "confidence",  "confidence_level",  "should_match",  "reason",  "contributing_factors",  "recommendation",  ])
+        self._props = ConfidenceJudgementProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "ConfidenceJudgementProperties":
+        return self._props
+
+
+class ConfidenceJudgementViewer(ConfidenceJudgementAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+
+
+
+class ConfidenceJudgementProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+
+
+    @property
+    def confidence(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("confidence"))
+
+    @property
+    def confidence_level(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("confidence_level"))
+
+    @property
+    def should_match(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("should_match"))
+
+    @property
+    def reason(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("reason"))
+
+    @property
+    def contributing_factors(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("contributing_factors"))
+
+    @property
+    def recommendation(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("recommendation"))
+
+
+
+
+class ContributingFactorAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("ContributingFactor")
+        self._properties: typing.Set[str] = set([  "factor",  "impact",  "description",  ])
+        self._props = ContributingFactorProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "ContributingFactorProperties":
+        return self._props
+
+
+class ContributingFactorViewer(ContributingFactorAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+
+
+
+class ContributingFactorProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+
+
+    @property
+    def factor(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("factor"))
+
+    @property
+    def impact(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("impact"))
+
+    @property
+    def description(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("description"))
 
 
 

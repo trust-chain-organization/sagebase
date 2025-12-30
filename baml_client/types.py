@@ -41,13 +41,26 @@ def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
 # #########################################################################
 
 # #########################################################################
-# Generated classes (14)
+# Generated classes (16)
 # #########################################################################
 
 class AttendeesMapping(BaseModel):
     attendees_mapping: typing.Optional[typing.Dict[str, typing.Optional[str]]] = None
     regular_attendees: typing.List[str]
     confidence: float
+
+class ConfidenceJudgement(BaseModel):
+    confidence: float
+    confidence_level: str
+    should_match: bool
+    reason: str
+    contributing_factors: typing.List["ContributingFactor"]
+    recommendation: str
+
+class ContributingFactor(BaseModel):
+    factor: str
+    impact: float
+    description: str
 
 class ExtractedMember(BaseModel):
     name: str

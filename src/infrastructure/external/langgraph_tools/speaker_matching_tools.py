@@ -7,14 +7,17 @@ high-accuracy matching between speakers and politicians.
 Tools:
 - evaluate_matching_candidates: Evaluate and score politician candidates for a speaker
 - search_additional_info: Search additional information about politicians/speakers
-- judge_confidence: Judge the confidence level of a matching candidate
+- judge_confidence: Judge the confidence level of a matching candidate (BAML-powered)
 """
 
+import json
 import logging
 
 from typing import Any
 
 from langchain_core.tools import tool
+
+from baml_client.async_client import b
 
 from src.domain.repositories.politician_affiliation_repository import (
     PoliticianAffiliationRepository,
@@ -430,10 +433,10 @@ def create_speaker_matching_tools(
         candidate: dict[str, Any],
         additional_info: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Judge the confidence level of a matching candidate.
+        """Judge the confidence level of a matching candidate using BAML.
 
-        マッチング候補の確信度を総合的に判定します。
-        候補のスコア、追加情報を考慮して、最終的な確信度を計算します。
+        マッチング候補の確信度をBAMLを使用して総合的に判定します。
+        LLMが候補のスコア、追加情報を考慮して、最終的な確信度を計算します。
 
         Args:
             speaker_name: 発言者名
@@ -442,14 +445,14 @@ def create_speaker_matching_tools(
               - politician_name: 政治家名
               - party: 政党名
               - score: スコア（0.0-1.0）
-              - match_type: マッチタイプ
+              - match_type: マッチタイプ（"exact", "partial", "fuzzy"）
               - is_affiliated: 所属フラグ
             additional_info: 追加情報（search_additional_infoの結果、オプション）
 
         Returns:
             Dictionary with:
             - confidence: 確信度（0.0-1.0）
-            - confidence_level: 確信度レベル（"high", "medium", "low"）
+            - confidence_level: 確信度レベル（"HIGH", "MEDIUM", "LOW"）
             - should_match: マッチすべきかどうか（確信度0.8以上でTrue）
             - reason: 判定理由の説明
             - contributing_factors: 確信度に寄与した要素のリスト
@@ -481,7 +484,7 @@ def create_speaker_matching_tools(
             if not speaker_name or not speaker_name.strip():
                 return {
                     "confidence": 0.0,
-                    "confidence_level": "low",
+                    "confidence_level": "LOW",
                     "should_match": False,
                     "reason": "発言者名が空です",
                     "contributing_factors": [],
@@ -492,7 +495,7 @@ def create_speaker_matching_tools(
             if not candidate or not isinstance(candidate, dict):
                 return {
                     "confidence": 0.0,
-                    "confidence_level": "low",
+                    "confidence_level": "LOW",
                     "should_match": False,
                     "reason": "候補情報が無効です",
                     "contributing_factors": [],
@@ -500,111 +503,48 @@ def create_speaker_matching_tools(
                     "error": "Invalid candidate data",
                 }
 
-            # Get base score from candidate
-            base_score = candidate.get("score", 0.0)
-            match_type = candidate.get("match_type", "unknown")
-            contributing_factors = [
-                {
-                    "factor": "base_score",
-                    "impact": base_score,
-                    "description": f"名前マッチングスコア（{match_type}）",
-                }
-            ]
+            # Convert match_type to uppercase for BAML
+            if "match_type" in candidate:
+                candidate["match_type"] = candidate["match_type"].upper()
 
-            # Start with base confidence
-            confidence = base_score
+            # Convert candidate and additional_info to JSON strings
+            candidate_json = json.dumps(candidate, ensure_ascii=False, indent=2)
+            additional_info_json = (
+                json.dumps(additional_info, ensure_ascii=False, indent=2)
+                if additional_info
+                else None
+            )
 
-            # Adjust confidence based on additional info
-            if additional_info and isinstance(additional_info, dict):
-                info = additional_info.get("info", {})
+            logger.info(
+                f"Calling BAML JudgeMatchingConfidence for speaker='{speaker_name}'"
+            )
 
-                # Affiliation boost
-                affiliations = info.get("affiliation", [])
-                if affiliations:
-                    affiliation_boost = 0.1
-                    confidence = min(1.0, confidence + affiliation_boost)
-                    contributing_factors.append(
-                        {
-                            "factor": "affiliation",
-                            "impact": affiliation_boost,
-                            "description": f"所属情報あり（{len(affiliations)}件）",
-                        }
-                    )
+            # Call BAML function
+            result = await b.JudgeMatchingConfidence(
+                speaker_name=speaker_name,
+                candidate_json=candidate_json,
+                additional_info_json=additional_info_json,
+            )
 
-                # Party boost
-                party = info.get("party")
-                if party and party.get("party_name"):
-                    party_boost = 0.05
-                    confidence = min(1.0, confidence + party_boost)
-                    contributing_factors.append(
-                        {
-                            "factor": "party",
-                            "impact": party_boost,
-                            "description": f"政党情報あり（{party.get('party_name')}）",
-                        }
-                    )
-
-            # Is affiliated boost
-            if candidate.get("is_affiliated", False):
-                affiliated_boost = 0.15
-                confidence = min(1.0, confidence + affiliated_boost)
-                contributing_factors.append(
-                    {
-                        "factor": "is_affiliated",
-                        "impact": affiliated_boost,
-                        "description": "会議体所属",
-                    }
-                )
-
-            # Determine confidence level
-            if confidence >= 0.9:
-                confidence_level = "high"
-            elif confidence >= 0.7:
-                confidence_level = "medium"
-            else:
-                confidence_level = "low"
-
-            # Should match if confidence >= 0.8
-            should_match = confidence >= 0.8
-
-            # Build reason
-            pol_name = candidate.get("politician_name", "Unknown")
-            reason_parts = [f"候補「{pol_name}」の確信度: {confidence:.2f}"]
-            if candidate.get("match_type") == "exact":
-                reason_parts.append("名前が完全一致")
-            elif candidate.get("match_type") == "partial":
-                reason_parts.append("名前が部分一致")
-            else:
-                reason_parts.append("名前が類似")
-
-            if candidate.get("is_affiliated"):
-                reason_parts.append("会議体所属")
-
-            reason = "。".join(reason_parts)
-
-            # Recommendation
-            if should_match:
-                if confidence_level == "high":
-                    recommendation = "高確信度でマッチング推奨"
-                else:
-                    recommendation = "マッチング推奨（確認推奨）"
-            else:
-                if confidence >= 0.7:
-                    recommendation = "マッチングの可能性あり（要確認）"
-                else:
-                    recommendation = "マッチング非推奨（他の候補を検討）"
-
+            # Convert BAML result to dict
             return {
-                "confidence": confidence,
-                "confidence_level": confidence_level,
-                "should_match": should_match,
-                "reason": reason,
-                "contributing_factors": contributing_factors,
-                "recommendation": recommendation,
+                "confidence": result.confidence,
+                "confidence_level": result.confidence_level.lower(),
+                "should_match": result.should_match,
+                "reason": result.reason,
+                "contributing_factors": [
+                    {
+                        "factor": f.factor,
+                        "impact": f.impact,
+                        "description": f.description,
+                    }
+                    for f in result.contributing_factors
+                ],
+                "recommendation": result.recommendation,
             }
 
         except Exception as e:
-            logger.error(f"Error judging confidence: {e}", exc_info=True)
+            logger.error(f"Error judging confidence with BAML: {e}", exc_info=True)
             return {
                 "confidence": 0.0,
                 "confidence_level": "low",

@@ -4,7 +4,7 @@
 リポジトリはモックを使用してテストします。
 """
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -319,12 +319,26 @@ class TestJudgeConfidence:
             "is_affiliated": False,
         }
 
-        result = await judge_tool.ainvoke(
-            {
-                "speaker_name": "田中太郎",
-                "candidate": candidate,
-            }
-        )
+        # BAML呼び出しをモック（CI環境でLLM APIを叩かないため）
+        mock_baml_result = MagicMock()
+        mock_baml_result.confidence = 1.0
+        mock_baml_result.confidence_level = "HIGH"
+        mock_baml_result.should_match = True
+        mock_baml_result.reason = "名前が完全一致"
+        mock_baml_result.contributing_factors = []
+        mock_baml_result.recommendation = "マッチング推奨"
+
+        with patch(
+            "src.infrastructure.external.langgraph_tools.speaker_matching_tools.b.JudgeMatchingConfidence",
+            new_callable=AsyncMock,
+            return_value=mock_baml_result,
+        ):
+            result = await judge_tool.ainvoke(
+                {
+                    "speaker_name": "田中太郎",
+                    "candidate": candidate,
+                }
+            )
 
         assert "error" not in result
         assert result["confidence"] == 1.0
@@ -346,17 +360,35 @@ class TestJudgeConfidence:
             "is_affiliated": True,
         }
 
-        result = await judge_tool.ainvoke(
-            {
-                "speaker_name": "田中",
-                "candidate": candidate,
-            }
-        )
+        # BAML呼び出しをモック（CI環境でLLM APIを叩かないため）
+        mock_baml_result = MagicMock()
+        mock_baml_result.confidence = 0.85
+        mock_baml_result.confidence_level = "HIGH"
+        mock_baml_result.should_match = True
+        mock_baml_result.reason = "部分一致だが所属情報が一致するため信頼度が高い"
+        mock_baml_result.contributing_factors = [
+            MagicMock(factor="base_score", impact=0.75, description="基本スコア"),
+            MagicMock(factor="is_affiliated", impact=0.1, description="所属情報一致"),
+        ]
+        mock_baml_result.recommendation = "マッチング推奨"
+
+        with patch(
+            "src.infrastructure.external.langgraph_tools.speaker_matching_tools.b.JudgeMatchingConfidence",
+            new_callable=AsyncMock,
+            return_value=mock_baml_result,
+        ):
+            result = await judge_tool.ainvoke(
+                {
+                    "speaker_name": "田中",
+                    "candidate": candidate,
+                }
+            )
 
         assert "error" not in result
-        # Base score 0.75 + affiliated boost 0.15 = 0.90
-        assert result["confidence"] >= 0.9
-        assert result["confidence_level"] == "high"
+        # BAML/LLM judges confidence flexibly (部分一致 + 所属情報)
+        # LLMは0.85程度を返す（should_match閾値0.8以上）
+        assert result["confidence"] >= 0.8
+        assert result["confidence_level"] in ("medium", "high")
         assert result["should_match"] is True
 
     @pytest.mark.asyncio
@@ -390,13 +422,33 @@ class TestJudgeConfidence:
             },
         }
 
-        result = await judge_tool.ainvoke(
-            {
-                "speaker_name": "田中",
-                "candidate": candidate,
-                "additional_info": additional_info,
-            }
-        )
+        # BAML呼び出しをモック（CI環境でLLM APIを叩かないため）
+        mock_baml_result = MagicMock()
+        mock_baml_result.confidence = 0.85
+        mock_baml_result.confidence_level = "HIGH"
+        mock_baml_result.should_match = True
+        mock_baml_result.reason = "追加情報により所属と政党が確認できるため信頼度が高い"
+        mock_baml_result.contributing_factors = [
+            MagicMock(factor="base_score", impact=0.7, description="基本スコア"),
+            MagicMock(
+                factor="affiliation", impact=0.1, description="会議体所属情報の一致"
+            ),
+            MagicMock(factor="party", impact=0.05, description="政党情報の一致"),
+        ]
+        mock_baml_result.recommendation = "マッチング推奨"
+
+        with patch(
+            "src.infrastructure.external.langgraph_tools.speaker_matching_tools.b.JudgeMatchingConfidence",
+            new_callable=AsyncMock,
+            return_value=mock_baml_result,
+        ):
+            result = await judge_tool.ainvoke(
+                {
+                    "speaker_name": "田中",
+                    "candidate": candidate,
+                    "additional_info": additional_info,
+                }
+            )
 
         assert "error" not in result
         # Base score 0.7 + affiliation boost 0.1 + party boost 0.05 = 0.85
@@ -417,18 +469,41 @@ class TestJudgeConfidence:
             "is_affiliated": False,
         }
 
-        result = await judge_tool.ainvoke(
-            {
-                "speaker_name": "田中太郎",
-                "candidate": candidate,
-            }
-        )
+        # BAML呼び出しをモック（CI環境でLLM APIを叩かないため）
+        mock_baml_result = MagicMock()
+        mock_baml_result.confidence = 0.5
+        mock_baml_result.confidence_level = "LOW"
+        mock_baml_result.should_match = False
+        mock_baml_result.reason = "名前が大きく異なるため信頼度が低い"
+        mock_baml_result.contributing_factors = [
+            MagicMock(factor="base_score", impact=0.5, description="基本スコアが低い"),
+            MagicMock(
+                factor="name_mismatch", impact=-0.3, description="名前が大きく異なる"
+            ),
+        ]
+        mock_baml_result.recommendation = "マッチング非推奨。別の候補を検討してください"
+
+        with patch(
+            "src.infrastructure.external.langgraph_tools.speaker_matching_tools.b.JudgeMatchingConfidence",
+            new_callable=AsyncMock,
+            return_value=mock_baml_result,
+        ):
+            result = await judge_tool.ainvoke(
+                {
+                    "speaker_name": "田中太郎",
+                    "candidate": candidate,
+                }
+            )
 
         assert "error" not in result
         assert result["confidence"] < 0.8
         assert result["confidence_level"] == "low"
         assert result["should_match"] is False
-        assert "非推奨" in result["recommendation"]
+        # LLMは柔軟に表現するため、マッチング否定の意図を確認
+        assert any(
+            word in result["recommendation"]
+            for word in ["非推奨", "推奨しません", "別の候補", "検討"]
+        )
 
     @pytest.mark.asyncio
     async def test_empty_speaker_name(self, tools):
@@ -485,25 +560,51 @@ class TestJudgeConfidence:
             "is_affiliated": True,
         }
 
-        result = await judge_tool.ainvoke(
-            {
-                "speaker_name": "田中太郎",
-                "candidate": candidate,
-            }
-        )
+        # BAML呼び出しをモック（CI環境でLLM APIを叩かないため）
+        mock_baml_result = MagicMock()
+        mock_baml_result.confidence = 0.9
+        mock_baml_result.confidence_level = "HIGH"
+        mock_baml_result.should_match = True
+        mock_baml_result.reason = "名前完全一致かつ所属情報も一致"
+        mock_baml_result.contributing_factors = [
+            MagicMock(factor="base_score", impact=0.8, description="基本スコアが高い"),
+            MagicMock(factor="name_match", impact=0.05, description="名前が完全一致"),
+            MagicMock(
+                factor="is_affiliated", impact=0.05, description="所属情報が一致"
+            ),
+        ]
+        mock_baml_result.recommendation = "マッチング推奨"
+
+        with patch(
+            "src.infrastructure.external.langgraph_tools.speaker_matching_tools.b.JudgeMatchingConfidence",
+            new_callable=AsyncMock,
+            return_value=mock_baml_result,
+        ):
+            result = await judge_tool.ainvoke(
+                {
+                    "speaker_name": "田中太郎",
+                    "candidate": candidate,
+                }
+            )
 
         assert "error" not in result
         assert "contributing_factors" in result
         assert len(result["contributing_factors"]) > 0
 
-        # Check that base_score is in contributing factors
+        # Check that contributing factors are present
         factors = {f["factor"]: f for f in result["contributing_factors"]}
-        assert "base_score" in factors
-        assert factors["base_score"]["impact"] == 0.8
 
-        # Check that is_affiliated is in contributing factors
-        assert "is_affiliated" in factors
-        assert factors["is_affiliated"]["impact"] == 0.15
+        # LLMは柔軟にfactor名を決定するため、主要な要素が含まれていることを確認
+        # base_scoreまたは類似のスコア関連factorが存在
+        assert any(
+            factor in factors
+            for factor in ["base_score", "score", "name_match", "name_similarity"]
+        )
+
+        # is_affiliatedまたはaffiliation関連factorが存在（所属情報の考慮）
+        assert any(
+            factor in factors for factor in ["is_affiliated", "affiliation", "所属"]
+        )
 
 
 class TestCalculateNameSimilarity:
