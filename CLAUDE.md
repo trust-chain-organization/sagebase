@@ -190,6 +190,15 @@ src/
 - BI Dashboardの動作確認手順を知りたい時
 - BI Dashboardのトラブルシューティングが必要な時
 
+### SKILL Management
+
+#### skill-design-principles
+**使用タイミング**:
+- 新しいSKILLを作成する時
+- 既存のSKILLをレビュー・改善する時
+- SKILLが適切かどうか判断する時
+- CLAUDE.mdからSKILL化すべき内容を検討する時
+
 ## Documentation
 
 ### Architecture & Development
