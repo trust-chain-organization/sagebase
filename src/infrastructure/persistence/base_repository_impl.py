@@ -74,8 +74,7 @@ class BaseRepositoryImpl[T: BaseEntity](BaseRepository[T]):
         model = self._to_model(entity)
         self.session.add(model)
         await self.session.flush()
-        # NOTE: Temporarily removed refresh() to debug rollback issue (#839)
-        # await self.session.refresh(model)
+        await self.session.refresh(model)
         return self._to_entity(model)
 
     async def update(self, entity: T) -> T:
