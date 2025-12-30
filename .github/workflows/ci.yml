@@ -182,11 +182,17 @@ jobs:
         run: |
           # Run initial schema setup for CI
           PGPASSWORD=test psql -h localhost -U test -d test_db -f database/init_ci.sql
-          # Run all migrations
-          for migration in database/migrations/*.sql; do
-            echo "Running migration: $migration"
-            PGPASSWORD=test psql -h localhost -U test -d test_db -f "$migration"
-          done
+
+          # Create a temporary file to combine all migrations
+          cat database/migrations/*.sql > /tmp/all_migrations.sql
+
+          # Run all migrations in a single psql session
+          echo "Running all migrations..."
+          PGPASSWORD=test psql -h localhost -U test -d test_db -f /tmp/all_migrations.sql
+
+          # Verify tables were created
+          echo "Verifying database setup..."
+          PGPASSWORD=test psql -h localhost -U test -d test_db -c "\dt" | head -20
 
       - name: Run persistence integration tests
         env:
@@ -194,7 +200,13 @@ jobs:
           TESTING: "true"
           CI: "true"
         run: |
-          uv run pytest tests/integration/persistence/ tests/integration/database/ tests/integration/parliamentary*/ tests/integration/test_repository_adapter.py -v
+          # Run tests with timeout (max 10 minutes total)
+          timeout 600 uv run pytest tests/integration/persistence/ tests/integration/database/ tests/integration/parliamentary*/ tests/integration/test_repository_adapter.py -v || (
+            echo "Tests timed out or failed"
+            echo "Checking for hanging database connections..."
+            PGPASSWORD=test psql -h localhost -U test -d test_db -c "SELECT pid, state, query FROM pg_stat_activity WHERE datname = 'test_db' AND state != 'idle';" || true
+            exit 1
+          )
 
   # Lane 6: Integration - Scraping (~5-7分)
   integration-scraping:

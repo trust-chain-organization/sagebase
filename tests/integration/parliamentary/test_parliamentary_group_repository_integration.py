@@ -63,25 +63,25 @@ def db_session():
     session = session_factory()
 
     # Clean up any existing test data before yielding
-    # Use TRUNCATE CASCADE to properly handle FK constraints and reset sequences
+    # Delete in correct order to respect FK constraints (child → parent)
     try:
+        # Delete child tables first
         session.execute(
-            text("SET session_replication_role = replica;")
-        )  # Disable FK checks
-        session.execute(text("TRUNCATE TABLE parliamentary_group_memberships CASCADE"))
-        session.execute(
-            text("TRUNCATE TABLE parliamentary_groups RESTART IDENTITY CASCADE")
+            text("DELETE FROM parliamentary_group_memberships WHERE id > 0")
         )
         session.execute(text("DELETE FROM politician_affiliations WHERE id > 0"))
+
+        # Delete parliamentary groups
+        session.execute(text("DELETE FROM parliamentary_groups WHERE id > 0"))
+
+        # Delete test data from other tables
         session.execute(text("DELETE FROM politicians WHERE name LIKE 'テスト議員%'"))
         session.execute(text("DELETE FROM speakers WHERE name LIKE 'テスト議員%'"))
         session.execute(
             text("DELETE FROM political_parties WHERE name LIKE 'テスト党%'")
         )
         session.execute(text("DELETE FROM conferences WHERE name LIKE 'テスト%'"))
-        session.execute(
-            text("SET session_replication_role = DEFAULT;")
-        )  # Re-enable FK checks
+
         session.commit()
     except Exception as e:
         # If cleanup fails, still continue with test
