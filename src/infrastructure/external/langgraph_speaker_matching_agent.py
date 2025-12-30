@@ -11,7 +11,7 @@ import logging
 from typing import Annotated, Any, TypedDict
 
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import BaseMessage, HumanMessage
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import create_react_agent
 
@@ -206,6 +206,15 @@ class SpeakerMatchingAgent:
             f"(meeting_date={meeting_date}, conference_id={conference_id})"
         )
 
+        # タスク指示メッセージを作成
+        task_description = (
+            f"発言者'{speaker_name}'に最もマッチする政治家を見つけてください。"
+        )
+        if meeting_date:
+            task_description += f"\n会議開催日: {meeting_date}"
+        if conference_id:
+            task_description += f"\n会議体ID: {conference_id}"
+
         initial_state: SpeakerMatchingAgentState = {
             "speaker_name": speaker_name,
             "meeting_date": meeting_date,
@@ -214,7 +223,7 @@ class SpeakerMatchingAgent:
             "current_candidate_index": 0,
             "best_match": None,
             "best_confidence": None,
-            "messages": [],
+            "messages": [HumanMessage(content=task_description)],
             "remaining_steps": MAX_REACT_STEPS,
             "error_message": None,
         }
