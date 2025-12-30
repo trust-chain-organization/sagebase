@@ -601,6 +601,7 @@ def render_agent_test_tab() -> None:
         "発言者名",
         value="田中太郎",
         help="マッチング対象の発言者名を入力してください",
+        key="agent_test_speaker_name",
     )
 
     col1, col2 = st.columns(2)
@@ -609,6 +610,7 @@ def render_agent_test_tab() -> None:
             "会議開催日（オプション）",
             value=None,
             help="会議開催日を指定すると、所属情報を考慮します",
+            key="agent_test_meeting_date",
         )
 
     with col2:
@@ -617,6 +619,7 @@ def render_agent_test_tab() -> None:
             value=None,
             min_value=1,
             help="会議体IDを指定すると、所属情報を考慮します",
+            key="agent_test_conference_id",
         )
 
     # Advanced settings
