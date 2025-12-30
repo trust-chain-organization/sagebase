@@ -126,7 +126,8 @@ class RepositoryAdapter:
             AsyncSession: Shared session for the transaction
         """
         session_factory = self.get_async_session_factory()
-        async with session_factory() as session:
+        session = session_factory()
+        try:
             self._shared_session = session
             logger.debug(f"Transaction started, session={id(session)}")
             try:
@@ -143,6 +144,9 @@ class RepositoryAdapter:
             finally:
                 self._shared_session = None
                 logger.debug(f"Transaction context exited, session={id(session)}")
+        finally:
+            await session.close()
+            logger.debug(f"Session closed, session={id(session)}")
 
     def with_transaction(self, func: Any, *args: Any, **kwargs: Any) -> Any:
         """
