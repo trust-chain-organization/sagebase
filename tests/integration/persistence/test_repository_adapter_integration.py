@@ -60,6 +60,36 @@ def test_db_session():
         print(f"Cleanup failed (setup): {e}")
         session.rollback()
 
+    # テストに必要なマスターデータを作成
+    try:
+        # governing_bodyが存在しない場合は作成
+        gb_check = session.execute(text("SELECT id FROM governing_bodies WHERE id = 1"))
+        if not gb_check.scalar():
+            session.execute(
+                text(
+                    """
+                INSERT INTO governing_bodies (id, name, type)
+                VALUES (1, 'テスト市', '市区町村')
+                """
+                )
+            )
+
+        # conferenceが存在しない場合は作成
+        conf_check = session.execute(text("SELECT id FROM conferences WHERE id = 1"))
+        if not conf_check.scalar():
+            session.execute(
+                text(
+                    """
+                INSERT INTO conferences (id, governing_body_id, name, type)
+                VALUES (1, 1, 'テスト市議会', '地方議会全体')
+                """
+                )
+            )
+        session.commit()
+    except Exception as e:
+        print(f"Master data creation failed: {e}")
+        session.rollback()
+
     yield session
 
     # テストデータを削除（クリーンアップ）
@@ -109,25 +139,22 @@ async def test_repository_adapter_async_create_and_retrieve(
     """
     repo = RepositoryAdapter(MeetingRepositoryImpl)
 
-    try:
-        # 作成 (await 必須)
-        created = await repo.create(sample_meeting)
+    # 作成 (await 必須)
+    created = await repo.create(sample_meeting)
 
-        assert created is not None
-        assert created.id is not None
-        assert created.name == "統合テスト用会議"
-        assert created.url == "https://example.com/test-meeting.html"
+    assert created is not None
+    assert created.id is not None
+    assert created.name == "統合テスト用会議"
+    assert created.url == "https://example.com/test-meeting.html"
 
-        # 取得 (await 必須)
-        retrieved = await repo.get_by_id(created.id)
+    # 取得 (await 必須)
+    retrieved = await repo.get_by_id(created.id)
 
-        assert retrieved is not None
-        assert retrieved.id == created.id
-        assert retrieved.name == created.name
-        assert retrieved.url == created.url
-
-    finally:
-        repo.close()
+    assert retrieved is not None
+    assert retrieved.id == created.id
+    assert retrieved.name == created.name
+    assert retrieved.url == created.url
+    # Note: repo.close() は asyncio.run() を使うため async context では呼べない
 
 
 @pytest.mark.integration
@@ -139,24 +166,20 @@ async def test_repository_adapter_async_update(test_db_session, sample_meeting):
     """
     repo = RepositoryAdapter(MeetingRepositoryImpl)
 
-    try:
-        # 作成
-        created = await repo.create(sample_meeting)
-        original_name = created.name
+    # 作成
+    created = await repo.create(sample_meeting)
+    original_name = created.name
 
-        # 更新
-        created.name = "更新後の会議名"
-        updated = await repo.update(created)
+    # 更新
+    created.name = "更新後の会議名"
+    updated = await repo.update(created)
 
-        assert updated.name == "更新後の会議名"
-        assert updated.name != original_name
+    assert updated.name == "更新後の会議名"
+    assert updated.name != original_name
 
-        # 取得して確認
-        retrieved = await repo.get_by_id(created.id)
-        assert retrieved.name == "更新後の会議名"
-
-    finally:
-        repo.close()
+    # 取得して確認
+    retrieved = await repo.get_by_id(created.id)
+    assert retrieved.name == "更新後の会議名"
 
 
 @pytest.mark.integration
@@ -168,20 +191,16 @@ async def test_repository_adapter_async_delete(test_db_session, sample_meeting):
     """
     repo = RepositoryAdapter(MeetingRepositoryImpl)
 
-    try:
-        # 作成
-        created = await repo.create(sample_meeting)
-        meeting_id = created.id
+    # 作成
+    created = await repo.create(sample_meeting)
+    meeting_id = created.id
 
-        # 削除
-        await repo.delete(meeting_id)
+    # 削除
+    await repo.delete(meeting_id)
 
-        # 取得して確認（削除されているはず）
-        retrieved = await repo.get_by_id(meeting_id)
-        assert retrieved is None
-
-    finally:
-        repo.close()
+    # 取得して確認（削除されているはず）
+    retrieved = await repo.get_by_id(meeting_id)
+    assert retrieved is None
 
 
 @pytest.mark.integration
@@ -193,44 +212,40 @@ async def test_repository_adapter_async_transaction(test_db_session):
     """
     repo = RepositoryAdapter(MeetingRepositoryImpl)
 
-    try:
-        async with repo.transaction():
-            # トランザクション内で複数の Meeting を作成
-            meeting1 = Meeting(
-                conference_id=1,
-                date=date(2024, 1, 15),
-                url="https://example.com/meeting1.html",
-                name="会議1",
-            )
-            meeting1.created_at = datetime.now(UTC)
-            meeting1.updated_at = datetime.now(UTC)
+    async with repo.transaction():
+        # トランザクション内で複数の Meeting を作成
+        meeting1 = Meeting(
+            conference_id=1,
+            date=date(2024, 1, 15),
+            url="https://example.com/meeting1.html",
+            name="会議1",
+        )
+        meeting1.created_at = datetime.now(UTC)
+        meeting1.updated_at = datetime.now(UTC)
 
-            meeting2 = Meeting(
-                conference_id=1,
-                date=date(2024, 1, 16),
-                url="https://example.com/meeting2.html",
-                name="会議2",
-            )
-            meeting2.created_at = datetime.now(UTC)
-            meeting2.updated_at = datetime.now(UTC)
+        meeting2 = Meeting(
+            conference_id=1,
+            date=date(2024, 1, 16),
+            url="https://example.com/meeting2.html",
+            name="会議2",
+        )
+        meeting2.created_at = datetime.now(UTC)
+        meeting2.updated_at = datetime.now(UTC)
 
-            created1 = await repo.create(meeting1)
-            created2 = await repo.create(meeting2)
+        created1 = await repo.create(meeting1)
+        created2 = await repo.create(meeting2)
 
-            assert created1.id is not None
-            assert created2.id is not None
+        assert created1.id is not None
+        assert created2.id is not None
 
-        # トランザクション外で取得して確認
-        retrieved1 = await repo.get_by_id(created1.id)
-        retrieved2 = await repo.get_by_id(created2.id)
+    # トランザクション外で取得して確認
+    retrieved1 = await repo.get_by_id(created1.id)
+    retrieved2 = await repo.get_by_id(created2.id)
 
-        assert retrieved1 is not None
-        assert retrieved2 is not None
-        assert retrieved1.name == "会議1"
-        assert retrieved2.name == "会議2"
-
-    finally:
-        repo.close()
+    assert retrieved1 is not None
+    assert retrieved2 is not None
+    assert retrieved1.name == "会議1"
+    assert retrieved2.name == "会議2"
 
 
 # ============================================================================
