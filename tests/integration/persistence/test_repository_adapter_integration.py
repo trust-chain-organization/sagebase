@@ -52,15 +52,23 @@ def test_db_session():
     session_factory = sessionmaker(bind=connection)
     session = session_factory()
 
-    # 既存のテストデータをクリーンアップ
-    session.execute(text("TRUNCATE TABLE meetings CASCADE"))
-    session.commit()
+    # 既存のテストデータをクリーンアップ（TRUNCATEは重いのでDELETEを使用）
+    try:
+        session.execute(text("DELETE FROM meetings WHERE id > 0"))
+        session.commit()
+    except Exception as e:
+        print(f"Cleanup failed (setup): {e}")
+        session.rollback()
 
     yield session
 
     # テストデータを削除（クリーンアップ）
-    session.execute(text("TRUNCATE TABLE meetings CASCADE"))
-    session.commit()
+    try:
+        session.execute(text("DELETE FROM meetings WHERE id > 0"))
+        session.commit()
+    except Exception as e:
+        print(f"Cleanup failed (teardown): {e}")
+        session.rollback()
 
     session.close()
     transaction.rollback()
