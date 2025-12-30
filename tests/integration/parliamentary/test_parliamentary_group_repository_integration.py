@@ -5,6 +5,8 @@ repositories work correctly with the new Clean Architecture
 implementation using entity-based patterns.
 """
 
+import os
+
 from datetime import date, timedelta
 
 import pytest
@@ -21,6 +23,65 @@ from src.infrastructure.persistence.parliamentary_group_membership_repository_im
 from src.infrastructure.persistence.parliamentary_group_repository_impl import (
     ParliamentaryGroupRepositoryImpl as ParliamentaryGroupRepository,
 )
+
+
+# Skip all tests in this module if NOT running in CI environment
+pytestmark = pytest.mark.skipif(
+    os.getenv("CI") != "true",
+    reason="Integration tests require database connection available in CI only",
+)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def setup_master_data():
+    """テストモジュール全体で一度だけマスターデータを作成
+
+    parliamentary group testsが使用する conference_id=1 を作成する。
+    """
+    engine = create_engine(DATABASE_URL)
+    connection = engine.connect()
+    transaction = connection.begin()
+
+    try:
+        # governing_bodyが存在しない場合は作成
+        result = connection.execute(
+            text("SELECT id FROM governing_bodies WHERE id = 1")
+        )
+        if not result.scalar():
+            connection.execute(
+                text(
+                    """
+                INSERT INTO governing_bodies (id, name, type)
+                VALUES (1, 'テスト市', '市区町村')
+                ON CONFLICT (id) DO NOTHING
+                """
+                )
+            )
+
+        # conferenceが存在しない場合は作成
+        result = connection.execute(text("SELECT id FROM conferences WHERE id = 1"))
+        if not result.scalar():
+            connection.execute(
+                text(
+                    """
+                INSERT INTO conferences (id, governing_body_id, name, type)
+                VALUES (1, 1, 'テスト市議会', '地方議会全体')
+                ON CONFLICT (id) DO NOTHING
+                """
+                )
+            )
+
+        transaction.commit()
+    except Exception as e:
+        print(f"Master data setup failed: {e}")
+        transaction.rollback()
+    finally:
+        connection.close()
+        engine.dispose()
+
+    yield
+
+    # Cleanup is handled by individual test fixtures
 
 
 @pytest.fixture(scope="function")
@@ -54,25 +115,35 @@ def db_session():
     session = session_factory()
 
     # Clean up any existing test data before yielding
-    # Use TRUNCATE CASCADE to properly handle FK constraints and reset sequences
+    # Delete in correct order to respect FK constraints (child → parent)
     try:
+        # Delete meetings first (references conferences)
         session.execute(
-            text("SET session_replication_role = replica;")
-        )  # Disable FK checks
-        session.execute(text("TRUNCATE TABLE parliamentary_group_memberships CASCADE"))
+            text(
+                "DELETE FROM meetings WHERE conference_id IN "
+                "(SELECT id FROM conferences WHERE name LIKE 'テスト%')"
+            )
+        )
+
+        # Delete child tables
         session.execute(
-            text("TRUNCATE TABLE parliamentary_groups RESTART IDENTITY CASCADE")
+            text("DELETE FROM parliamentary_group_memberships WHERE id > 0")
         )
         session.execute(text("DELETE FROM politician_affiliations WHERE id > 0"))
+
+        # Delete parliamentary groups
+        session.execute(text("DELETE FROM parliamentary_groups WHERE id > 0"))
+
+        # Delete test data from other tables
         session.execute(text("DELETE FROM politicians WHERE name LIKE 'テスト議員%'"))
         session.execute(text("DELETE FROM speakers WHERE name LIKE 'テスト議員%'"))
         session.execute(
             text("DELETE FROM political_parties WHERE name LIKE 'テスト党%'")
         )
-        session.execute(text("DELETE FROM conferences WHERE name LIKE 'テスト%'"))
-        session.execute(
-            text("SET session_replication_role = DEFAULT;")
-        )  # Re-enable FK checks
+
+        # Note: conference_id=1 はマスターデータなので削除しない
+        # 新しい conference を作成した場合のみ削除（現在は作成していない）
+
         session.commit()
     except Exception as e:
         # If cleanup fails, still continue with test
@@ -95,31 +166,10 @@ def setup_test_data(db_session):
     # Generate unique test identifier
     test_id = str(uuid.uuid4())[:8]
 
-    # First check if governing body exists, if not create one
-    gb_check = db_session.execute(text("SELECT id FROM governing_bodies WHERE id = 1"))
-    if not gb_check.scalar():
-        db_session.execute(
-            text("""
-            INSERT INTO governing_bodies (id, name, type)
-            VALUES (1, 'テスト市', '市区町村')
-            """)
-        )
-        db_session.commit()
-
-    # Insert test conference with unique name
-    result = db_session.execute(
-        text("""
-        INSERT INTO conferences (governing_body_id, name, type)
-        VALUES (1, :conference_name, '地方議会全体')
-        RETURNING id
-        """),
-        {"conference_name": f"テスト市議会_{test_id}"},
-    )
-    conference_id = result.scalar()
-
-    # Verify conference was created
-    if not conference_id:
-        pytest.fail("Failed to create test conference")
+    # Use existing conference_id=1 (created by module-scoped fixture)
+    # Note: governing_body and conference are already created by
+    # setup_master_data in test_repository_adapter_integration.py
+    conference_id = 1
 
     # Insert test political parties with unique names
     party_result1 = db_session.execute(

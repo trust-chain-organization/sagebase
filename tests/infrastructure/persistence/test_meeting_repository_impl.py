@@ -351,7 +351,7 @@ class TestMeetingRepositoryImpl:
         assert result.id == 1
         assert result.conference_id == 10
         mock_session.execute.assert_called_once()
-        mock_session.commit.assert_called_once()
+        mock_session.flush.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_create_failure(
@@ -388,7 +388,7 @@ class TestMeetingRepositoryImpl:
 
         assert result.name == "本会議（更新）"
         mock_session.execute.assert_called_once()
-        mock_session.commit.assert_called_once()
+        mock_session.flush.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_update_failure(
@@ -423,7 +423,7 @@ class TestMeetingRepositoryImpl:
 
         assert result is True
         assert mock_session.execute.call_count == 2
-        mock_session.commit.assert_called_once()
+        mock_session.flush.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_delete_with_minutes(
@@ -663,7 +663,7 @@ class TestMeetingRepositoryImpl:
 
         assert result is False
         assert mock_session.execute.call_count == 2
-        mock_session.commit.assert_called_once()
+        mock_session.flush.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_delete_with_related_minutes(

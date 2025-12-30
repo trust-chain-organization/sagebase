@@ -19,5 +19,7 @@
   "reportAttributeAccessIssue": "warning",
   "strictParameterNoneValue": true,
   "reportUnnecessaryTypeIgnoreComment": "warning",
-  "reportImplicitStringConcatenation": "none"
+  "reportImplicitStringConcatenation": "none",
+  "reportUnusedCoroutine": "error",
+  "reportMissingAwait": "warning"
 }

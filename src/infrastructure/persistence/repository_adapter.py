@@ -124,25 +124,40 @@ class RepositoryAdapter:
 
         Yields:
             AsyncSession: Shared session for the transaction
+
+        Note:
+            Uses SQLAlchemy's recommended pattern with session.begin()
+            for proper transaction management. The transaction is automatically
+            committed on success and rolled back on exception.
         """
         session_factory = self.get_async_session_factory()
         async with session_factory() as session:
-            self._shared_session = session
-            logger.debug(f"Transaction started, session={id(session)}")
-            try:
-                yield session
-                logger.debug(f"Committing transaction, session={id(session)}")
-                await session.commit()
-                logger.info(
-                    f"Transaction committed successfully, session={id(session)}"
+            async with session.begin():
+                self._shared_session = session
+                logger.debug(
+                    f"Transaction started, session={id(session)}, "
+                    f"in_transaction={session.in_transaction()}"
                 )
-            except Exception as e:
-                logger.error(f"Transaction failed, rolling back: {e}")
-                await session.rollback()
-                raise
-            finally:
-                self._shared_session = None
-                logger.debug(f"Transaction context exited, session={id(session)}")
+                try:
+                    yield session
+                    logger.debug(
+                        f"Transaction block completed successfully, "
+                        f"session={id(session)}"
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Transaction failed, will auto-rollback: {e}, "
+                        f"session={id(session)}, "
+                        f"in_transaction={session.in_transaction()}, "
+                        f"is_active={session.is_active}"
+                    )
+                    raise
+                finally:
+                    self._shared_session = None
+                    logger.debug(
+                        f"Transaction context exited, session={id(session)}, "
+                        f"in_transaction={session.in_transaction()}"
+                    )
 
     def with_transaction(self, func: Any, *args: Any, **kwargs: Any) -> Any:
         """

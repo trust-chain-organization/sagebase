@@ -496,7 +496,7 @@ class MeetingRepositoryImpl(BaseRepositoryImpl[Meeting], MeetingRepository):
                 "updated_at": datetime.now(),
             }
             result = await async_executor.execute(text(sql), params)
-            await async_executor.commit()
+            await async_executor.flush()
             row = result.first()
             if row:
                 return self._dict_to_entity(dict(row._mapping))  # type: ignore
@@ -534,7 +534,7 @@ class MeetingRepositoryImpl(BaseRepositoryImpl[Meeting], MeetingRepository):
                     "updated_at": datetime.now(),
                 }
                 result = self.sync_session.execute(text(sql), params)
-                self.sync_session.commit()
+                self.sync_session.flush()
                 row = result.first()
                 if row:
                     return self._dict_to_entity(dict(row._mapping))  # type: ignore
@@ -576,7 +576,7 @@ class MeetingRepositoryImpl(BaseRepositoryImpl[Meeting], MeetingRepository):
                 "updated_at": datetime.now(),
             }
             result = await async_executor.execute(text(sql), params)
-            await async_executor.commit()
+            await async_executor.flush()
             row = result.first()
             if row:
                 return self._dict_to_entity(dict(row._mapping))  # type: ignore
@@ -615,7 +615,7 @@ class MeetingRepositoryImpl(BaseRepositoryImpl[Meeting], MeetingRepository):
                     "updated_at": datetime.now(),
                 }
                 result = self.sync_session.execute(text(sql), params)
-                self.sync_session.commit()
+                self.sync_session.flush()
                 row = result.first()
                 if row:
                     return self._dict_to_entity(dict(row._mapping))  # type: ignore
@@ -639,7 +639,7 @@ class MeetingRepositoryImpl(BaseRepositoryImpl[Meeting], MeetingRepository):
 
             sql = "DELETE FROM meetings WHERE id = :id"
             result = await async_executor.execute(text(sql), {"id": entity_id})
-            await async_executor.commit()
+            await async_executor.flush()
             return getattr(result, "rowcount", 0) > 0  # type: ignore
         else:
             # Use raw SQL for sync session
@@ -659,7 +659,7 @@ class MeetingRepositoryImpl(BaseRepositoryImpl[Meeting], MeetingRepository):
 
                 sql = "DELETE FROM meetings WHERE id = :id"
                 result = self.sync_session.execute(text(sql), {"id": entity_id})
-                self.sync_session.commit()
+                self.sync_session.flush()
                 return getattr(result, "rowcount", 0) > 0  # type: ignore
             return False
 

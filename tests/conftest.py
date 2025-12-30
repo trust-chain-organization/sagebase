@@ -272,3 +272,154 @@ def test_speeches():
         {"speaker": "鈴木花子", "content": "質問があります。"},
         {"speaker": "田中次郎", "content": "賛成です。"},
     ]
+
+
+# ============================================================================
+# LLMモックフィクスチャー（統合テスト用）
+# Issue #839: 統合テストで実際のLLMを叩かないためのフィクスチャー
+# ============================================================================
+
+
+@pytest.fixture(scope="session", autouse=True)
+def set_testing_env():
+    """テスト環境フラグを自動設定
+
+    統合テストで実際のLLM APIを呼ばないようにする（マスト要件）。
+    """
+    os.environ["TESTING"] = "true"
+    # ダミーAPIキー（実際には使用されない）
+    if "GOOGLE_API_KEY" not in os.environ:
+        os.environ["GOOGLE_API_KEY"] = "test-api-key-not-used"
+    yield
+    # クリーンアップ
+    if os.environ.get("TESTING") == "true":
+        del os.environ["TESTING"]
+
+
+@pytest.fixture
+def mock_gemini_llm_service():
+    """統合テスト用のモックGemini LLMサービス
+
+    実際のGemini APIを呼ばず、予測可能な結果を返す。
+    Issue #839: LLM APIコストゼロ、テスト高速化。
+    """
+
+    mock_service = AsyncMock()
+
+    # 基本的なLLM生成メソッド
+    mock_service.generate.return_value = {
+        "content": "モックされたLLMレスポンス",
+        "role": "assistant",
+        "model": "gemini-2.0-flash-mock",
+    }
+
+    # 構造化出力メソッド
+    mock_service.generate_structured.return_value = {
+        "members": [
+            {"name": "テスト議員1", "role": "議長", "party_name": "テスト党"},
+            {"name": "テスト議員2", "role": "議員", "party_name": "テスト党"},
+        ]
+    }
+
+    # 話者マッチングメソッド
+    mock_service.match_speaker_to_politician.return_value = {
+        "politician_id": 1,
+        "confidence": 0.95,
+        "reason": "完全一致",
+    }
+
+    return mock_service
+
+
+@pytest.fixture(scope="session")
+def mock_baml_client():
+    """BAML クライアントをモック（統合テスト用）
+
+    実際のLLM APIコールを完全に防ぐ。
+    必要なテストで明示的に使用する。
+
+    Issue #839: 統合テストでLLMを絶対に叩かない（マスト要件）
+
+    注: autouse=True を削除したため、このフィクスチャーが必要なテストは
+    明示的に引数として受け取る必要があります。
+    BAML生成コードの構造テスト（シグネチャやasync確認）には影響しません。
+    """
+    from unittest.mock import AsyncMock, patch
+
+    # BAML関数のモックレスポンス
+    mock_responses = {
+        "ExtractMembers": [
+            {"name": "テスト議員1", "role": "議長", "party_name": "テスト党"},
+            {"name": "テスト議員2", "role": "議員", "party_name": "テスト党"},
+        ],
+        "ExtractSpeeches": [
+            {"speaker": "テスト議員1", "content": "テスト発言1"},
+            {"speaker": "テスト議員2", "content": "テスト発言2"},
+        ],
+        "MatchSpeaker": {
+            "politician_id": 1,
+            "confidence": 0.95,
+            "reason": "モックマッチング",
+        },
+        "DivideMinutes": {
+            "sections": [
+                {"title": "議事開始", "content": "テスト議事録セクション1"},
+                {"title": "質疑応答", "content": "テスト議事録セクション2"},
+            ]
+        },
+    }
+
+    # BAML クライアントをパッチ
+    with patch("baml_client.async_client.b") as mock_b:
+        # 各BAML関数をモック
+        for func_name, response in mock_responses.items():
+            mock_func = AsyncMock(return_value=response)
+            setattr(mock_b, func_name, mock_func)
+
+        yield mock_b
+
+
+@pytest.fixture(scope="function", autouse=True)
+def assert_no_real_llm_call(monkeypatch, request):
+    """実際のLLM APIコールが発生していないことを検証するフィクスチャー
+
+    Issue #839: 統合テストでLLMを絶対に叩かない（マスト要件）
+
+    統合テストで自動的に有効化され、実際のLLM APIコールを検出・ブロックします。
+    単体テストでは無効化されます。
+
+    使用例:
+        @pytest.mark.integration
+        async def test_something():
+            # 実際のLLM APIコールがあれば自動的にエラー
+            result = await some_function()
+    """
+    import httpx
+
+    # 単体テストではスキップ（integrationマーカーがある場合のみ有効化）
+    if "integration" not in request.keywords:
+        yield
+        return
+
+    original_post = httpx.AsyncClient.post
+    call_count = {"count": 0}
+
+    async def patched_post(self, url, *args, **kwargs):
+        # Gemini APIへのコールを検出
+        if "generativelanguage.googleapis.com" in str(url):
+            call_count["count"] += 1
+            raise AssertionError(
+                f"実際のLLM APIコールが検出されました！ URL: {url}\n"
+                "統合テストでは実際のLLMを叩いてはいけません（マスト要件）。\n"
+                "mock_gemini_llm_service または mock_baml_client を使用してください。"
+            )
+        return await original_post(self, url, *args, **kwargs)
+
+    monkeypatch.setattr(httpx.AsyncClient, "post", patched_post)
+
+    yield
+
+    # テスト終了後、カウントを確認
+    assert call_count["count"] == 0, (
+        f"統合テスト中に {call_count['count']} 回のLLM APIコールが検出されました！"
+    )

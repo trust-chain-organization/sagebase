@@ -23,6 +23,14 @@ repos:
 
   - repo: local
     hooks:
+      - id: check-async-await
+        name: Check async/await usage
+        entry: python scripts/check_async_await.py
+        language: system
+        pass_filenames: true
+        types: [python]
+        files: ^src/
+
       - id: pyright
         name: pyright
         entry: uv run --frozen pyright
@@ -38,3 +46,27 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [pre-push] # プッシュ時のみ実行（コミット時は実行しない）
+
+      - id: pytest-integration-persistence
+        name: pytest (integration tests - persistence)
+        entry: uv run --frozen pytest tests/integration/persistence/ -v
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
+      - id: pytest-integration-scraping
+        name: pytest (integration tests - scraping)
+        entry: uv run --frozen pytest tests/integration/scraping/ -v
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
+      - id: pytest-integration-other
+        name: pytest (integration tests - other)
+        entry: uv run --frozen pytest tests/integration/ --ignore=tests/integration/persistence --ignore=tests/integration/scraping --ignore=tests/integration/parliamentary --ignore=tests/integration/database --ignore=tests/integration/cli -v
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

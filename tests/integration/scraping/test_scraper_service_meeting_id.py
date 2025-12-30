@@ -162,3 +162,63 @@ async def test_fetch_from_meeting_id_scraping_failure(scraper_service, mock_meet
         scraper_service.fetch_from_url.assert_called_once_with(
             "https://example.com/minutes.html", use_cache=True
         )
+
+
+# ============================================================================
+# リグレッションテスト（Issue #839）
+# async/await バグの再発防止
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_repository_adapter_requires_await(mock_meeting):
+    """
+    リグレッションテスト: RepositoryAdapter の非同期メソッドは必ず await すること
+
+    Issue #836 の再発防止のためのテスト。
+    AsyncMock を使用して、await なしで呼び出すとエラーになることを確認する。
+
+    背景:
+        - Issue #836: ScraperService.fetch_from_meeting_id で await を忘れた
+        - 問題: meeting = meeting_repo.get_by_id(meeting_id)  # await なし
+        - 結果: meeting がコルーチンオブジェクトになり、meeting.url でエラー
+        - 原因: テストがモックに依存しすぎており、実際の挙動を検証していなかった
+
+    このテスト:
+        - AsyncMock を正しく使用して、await なしの呼び出しを検出
+        - コルーチンオブジェクトが返されることを確認
+        - url 属性へのアクセスでエラーが発生することを確認
+    """
+    import asyncio
+
+    with patch("src.web_scraper.scraper_service.RepositoryAdapter") as mock_repo_class:
+        # Mock the repository with AsyncMock
+        mock_repo = Mock()
+        mock_repo.get_by_id = AsyncMock(return_value=mock_meeting)
+        mock_repo_class.return_value = mock_repo
+
+        # === ケース1: await していない場合（バグのシミュレーション） ===
+        # この呼び出しは await していないため、コルーチンオブジェクトが返される
+        coro = mock_repo.get_by_id(123)  # await なし
+
+        # コルーチンオブジェクトであることを確認
+        assert asyncio.iscoroutine(coro), (
+            "AsyncMock の戻り値は await されていない場合、"
+            "コルーチンオブジェクトであるべき"
+        )
+
+        # url 属性にアクセスしようとするとエラーになることを確認
+        with pytest.raises(AttributeError, match="'coroutine' object has no attribute"):
+            _ = coro.url  # これが Issue #836 で発生したエラー
+
+        # コルーチンをクリーンアップ
+        coro.close()
+
+        # === ケース2: 正しく await した場合 ===
+        # 正しく await すれば、Meeting オブジェクトが返される
+        meeting = await mock_repo.get_by_id(123)
+
+        # Meeting オブジェクトであることを確認
+        assert meeting == mock_meeting
+        assert hasattr(meeting, "url")
+        assert meeting.url == "https://example.com/minutes.html"

@@ -1,4 +1,4 @@
-name: CI - Quick Checks
+name: CI - Parallel Checks
 
 on:
   pull_request:
@@ -9,8 +9,9 @@ permissions:
   pull-requests: read
 
 jobs:
-  quick-checks:
-    name: Quick validation checks
+  # Lane 1: Lint & Format (~1-2分)
+  lint-format:
+    name: Lint & Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,13 +26,42 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Check Python syntax
+      - name: Install dependencies
         run: |
-          python -m py_compile src/**/*.py tests/**/*.py || true
+          uv sync --frozen --extra dev
+
+      - name: Check code formatting with ruff
+        run: |
+          uv run --frozen ruff format --check .
+
+      - name: Lint code with ruff
+        run: |
+          uv run --frozen ruff check .
+
+  # Lane 2: Type Check (~2-3分)
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13.3
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
 
       - name: Install dependencies
         run: |
           uv sync --frozen --extra dev
+
+      - name: Type check with Pyright
+        run: |
+          uv run --frozen pyright
 
       - name: Check imports and basic structure
         run: |
@@ -39,7 +69,6 @@ jobs:
           import sys
           sys.path.insert(0, '.')
           try:
-              # srcディレクトリ内のモジュールを確認
               from src.infrastructure.persistence import base_repository_impl
               from src.application import usecases
               from src.domain import entities
@@ -51,8 +80,231 @@ jobs:
               sys.exit(1)
           "
 
-      - name: Check for security issues with bandit
+  # Lane 3: Security (~1-2分)
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13.3
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
         run: |
-          # Skip B608: SQL injection (all queries use parameterized queries, table names are hardcoded)
-          # Skip B104: Hardcoded bind to 0.0.0.0 (required for Docker environment)
+          uv sync --frozen --extra dev
+
+      - name: Security scan with bandit
+        run: |
+          # Skip B608: SQL injection (parameterized queries used)
+          # Skip B104: Hardcoded bind to 0.0.0.0 (required for Docker)
           uv run bandit -r src/ -ll -i -x "*/tests/*" -s B608,B104
+
+  # Lane 4: Unit Tests (~3-5分)
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13.3
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --extra dev
+
+      - name: Run unit tests
+        run: |
+          uv run pytest tests/unit/ -v --cov=src --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          file: ./coverage.xml
+          flags: unit-tests
+          name: unit-tests-coverage
+
+  # Lane 5: Integration - Persistence (~3-5分)
+  integration-persistence:
+    name: Integration Tests - Persistence
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13.3
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --extra dev
+
+      - name: Set up test database
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+        run: |
+          # Run initial schema setup for CI
+          PGPASSWORD=test psql -h localhost -U test -d test_db -f database/init_ci.sql
+
+          # Create a temporary file to combine all migrations
+          cat database/migrations/*.sql > /tmp/all_migrations.sql
+
+          # Run all migrations in a single psql session
+          echo "Running all migrations..."
+          PGPASSWORD=test psql -h localhost -U test -d test_db -f /tmp/all_migrations.sql
+
+          # Verify tables were created
+          echo "Verifying database setup..."
+          PGPASSWORD=test psql -h localhost -U test -d test_db -c "\dt" | head -20
+
+      - name: Run persistence integration tests
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+          TESTING: "true"
+          CI: "true"
+        run: |
+          uv run pytest tests/integration/persistence/ tests/integration/database/ tests/integration/parliamentary*/ tests/integration/test_repository_adapter.py -v
+
+  # Lane 6: Integration - Scraping (~5-7分)
+  integration-scraping:
+    name: Integration Tests - Scraping
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13.3
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --extra dev
+
+      - name: Install Playwright browsers
+        run: |
+          uv run playwright install chromium
+
+      - name: Run scraping integration tests
+        env:
+          TESTING: "true"
+          GOOGLE_API_KEY: "test-api-key-not-used"
+          CI: "true"
+        run: |
+          uv run pytest tests/integration/scraping/ -v
+
+  # Lane 7: Integration - LLM (~3-5分)
+  integration-llm:
+    name: Integration Tests - LLM (Mocked)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13.3
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --extra dev
+
+      - name: Run LLM integration tests (fully mocked)
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+          TESTING: "true"
+          GOOGLE_API_KEY: "test-api-key-not-used"
+          CI: "true"
+        run: |
+          uv run pytest tests/integration/llm/ tests/integration/test_minutes_processing_with_history.py -v
+
+  # Lane 8: Integration - Other (~2-4分)
+  integration-other:
+    name: Integration Tests - Other
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13.3
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --extra dev
+
+      - name: Run other integration tests
+        env:
+          TESTING: "true"
+          GOOGLE_API_KEY: "test-api-key-not-used"
+          CI: "true"
+        run: |
+          uv run pytest tests/integration/cli/ tests/integration/test_*.py --ignore=tests/integration/scraping --ignore=tests/integration/persistence --ignore=tests/integration/database --ignore=tests/integration/llm --ignore=tests/integration/parliamentary -v
