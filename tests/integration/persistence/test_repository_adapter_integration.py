@@ -369,6 +369,11 @@ async def test_repository_adapter_async_transaction_rollback(test_db_session):
     """
     repo = RepositoryAdapter(MeetingRepositoryImpl)
 
+    # テスト前に既存のmeetingsを全て削除（他のテストのデータをクリア）
+    all_existing = await repo.get_all()
+    for meeting in all_existing:
+        await repo.delete(meeting.id)
+
     try:
         with pytest.raises(ValueError):
             async with repo.transaction():

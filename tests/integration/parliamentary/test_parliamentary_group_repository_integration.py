@@ -104,31 +104,10 @@ def setup_test_data(db_session):
     # Generate unique test identifier
     test_id = str(uuid.uuid4())[:8]
 
-    # First check if governing body exists, if not create one
-    gb_check = db_session.execute(text("SELECT id FROM governing_bodies WHERE id = 1"))
-    if not gb_check.scalar():
-        db_session.execute(
-            text("""
-            INSERT INTO governing_bodies (id, name, type)
-            VALUES (1, 'テスト市', '市区町村')
-            """)
-        )
-        db_session.commit()
-
-    # Insert test conference with unique name
-    result = db_session.execute(
-        text("""
-        INSERT INTO conferences (governing_body_id, name, type)
-        VALUES (1, :conference_name, '地方議会全体')
-        RETURNING id
-        """),
-        {"conference_name": f"テスト市議会_{test_id}"},
-    )
-    conference_id = result.scalar()
-
-    # Verify conference was created
-    if not conference_id:
-        pytest.fail("Failed to create test conference")
+    # Use existing conference_id=1 (created by module-scoped fixture)
+    # Note: governing_body and conference are already created by
+    # setup_master_data in test_repository_adapter_integration.py
+    conference_id = 1
 
     # Insert test political parties with unique names
     party_result1 = db_session.execute(
