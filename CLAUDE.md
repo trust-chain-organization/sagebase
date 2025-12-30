@@ -94,16 +94,86 @@ src/
 - **Cloud Storage**: Google Cloud Storage
 - **Data Visualization**: Plotly, Folium, Streamlit
 
-## Key Skills
+## Skill Usage Guide
 
-Sagebaseプロジェクトでは、以下のスキルが自動的にアクティベートされます：
+**重要**: 以下のskillは特定のタスクで自動的にアクティベートされるべきです。タスクの内容に応じて適切なskillを使用してください。
 
-- **[data-processing-workflows](.claude/skills/data-processing-workflows/)**: データ処理パイプラインとワークフロー
-- **[clean-architecture-checker](.claude/skills/clean-architecture-checker/)**: Clean Architectureの原則とレイヤー構造
-- **[test-writer](.claude/skills/test-writer/)**: テスト作成ガイドとTDD
-- **[migration-helper](.claude/skills/migration-helper/)**: データベース移行とスキーマ管理
-- **[project-conventions](.claude/skills/project-conventions/)**: プロジェクト規約とベストプラクティス
-- **[development-workflows](.claude/skills/development-workflows/)**: 開発ワークフローとパターン
+### Architecture & Code Quality
+
+#### clean-architecture-checker
+**使用タイミング**:
+- `src/domain/`、`src/application/`、`src/infrastructure/`、`src/interfaces/` 配下のファイルを作成・修正する時
+- Clean Architectureの原則に従っているか検証する必要がある時
+- リポジトリパターン、依存性ルール、エンティティの独立性をチェックする時
+
+#### test-writer
+**使用タイミング**:
+- テストファイルを作成する時
+- テスト作成ガイドが必要な時
+- 外部サービス（LLM、API）のモックが必要な時
+- pytest-asyncioを使用した非同期テストを書く時
+- CI失敗を防ぐためのテスト品質を確保したい時
+
+### Development Workflow
+
+#### project-conventions
+**使用タイミング**:
+- プロジェクトの規約とベストプラクティスを確認したい時
+- Pre-commit hooks の遵守方法を知りたい時
+- CI/CD運用のルールを確認したい時
+- 中間ファイル管理（`tmp/`ディレクトリ）について知りたい時
+- 知識蓄積層（`_docs/`）の活用方法を知りたい時
+
+#### development-workflows
+**使用タイミング**:
+- Docker-first開発の手順を確認したい時
+- 環境変数管理の方法を知りたい時
+- 新機能追加の標準手順を確認したい時
+- 日常的な開発作業のベストプラクティスを知りたい時
+
+#### sagebase-commands
+**使用タイミング**:
+- アプリケーションの起動方法を知りたい時
+- テスト、フォーマット、lintコマンドを実行したい時
+- データベース操作コマンドを知りたい時
+- Dockerコマンドやsagebase CLIの使い方を知りたい時
+- `just`コマンドの一覧を確認したい時
+
+### Database
+
+#### migration-helper
+**使用タイミング**:
+- データベースマイグレーションファイルを作成する時
+- テーブル、カラム、インデックスを追加・変更する時
+- `database/02_run_migrations.sql`への追加が必要な時
+- マイグレーションの命名規則（連番）を確認したい時
+
+### Data Processing
+
+#### data-processing-workflows
+**使用タイミング**:
+- 議事録処理のワークフローを理解したい時
+- Web scrapingのパイプラインを確認したい時
+- 政治家データ収集の処理フローを知りたい時
+- 話者マッチングの依存関係・実行順序を理解したい時
+- データ処理の全体像を把握したい時
+
+#### baml-integration
+**使用タイミング**:
+- BAML (Boundary ML) の使い方を知りたい時
+- BAML定義ファイルを作成・修正する時
+- BAMLクライアントを再生成する必要がある時
+- Factory Patternを使った実装を設計する時
+- ハイブリッドアプローチ（ルールベース + LLM）を実装する時
+
+### Operations
+
+#### bi-dashboard-commands
+**使用タイミング**:
+- BI Dashboard (Plotly Dash) を起動したい時
+- BI Dashboardのテストを実行したい時
+- BI Dashboardの動作確認手順を知りたい時
+- BI Dashboardのトラブルシューティングが必要な時
 
 ## Documentation
 
