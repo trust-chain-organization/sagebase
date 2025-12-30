@@ -32,6 +32,58 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+@pytest.fixture(scope="module", autouse=True)
+def setup_master_data():
+    """テストモジュール全体で一度だけマスターデータを作成
+
+    parliamentary group testsが使用する conference_id=1 を作成する。
+    """
+    engine = create_engine(DATABASE_URL)
+    connection = engine.connect()
+    transaction = connection.begin()
+
+    try:
+        # governing_bodyが存在しない場合は作成
+        result = connection.execute(
+            text("SELECT id FROM governing_bodies WHERE id = 1")
+        )
+        if not result.scalar():
+            connection.execute(
+                text(
+                    """
+                INSERT INTO governing_bodies (id, name, type)
+                VALUES (1, 'テスト市', '市区町村')
+                ON CONFLICT (id) DO NOTHING
+                """
+                )
+            )
+
+        # conferenceが存在しない場合は作成
+        result = connection.execute(text("SELECT id FROM conferences WHERE id = 1"))
+        if not result.scalar():
+            connection.execute(
+                text(
+                    """
+                INSERT INTO conferences (id, governing_body_id, name, type)
+                VALUES (1, 1, 'テスト市議会', '地方議会全体')
+                ON CONFLICT (id) DO NOTHING
+                """
+                )
+            )
+
+        transaction.commit()
+    except Exception as e:
+        print(f"Master data setup failed: {e}")
+        transaction.rollback()
+    finally:
+        connection.close()
+        engine.dispose()
+
+    yield
+
+    # Cleanup is handled by individual test fixtures
+
+
 @pytest.fixture(scope="function")
 def db_session():
     """Create a database session for testing with transaction rollback"""
