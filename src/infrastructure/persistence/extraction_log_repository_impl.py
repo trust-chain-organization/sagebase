@@ -105,9 +105,9 @@ class ExtractionLogRepositoryImpl(
             self.model_class.pipeline_version == version
         )
 
-        if offset:
+        if offset is not None:
             query = query.offset(offset)
-        if limit:
+        if limit is not None:
             query = query.limit(limit)
 
         query = query.order_by(self.model_class.created_at.desc())
@@ -137,9 +137,9 @@ class ExtractionLogRepositoryImpl(
             self.model_class.entity_type == entity_type.value
         )
 
-        if offset:
+        if offset is not None:
             query = query.offset(offset)
-        if limit:
+        if limit is not None:
             query = query.limit(limit)
 
         query = query.order_by(self.model_class.created_at.desc())
@@ -215,9 +215,9 @@ class ExtractionLogRepositoryImpl(
         if conditions:
             query = query.where(and_(*conditions))
 
-        if offset:
+        if offset is not None:
             query = query.offset(offset)
-        if limit:
+        if limit is not None:
             query = query.limit(limit)
 
         query = query.order_by(self.model_class.created_at.desc())

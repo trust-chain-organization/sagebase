@@ -16,11 +16,7 @@ import os
 
 import pytest
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
-
 from src.domain.entities.extraction_log import EntityType, ExtractionLog
-from src.infrastructure.config.database import DATABASE_URL
 from src.infrastructure.persistence.extraction_log_repository_impl import (
     ExtractionLogRepositoryImpl,
 )
@@ -39,37 +35,10 @@ pytestmark = pytest.mark.skipif(
 # ============================================================================
 
 
-@pytest.fixture(scope="function")
-def test_db_session():
-    """テスト用のデータベースセッションを作成
-
-    extraction_logsテーブルは外部キー制約がないため、マスターデータ不要。
-    各テスト後にクリーンアップを実行。
-    """
-    engine = create_engine(DATABASE_URL)
-    session_factory = sessionmaker(bind=engine)
-    session = session_factory()
-
-    yield session
-
-    # Cleanup: テスト用のデータを削除
-    try:
-        session.execute(
-            text("DELETE FROM extraction_logs WHERE pipeline_version LIKE 'test-%'")
-        )
-        session.commit()
-    except Exception:
-        session.rollback()
-    finally:
-        session.close()
-        engine.dispose()
-
-
 @pytest.fixture
-def repository(test_db_session):
-    """テスト用のリポジトリを作成"""
-    adapter = RepositoryAdapter(test_db_session)
-    return ExtractionLogRepositoryImpl(adapter)
+def repository():
+    """テスト用のリポジトリを作成（RepositoryAdapterを使用）"""
+    return RepositoryAdapter(ExtractionLogRepositoryImpl)
 
 
 @pytest.fixture
@@ -95,9 +64,10 @@ def sample_log() -> ExtractionLog:
 # ============================================================================
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_create_and_get_by_id(
-    repository: ExtractionLogRepositoryImpl,
+    repository: RepositoryAdapter,
     sample_log: ExtractionLog,
 ):
     """Create操作とGet by ID操作のテスト"""
@@ -122,9 +92,10 @@ async def test_create_and_get_by_id(
     assert retrieved_log.pipeline_version == created_log.pipeline_version
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_by_entity(
-    repository: ExtractionLogRepositoryImpl,
+    repository: RepositoryAdapter,
     sample_log: ExtractionLog,
 ):
     """特定エンティティのログ取得テスト"""
@@ -162,9 +133,10 @@ async def test_get_by_entity(
     assert logs[0].created_at >= logs[1].created_at
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_latest_by_entity(
-    repository: ExtractionLogRepositoryImpl,
+    repository: RepositoryAdapter,
     sample_log: ExtractionLog,
 ):
     """最新ログの取得テスト"""
@@ -194,9 +166,10 @@ async def test_get_latest_by_entity(
     assert latest_log.pipeline_version == "test-v2"
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_latest_by_entity_not_found(
-    repository: ExtractionLogRepositoryImpl,
+    repository: RepositoryAdapter,
 ):
     """存在しないエンティティの最新ログ取得テスト"""
     latest_log = await repository.get_latest_by_entity(EntityType.SPEAKER, 99999)
@@ -209,9 +182,10 @@ async def test_get_latest_by_entity_not_found(
 # ============================================================================
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_by_entity_type(
-    repository: ExtractionLogRepositoryImpl,
+    repository: RepositoryAdapter,
     sample_log: ExtractionLog,
 ):
     """エンティティタイプでのフィルタリングテスト"""
@@ -236,9 +210,10 @@ async def test_get_by_entity_type(
     assert all(log.entity_type == EntityType.SPEAKER for log in speaker_logs)
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_by_pipeline_version(
-    repository: ExtractionLogRepositoryImpl,
+    repository: RepositoryAdapter,
     sample_log: ExtractionLog,
 ):
     """パイプラインバージョンでのフィルタリングテスト"""
@@ -263,9 +238,10 @@ async def test_get_by_pipeline_version(
     assert all(log.pipeline_version == "test-v1" for log in logs_v1)
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_search_with_multiple_filters(
-    repository: ExtractionLogRepositoryImpl,
+    repository: RepositoryAdapter,
 ):
     """複数条件での検索テスト"""
     # 異なる条件のログを作成
@@ -317,9 +293,10 @@ async def test_search_with_multiple_filters(
 # ============================================================================
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_count_by_entity_type(
-    repository: ExtractionLogRepositoryImpl,
+    repository: RepositoryAdapter,
 ):
     """エンティティタイプ別カウントテスト"""
     # SPEAKERタイプのログを2つ作成
@@ -339,9 +316,10 @@ async def test_count_by_entity_type(
     assert count >= 2
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_count_by_pipeline_version(
-    repository: ExtractionLogRepositoryImpl,
+    repository: RepositoryAdapter,
 ):
     """パイプラインバージョン別カウントテスト"""
     # test-count-v1のログを3つ作成
@@ -366,6 +344,7 @@ async def test_count_by_pipeline_version(
 # ============================================================================
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "entity_type",
@@ -378,7 +357,7 @@ async def test_count_by_pipeline_version(
     ],
 )
 async def test_all_entity_types(
-    repository: ExtractionLogRepositoryImpl,
+    repository: RepositoryAdapter,
     entity_type: EntityType,
 ):
     """全エンティティタイプでの動作確認"""
@@ -407,9 +386,10 @@ async def test_all_entity_types(
 # ============================================================================
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_pagination(
-    repository: ExtractionLogRepositoryImpl,
+    repository: RepositoryAdapter,
 ):
     """ページネーション機能のテスト"""
     # 10個のログを作成
