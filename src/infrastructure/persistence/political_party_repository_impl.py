@@ -102,6 +102,53 @@ class PoliticalPartyRepositoryImpl(
             return self._row_to_entity(row)
         return None
 
+    async def create(self, entity: PoliticalParty) -> PoliticalParty:
+        """Create a new political party."""
+        query = text("""
+            INSERT INTO political_parties (name, members_list_url)
+            VALUES (:name, :members_list_url)
+            RETURNING id, name, members_list_url
+        """)
+
+        result = await self.session.execute(
+            query,
+            {
+                "name": entity.name,
+                "members_list_url": entity.members_list_url,
+            },
+        )
+        row = result.fetchone()
+
+        if row:
+            return self._row_to_entity(row)
+        raise RuntimeError("Failed to create political party")
+
+    async def update(self, entity: PoliticalParty) -> PoliticalParty:
+        """Update an existing political party."""
+        if entity.id is None:
+            raise ValueError("Cannot update entity without ID")
+
+        query = text("""
+            UPDATE political_parties
+            SET name = :name, members_list_url = :members_list_url
+            WHERE id = :id
+            RETURNING id, name, members_list_url
+        """)
+
+        result = await self.session.execute(
+            query,
+            {
+                "id": entity.id,
+                "name": entity.name,
+                "members_list_url": entity.members_list_url,
+            },
+        )
+        row = result.fetchone()
+
+        if row:
+            return self._row_to_entity(row)
+        raise RuntimeError(f"Failed to update political party with ID {entity.id}")
+
     def _row_to_entity(self, row: Any) -> PoliticalParty:
         """Convert database row to domain entity."""
         return PoliticalParty(
