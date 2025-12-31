@@ -106,3 +106,33 @@ class ExtractionLogRepository(BaseRepository[ExtractionLog]):
             抽出ログのリスト（作成日時の降順）
         """
         pass
+
+    @abstractmethod
+    async def count_by_entity_type(
+        self,
+        entity_type: EntityType,
+    ) -> int:
+        """特定のエンティティタイプのログ件数を取得する。
+
+        Args:
+            entity_type: エンティティタイプ
+
+        Returns:
+            ログ件数
+        """
+        pass
+
+    @abstractmethod
+    async def count_by_pipeline_version(
+        self,
+        version: str,
+    ) -> int:
+        """特定のパイプラインバージョンのログ件数を取得する。
+
+        Args:
+            version: パイプラインバージョン
+
+        Returns:
+            ログ件数
+        """
+        pass

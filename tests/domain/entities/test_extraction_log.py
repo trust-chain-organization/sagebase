@@ -1,5 +1,7 @@
 """抽出ログエンティティのテスト。"""
 
+from tests.fixtures.entity_factories import create_extraction_log
+
 from src.domain.entities.extraction_log import EntityType, ExtractionLog
 
 
@@ -190,3 +192,91 @@ class TestExtractionLog:
             confidence_score=0.75,
         )
         assert entity_mid.confidence_score == 0.75
+
+    def test_confidence_score_allows_out_of_range_values(self):
+        """信頼度スコアは0-1の範囲外の値も許容する。
+
+        LLMからの生の値を保持するため、範囲外の値でもエラーにならない。
+        バリデーションは上位層（ユースケース等）で行う設計。
+        """
+        # 負の値
+        entity_negative = ExtractionLog(
+            entity_type=EntityType.POLITICIAN,
+            entity_id=1,
+            pipeline_version="test-v1",
+            extracted_data={"test": "data"},
+            confidence_score=-0.5,
+        )
+        assert entity_negative.confidence_score == -0.5
+
+        # 1.0を超える値
+        entity_over = ExtractionLog(
+            entity_type=EntityType.POLITICIAN,
+            entity_id=2,
+            pipeline_version="test-v1",
+            extracted_data={"test": "data"},
+            confidence_score=1.5,
+        )
+        assert entity_over.confidence_score == 1.5
+
+    def test_empty_extracted_data(self):
+        """空のextracted_dataでエンティティを作成できる。"""
+        entity = ExtractionLog(
+            entity_type=EntityType.STATEMENT,
+            entity_id=1,
+            pipeline_version="test-v1",
+            extracted_data={},
+        )
+        assert entity.extracted_data == {}
+
+    def test_inheritance_from_base_entity(self):
+        """BaseEntityの継承が正しく機能する。"""
+        entity1 = ExtractionLog(
+            entity_type=EntityType.POLITICIAN,
+            entity_id=1,
+            pipeline_version="test-v1",
+            extracted_data={},
+            id=42,
+        )
+        entity2 = ExtractionLog(
+            entity_type=EntityType.SPEAKER,  # 異なるタイプ
+            entity_id=999,  # 異なるentity_id
+            pipeline_version="different-v1",
+            extracted_data={"different": "data"},
+            id=42,  # 同じid
+        )
+        # BaseEntityの__eq__はidのみで比較
+        assert entity1 == entity2
+        assert hash(entity1) == hash(entity2)
+
+    def test_created_at_updated_at_from_base_entity(self):
+        """BaseEntityからcreated_at/updated_atを継承している。"""
+        entity = ExtractionLog(
+            entity_type=EntityType.POLITICIAN,
+            entity_id=1,
+            pipeline_version="test-v1",
+            extracted_data={},
+        )
+        assert hasattr(entity, "created_at")
+        assert hasattr(entity, "updated_at")
+        assert entity.created_at is None  # 初期値
+        assert entity.updated_at is None  # 初期値
+
+    def test_create_with_factory(self):
+        """ファクトリ関数でエンティティを作成できる。"""
+        entity = create_extraction_log()
+        assert entity.entity_type == EntityType.POLITICIAN
+        assert entity.entity_id == 123
+        assert entity.pipeline_version == "gemini-2.0-flash-v1"
+        assert entity.extracted_data == {"name": "テスト太郎"}
+
+    def test_create_with_factory_override(self):
+        """ファクトリ関数でパラメータを上書きできる。"""
+        entity = create_extraction_log(
+            entity_type=EntityType.SPEAKER,
+            entity_id=999,
+            confidence_score=0.85,
+        )
+        assert entity.entity_type == EntityType.SPEAKER
+        assert entity.entity_id == 999
+        assert entity.confidence_score == 0.85

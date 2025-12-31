@@ -10,6 +10,7 @@ from src.domain.entities.extracted_parliamentary_group_member import (
     ExtractedParliamentaryGroupMember,
 )
 from src.domain.entities.extracted_proposal_judge import ExtractedProposalJudge
+from src.domain.entities.extraction_log import EntityType, ExtractionLog
 from src.domain.entities.governing_body import GoverningBody
 from src.domain.entities.meeting import Meeting
 from src.domain.entities.minutes import Minutes
@@ -240,3 +241,18 @@ def create_extracted_proposal_judge(**kwargs: Any) -> ExtractedProposalJudge:
     }
     defaults.update(kwargs)
     return ExtractedProposalJudge(**defaults)
+
+
+def create_extraction_log(**kwargs: Any) -> ExtractionLog:
+    """Create a test extraction log."""
+    defaults = {
+        "id": 1,
+        "entity_type": EntityType.POLITICIAN,
+        "entity_id": 123,
+        "pipeline_version": "gemini-2.0-flash-v1",
+        "extracted_data": {"name": "テスト太郎"},
+        "confidence_score": None,
+        "extraction_metadata": {},
+    }
+    defaults.update(kwargs)
+    return ExtractionLog(**defaults)
