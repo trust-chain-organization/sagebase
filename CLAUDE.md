@@ -181,6 +181,14 @@ src/
 - Factory Patternを使った実装を設計する時
 - ハイブリッドアプローチ（ルールベース + LLM）を実装する時
 
+#### data-layer-architecture
+**使用タイミング**:
+- LLM抽出処理を新規実装する時
+- ExtractionLogエンティティを使用する時
+- `is_manually_verified`フラグを扱う時
+- 抽出結果からGoldエンティティを更新する時
+- Bronze Layer / Gold Layerの設計について質問された時
+
 ### Operations
 
 #### bi-dashboard-commands
@@ -320,3 +328,12 @@ Sagebaseでは、以下の機能にBAML (Boundary ML)を使用しています。
 
 ### Usage in Streamlit
 会議体管理画面の「会議体一覧」タブで、会議体を選択して「選択した会議体から議員情報を抽出」ボタンをクリックすると、BAMLを使用してメンバー情報を抽出できます。抽出結果は「抽出結果確認」タブで確認できます。
+
+## Data Layer Architecture（Bronze Layer / Gold Layer）
+
+Sagebaseでは、LLM抽出結果と確定データを分離する**2層アーキテクチャ**を採用しています。
+
+- **Bronze Layer（抽出ログ層）**: LLM抽出結果を追記専用（Immutable）で保存
+- **Gold Layer（確定データ層）**: ユーザーに提供する確定データ、人間の修正が最優先
+
+**📖 For detailed architecture**: See [.claude/skills/data-layer-architecture/](.claude/skills/data-layer-architecture/)
