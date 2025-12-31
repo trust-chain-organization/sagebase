@@ -2,13 +2,17 @@
 
 このモジュールは、BAMLを使用して話者マッチング処理を行います。
 既存のPydantic実装と並行して動作し、フィーチャーフラグで切り替え可能です。
+
+Issue #800で、LangGraph ReActエージェントを統合し、ハイブリッドマッチングを実装。
 """
 
 import logging
+import os
 import re
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import BaseModel, Field
 
 from baml_client.async_client import b
@@ -17,6 +21,12 @@ from src.domain.exceptions import ExternalServiceException
 from src.domain.repositories.speaker_repository import SpeakerRepository
 from src.domain.services.interfaces.llm_service import ILLMService
 
+
+if TYPE_CHECKING:
+    # 型チェック時のみインポート（循環インポート回避）
+    from src.infrastructure.external.langgraph_speaker_matching_agent import (
+        SpeakerMatchingAgent,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -37,25 +47,58 @@ class BAMLSpeakerMatchingService:
     """BAML-based 発言者名マッチングサービス
 
     BAMLを使用して発言者マッチング処理を行うクラス。
-    既存のSpeakerMatchingServiceと同じインターフェースを持ち、
-    トークン効率とパース精度の向上を目指します。
+    Issue #800で、LangGraph ReActエージェントを統合し、ハイブリッドマッチングを実装。
+
+    マッチングフロー:
+    1. ルールベースマッチング（高速パス、信頼度0.9以上）
+    2. Agentマッチング（反復的評価、信頼度0.8以上）
+    3. BAMLマッチング（フォールバック、エラー時）
     """
 
     def __init__(
         self,
         llm_service: ILLMService,  # 互換性のため保持（BAML使用時は不要）
         speaker_repository: SpeakerRepository,
+        use_agent: bool = True,  # Agentマッチングを使用するか
     ):
         """
-        Initialize BAML speaker matching service
+        Initialize BAML speaker matching service with Agent integration
 
         Args:
             llm_service: 互換性のためのパラメータ（BAML使用時は不要）
             speaker_repository: Speaker repository instance (domain interface)
+            use_agent: Agentマッチングを使用するか（デフォルト: True）
         """
         self.llm_service = llm_service
         self.speaker_repository = speaker_repository
-        logger.info("BAMLSpeakerMatchingService initialized")
+        self.use_agent = use_agent
+
+        # LangGraphエージェントの初期化
+        self.matching_agent: SpeakerMatchingAgent | None = None  # noqa: F823  # type: ignore
+        if use_agent:
+            try:
+                # 循環インポート回避のため、実行時にインポート
+                from src.infrastructure.external.langgraph_speaker_matching_agent import (  # noqa: E501
+                    SpeakerMatchingAgent,
+                )
+
+                llm = self._get_langchain_llm()
+                self.matching_agent = SpeakerMatchingAgent(
+                    llm=llm,
+                    speaker_repo=speaker_repository,
+                    # politician_repo と affiliation_repo は必要に応じて追加
+                )
+                logger.info("BAMLSpeakerMatchingService with Agent initialized")
+            except Exception as e:
+                logger.warning(
+                    f"Failed to initialize SpeakerMatchingAgent: {e}. "
+                    "Falling back to BAML-only mode."
+                )
+                self.use_agent = False
+                self.matching_agent = None
+
+        if not use_agent:
+            logger.info("BAMLSpeakerMatchingService initialized (BAML-only mode)")
 
     async def find_best_match(
         self,
@@ -65,6 +108,13 @@ class BAMLSpeakerMatchingService:
     ) -> SpeakerMatch:
         """
         発言者名に最適なマッチを見つける（会議体所属を考慮）
+
+        Issue #800でAgentマッチングを統合し、ハイブリッド処理を実装。
+
+        処理フロー:
+        1. ルールベースマッチング（高速パス、信頼度0.9以上）
+        2. Agentマッチング（use_agent=Trueの場合、反復的評価）
+        3. BAMLマッチング（フォールバック、Agentエラー時）
 
         Args:
             speaker_name: マッチングする発言者名
@@ -97,7 +147,30 @@ class BAMLSpeakerMatchingService:
             logger.info(f"Rule-based match found for '{speaker_name}'")
             return rule_based_match
 
-        # BAMLによる高度なマッチング
+        # Agentマッチングを試行（use_agent=Trueの場合）
+        if self.use_agent and self.matching_agent:
+            try:
+                agent_result = await self._agent_based_matching(
+                    speaker_name, meeting_date, conference_id
+                )
+                if agent_result.matched and agent_result.confidence >= 0.8:
+                    logger.info(
+                        f"Agent match found for '{speaker_name}' "
+                        f"(confidence={agent_result.confidence})"
+                    )
+                    return agent_result
+                else:
+                    logger.info(
+                        f"Agent matching completed but confidence too low "
+                        f"({agent_result.confidence}). Falling back to BAML."
+                    )
+            except Exception as e:
+                logger.warning(
+                    f"Agent matching failed for '{speaker_name}': {e}. "
+                    "Falling back to BAML matching."
+                )
+
+        # BAMLによる高度なマッチング（フォールバック）
         try:
             # 候補を絞り込み（パフォーマンス向上のため）
             filtered_speakers = self._filter_candidates(
@@ -264,3 +337,69 @@ class BAMLSpeakerMatchingService:
                 entry += " ★【会議体所属議員】"
             formatted.append(entry)
         return "\n".join(formatted)
+
+    async def _agent_based_matching(
+        self,
+        speaker_name: str,
+        meeting_date: str | None,
+        conference_id: int | None,
+    ) -> SpeakerMatch:
+        """Agentベースの発言者マッチング
+
+        LangGraph ReActエージェントを使用して、反復的評価により
+        高精度なマッチングを実現。
+
+        Args:
+            speaker_name: マッチングする発言者名
+            meeting_date: 会議開催日（YYYY-MM-DD形式）
+            conference_id: 会議体ID
+
+        Returns:
+            SpeakerMatch: マッチング結果
+
+        Raises:
+            Exception: Agent実行エラー時
+        """
+        if not self.matching_agent:
+            raise RuntimeError("SpeakerMatchingAgent not initialized")
+
+        # Agentを実行
+        agent_result = await self.matching_agent.match_speaker(
+            speaker_name=speaker_name,
+            meeting_date=meeting_date,
+            conference_id=conference_id,
+        )
+
+        # SpeakerMatchingResultをSpeakerMatchに変換
+        return SpeakerMatch(
+            matched=agent_result["matched"],
+            speaker_id=agent_result.get("politician_id"),
+            speaker_name=agent_result.get("politician_name"),
+            confidence=agent_result["confidence"],
+            reason=agent_result["reason"],
+        )
+
+    def _get_langchain_llm(self) -> ChatGoogleGenerativeAI:
+        """ILLMServiceからLangChain互換のLLMを取得
+
+        環境変数からGoogle API Keyを取得し、ChatGoogleGenerativeAIインスタンスを作成。
+
+        Returns:
+            ChatGoogleGenerativeAI: LangChain互換のLLMインスタンス
+
+        Raises:
+            ValueError: GOOGLE_API_KEY環境変数が設定されていない場合
+        """
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "GOOGLE_API_KEY environment variable not set. "
+                "Please set it to use Agent-based matching."
+            )
+
+        # gemini-2.0-flashを使用（高速で低コスト）
+        return ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash-exp",
+            google_api_key=api_key,
+            temperature=0.0,  # 確定的な結果のため
+        )
