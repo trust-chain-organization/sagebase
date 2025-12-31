@@ -16,8 +16,6 @@ omit =
     src/infrastructure/utilities/japan_map.py
     # 監視/メトリクスエンドポイント（FastAPI）
     src/interfaces/metrics_app.py
-    # 未使用コード
-    src/infrastructure/persistence/optimized_repository_mixin.py
     # CLI専用コマンド（統合テストで検証）
     src/interfaces/cli/commands/coverage_commands.py
     # 同期アダプター（非同期実装のラッパー、CLIのみで使用）
