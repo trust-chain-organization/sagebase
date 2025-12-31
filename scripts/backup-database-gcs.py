@@ -21,7 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.infrastructure.config.settings import get_settings
-from src.utils.gcs_storage import HAS_GCS, GCSStorage
+from src.infrastructure.storage.gcs_client import HAS_GCS, GCSStorage
 
 
 # Configure logging

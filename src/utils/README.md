@@ -15,7 +15,7 @@ The following modules are **deprecated** and will be removed in Phase 5:
 |-------------------|--------------|--------|
 | `src.utils.text_extractor` | `src.infrastructure.utilities.text_extractor` | ⚠️ Deprecated |
 | `src.utils.japan_map` | `src.infrastructure.utilities.japan_map` | ⚠️ Deprecated |
-| `src.utils.gcs_storage` | (stays here - differs from gcs_storage_service) | ⏳ To be evaluated |
+| `src.utils.gcs_storage` | `src.infrastructure.storage.gcs_client` | ✅ Migrated (Issue #792) |
 
 ## How to Update Your Code
 
@@ -58,7 +58,7 @@ Use 'src.infrastructure.utilities.text_extractor' instead.
 
 ## GCS Storage Note
 
-`src.utils.gcs_storage` is **not yet deprecated** because it differs from `src.infrastructure.external.gcs_storage_service`. These will be evaluated for consolidation in a future phase.
+`src.utils.gcs_storage` has been **migrated** to `src.infrastructure.storage.gcs_client` (Issue #792). This provides the low-level GCS client, while `src.infrastructure.external.gcs_storage_service` implements the `IStorageService` interface.
 
 ## Contributing
 
