@@ -16,7 +16,7 @@ from src.infrastructure.exceptions import (
 @pytest.fixture(autouse=True)
 def mock_gcs_module():
     """Mock Google Cloud Storage module."""
-    with patch("src.utils.gcs_storage.HAS_GCS", True):
+    with patch("src.infrastructure.storage.gcs_client.HAS_GCS", True):
         yield
 
 
@@ -43,9 +43,10 @@ def mock_blob():
 def gcs_storage(mock_storage_client):
     """Create GCS storage instance."""
     with patch(
-        "src.utils.gcs_storage.storage.Client", return_value=mock_storage_client
+        "src.infrastructure.storage.gcs_client.storage.Client",
+        return_value=mock_storage_client,
     ):
-        from src.utils.gcs_storage import GCSStorage
+        from src.infrastructure.storage.gcs_client import GCSStorage
 
         return GCSStorage("test-bucket")
 
@@ -53,7 +54,7 @@ def gcs_storage(mock_storage_client):
 class TestGCSStorageInit:
     """Test GCSStorage initialization."""
 
-    @patch("src.utils.gcs_storage.storage.Client")
+    @patch("src.infrastructure.storage.gcs_client.storage.Client")
     def test_init_without_project_id(self, mock_client_class):
         """Test initialization without project ID."""
         mock_client = MagicMock()
@@ -62,7 +63,7 @@ class TestGCSStorageInit:
         mock_bucket.exists.return_value = True
         mock_client.bucket.return_value = mock_bucket
 
-        from src.utils.gcs_storage import GCSStorage
+        from src.infrastructure.storage.gcs_client import GCSStorage
 
         storage = GCSStorage("test-bucket")
 
@@ -70,7 +71,7 @@ class TestGCSStorageInit:
         assert storage.project_id is None
         mock_client_class.assert_called_once_with()
 
-    @patch("src.utils.gcs_storage.storage.Client")
+    @patch("src.infrastructure.storage.gcs_client.storage.Client")
     def test_init_with_project_id(self, mock_client_class):
         """Test initialization with project ID."""
         mock_client = MagicMock()
@@ -79,14 +80,14 @@ class TestGCSStorageInit:
         mock_bucket.exists.return_value = True
         mock_client.bucket.return_value = mock_bucket
 
-        from src.utils.gcs_storage import GCSStorage
+        from src.infrastructure.storage.gcs_client import GCSStorage
 
         storage = GCSStorage("test-bucket", "test-project")
 
         assert storage.project_id == "test-project"
         mock_client_class.assert_called_once_with(project="test-project")
 
-    @patch("src.utils.gcs_storage.storage.Client")
+    @patch("src.infrastructure.storage.gcs_client.storage.Client")
     def test_init_bucket_not_exists(self, mock_client_class):
         """Test initialization fails if bucket doesn't exist."""
         mock_client = MagicMock()
@@ -95,36 +96,36 @@ class TestGCSStorageInit:
         mock_bucket.exists.return_value = False
         mock_client.bucket.return_value = mock_bucket
 
-        from src.utils.gcs_storage import GCSStorage
+        from src.infrastructure.storage.gcs_client import GCSStorage
 
         with pytest.raises(StorageError):
             GCSStorage("nonexistent-bucket")
 
-    @patch("src.utils.gcs_storage.storage.Client")
-    @patch("src.utils.gcs_storage.Forbidden", Exception)
+    @patch("src.infrastructure.storage.gcs_client.storage.Client")
+    @patch("src.infrastructure.storage.gcs_client.Forbidden", Exception)
     def test_init_permission_denied(self, mock_client_class):
         """Test initialization handles permission errors."""
         mock_client = MagicMock()
         mock_client_class.return_value = mock_client
 
-        from src.utils.gcs_storage import Forbidden
+        from src.infrastructure.storage.gcs_client import Forbidden
 
         mock_client.bucket.side_effect = Forbidden("Access denied")
 
-        from src.utils.gcs_storage import GCSStorage
+        from src.infrastructure.storage.gcs_client import GCSStorage
 
         with pytest.raises(PermissionError, match="Permission denied"):
             GCSStorage("test-bucket")
 
-    @patch("src.utils.gcs_storage.HAS_GCS", False)
+    @patch("src.infrastructure.storage.gcs_client.HAS_GCS", False)
     def test_init_gcs_not_available(self):
         """Test initialization fails when GCS library not available."""
-        from src.utils.gcs_storage import GCSStorage
+        from src.infrastructure.storage.gcs_client import GCSStorage
 
         with pytest.raises(StorageError, match="not installed"):
             GCSStorage("test-bucket")
 
-    @patch("src.utils.gcs_storage.storage.Client")
+    @patch("src.infrastructure.storage.gcs_client.storage.Client")
     def test_init_authentication_error(self, mock_client_class):
         """Test initialization handles authentication errors."""
         mock_client = MagicMock()
@@ -141,9 +142,11 @@ class TestGCSStorageInit:
         )
         mock_client.bucket.return_value = mock_bucket
 
-        from src.utils.gcs_storage import GCSStorage
+        from src.infrastructure.storage.gcs_client import GCSStorage
 
-        with patch("src.utils.gcs_storage.RefreshError", MockRefreshError):
+        with patch(
+            "src.infrastructure.storage.gcs_client.RefreshError", MockRefreshError
+        ):
             with pytest.raises(
                 AuthenticationError, match="認証に失敗しました"
             ) as exc_info:
@@ -223,8 +226,13 @@ class TestUploadFile:
         gcs_storage.bucket.blob.return_value = mock_blob
 
         with (
-            patch("src.utils.gcs_storage.GoogleCloudError", MockGoogleCloudError),
-            patch("src.utils.gcs_storage.Forbidden", MockForbiddenError),
+            patch(
+                "src.infrastructure.storage.gcs_client.GoogleCloudError",
+                MockGoogleCloudError,
+            ),
+            patch(
+                "src.infrastructure.storage.gcs_client.Forbidden", MockForbiddenError
+            ),
         ):
             with pytest.raises(PermissionError, match="Permission denied"):
                 gcs_storage.upload_file(test_file, "test.txt")
@@ -249,8 +257,13 @@ class TestUploadFile:
                 super().__init__("Upload failed")
 
         with (
-            patch("src.utils.gcs_storage.GoogleCloudError", MockGoogleCloudError),
-            patch("src.utils.gcs_storage.UploadException", MockUploadError),
+            patch(
+                "src.infrastructure.storage.gcs_client.GoogleCloudError",
+                MockGoogleCloudError,
+            ),
+            patch(
+                "src.infrastructure.storage.gcs_client.UploadException", MockUploadError
+            ),
         ):
             with pytest.raises(MockUploadError):
                 gcs_storage.upload_file(test_file, "test.txt")
@@ -311,8 +324,13 @@ class TestUploadContent:
         gcs_storage.bucket.blob.return_value = mock_blob
 
         with (
-            patch("src.utils.gcs_storage.GoogleCloudError", MockGoogleCloudError),
-            patch("src.utils.gcs_storage.Forbidden", MockForbiddenError),
+            patch(
+                "src.infrastructure.storage.gcs_client.GoogleCloudError",
+                MockGoogleCloudError,
+            ),
+            patch(
+                "src.infrastructure.storage.gcs_client.Forbidden", MockForbiddenError
+            ),
         ):
             with pytest.raises(PermissionError, match="Permission denied"):
                 gcs_storage.upload_content("Test", "test.txt")
@@ -345,10 +363,10 @@ class TestDownloadFile:
 
         assert local_path.parent.exists()
 
-    @patch("src.utils.gcs_storage.NotFound", Exception)
+    @patch("src.infrastructure.storage.gcs_client.NotFound", Exception)
     def test_download_file_not_found(self, gcs_storage, tmp_path):
         """Test download handles file not found."""
-        from src.utils.gcs_storage import NotFound
+        from src.infrastructure.storage.gcs_client import NotFound
 
         local_path = tmp_path / "downloaded.txt"
 
@@ -390,10 +408,10 @@ class TestExists:
 
         assert gcs_storage.exists("nonexistent.txt") is False
 
-    @patch("src.utils.gcs_storage.Forbidden", Exception)
+    @patch("src.infrastructure.storage.gcs_client.Forbidden", Exception)
     def test_exists_permission_denied(self, gcs_storage):
         """Test exists handles permission errors."""
-        from src.utils.gcs_storage import Forbidden
+        from src.infrastructure.storage.gcs_client import Forbidden
 
         mock_blob = MagicMock()
         mock_blob.exists.side_effect = Forbidden("No access")
@@ -401,10 +419,10 @@ class TestExists:
 
         assert gcs_storage.exists("test.txt") is False
 
-    @patch("src.utils.gcs_storage.GoogleCloudError", Exception)
+    @patch("src.infrastructure.storage.gcs_client.GoogleCloudError", Exception)
     def test_exists_gcs_error(self, gcs_storage):
         """Test exists handles GCS errors."""
-        from src.utils.gcs_storage import GoogleCloudError
+        from src.infrastructure.storage.gcs_client import GoogleCloudError
 
         mock_blob = MagicMock()
         mock_blob.exists.side_effect = GoogleCloudError("Error")
@@ -441,20 +459,20 @@ class TestListFiles:
         gcs_storage.bucket.list_blobs.assert_called_once_with(prefix="subdir/")
         assert files == ["subdir/file.txt"]
 
-    @patch("src.utils.gcs_storage.Forbidden", Exception)
+    @patch("src.infrastructure.storage.gcs_client.Forbidden", Exception)
     def test_list_files_permission_denied(self, gcs_storage):
         """Test list files handles permission errors."""
-        from src.utils.gcs_storage import Forbidden
+        from src.infrastructure.storage.gcs_client import Forbidden
 
         gcs_storage.bucket.list_blobs.side_effect = Forbidden("No access")
 
         with pytest.raises(PermissionError, match="Permission denied"):
             gcs_storage.list_files()
 
-    @patch("src.utils.gcs_storage.GoogleCloudError", Exception)
+    @patch("src.infrastructure.storage.gcs_client.GoogleCloudError", Exception)
     def test_list_files_gcs_error(self, gcs_storage):
         """Test list files handles GCS errors."""
-        from src.utils.gcs_storage import GoogleCloudError
+        from src.infrastructure.storage.gcs_client import GoogleCloudError
 
         gcs_storage.bucket.list_blobs.side_effect = GoogleCloudError("Error")
 
@@ -544,10 +562,10 @@ class TestDownloadContent:
 
         assert content is None
 
-    @patch("src.utils.gcs_storage.Forbidden", Exception)
+    @patch("src.infrastructure.storage.gcs_client.Forbidden", Exception)
     def test_download_content_permission_denied(self, gcs_storage):
         """Test download content handles permission errors."""
-        from src.utils.gcs_storage import Forbidden
+        from src.infrastructure.storage.gcs_client import Forbidden
 
         mock_blob = MagicMock()
         mock_blob.exists.return_value = True
@@ -621,10 +639,10 @@ class TestDownloadFileFromUri:
 
         assert result is False
 
-    @patch("src.utils.gcs_storage.Forbidden", Exception)
+    @patch("src.infrastructure.storage.gcs_client.Forbidden", Exception)
     def test_download_file_from_uri_permission_denied(self, gcs_storage, tmp_path):
         """Test download handles permission errors."""
-        from src.utils.gcs_storage import Forbidden
+        from src.infrastructure.storage.gcs_client import Forbidden
 
         local_path = tmp_path / "file.txt"
 
