@@ -40,5 +40,6 @@
 \i /docker-entrypoint-initdb.d/02_migrations/035_create_users_table.sql
 \i /docker-entrypoint-initdb.d/02_migrations/036_add_user_id_to_work_tables.sql
 \i /docker-entrypoint-initdb.d/02_migrations/037_add_created_by_user_id_to_parliamentary_group_memberships.sql
+\i /docker-entrypoint-initdb.d/02_migrations/038_create_extraction_logs.sql
 
 \echo 'Migrations completed.'
