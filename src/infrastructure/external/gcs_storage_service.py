@@ -3,7 +3,7 @@
 import asyncio
 
 from src.domain.services.interfaces.storage_service import IStorageService
-from src.utils.gcs_storage import GCSStorage
+from src.infrastructure.storage.gcs_client import GCSStorage
 
 
 class GCSStorageService(IStorageService):
