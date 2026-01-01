@@ -13,6 +13,7 @@
 # pyright: reportMissingParameterType=false, reportArgumentType=false
 
 import os
+import random
 
 import pytest
 
@@ -42,11 +43,17 @@ def repository():
 
 
 @pytest.fixture
-def sample_log() -> ExtractionLog:
+def unique_entity_id() -> int:
+    """テスト間で衝突しない一意なentity_idを生成"""
+    return random.randint(100000, 999999)
+
+
+@pytest.fixture
+def sample_log(unique_entity_id: int) -> ExtractionLog:
     """テスト用のExtractionLogエンティティを作成"""
     return ExtractionLog(
         entity_type=EntityType.SPEAKER,
-        entity_id=1,
+        entity_id=unique_entity_id,
         pipeline_version="test-v1",
         extracted_data={"name": "テスト太郎", "role": "議員"},
         confidence_score=0.95,
@@ -97,13 +104,18 @@ async def test_create_and_get_by_id(
 async def test_get_by_entity(
     repository: RepositoryAdapter,
     sample_log: ExtractionLog,
+    unique_entity_id: int,
 ):
     """特定エンティティのログ取得テスト"""
+    # sample_logはunique_entity_idを使用
+    target_entity_id = sample_log.entity_id
+    other_entity_id = unique_entity_id + 1  # 異なるentity_id
+
     # 3つのログを作成
     await repository.create(sample_log)
     log2 = ExtractionLog(
         entity_type=EntityType.SPEAKER,
-        entity_id=1,
+        entity_id=target_entity_id,
         pipeline_version="test-v2",
         extracted_data={"name": "テスト太郎", "role": "議員", "updated": True},
         confidence_score=0.98,
@@ -114,7 +126,7 @@ async def test_get_by_entity(
     # 別のエンティティIDのログ
     log3 = ExtractionLog(
         entity_type=EntityType.SPEAKER,
-        entity_id=2,
+        entity_id=other_entity_id,
         pipeline_version="test-v1",
         extracted_data={"name": "テスト花子", "role": "議員"},
         confidence_score=0.90,
@@ -122,11 +134,11 @@ async def test_get_by_entity(
     )
     await repository.create(log3)
 
-    # entity_id=1のログを取得
-    logs = await repository.get_by_entity(EntityType.SPEAKER, 1)
+    # target_entity_idのログを取得
+    logs = await repository.get_by_entity(EntityType.SPEAKER, target_entity_id)
 
     assert len(logs) == 2
-    assert all(log.entity_id == 1 for log in logs)
+    assert all(log.entity_id == target_entity_id for log in logs)
     assert all(log.entity_type == EntityType.SPEAKER for log in logs)
     # 降順でソートされていることを確認
     assert logs[0].created_at is not None and logs[1].created_at is not None
@@ -140,6 +152,9 @@ async def test_get_latest_by_entity(
     sample_log: ExtractionLog,
 ):
     """最新ログの取得テスト"""
+    # sample_logのentity_idを使用
+    target_entity_id = sample_log.entity_id
+
     # 2つのログを作成（時間差をつける）
     await repository.create(sample_log)
 
@@ -150,7 +165,7 @@ async def test_get_latest_by_entity(
 
     log2 = ExtractionLog(
         entity_type=EntityType.SPEAKER,
-        entity_id=1,
+        entity_id=target_entity_id,
         pipeline_version="test-v2",
         extracted_data={"name": "テスト太郎", "role": "議員", "updated": True},
         confidence_score=0.98,
@@ -159,7 +174,9 @@ async def test_get_latest_by_entity(
     latest_created = await repository.create(log2)
 
     # 最新のログを取得
-    latest_log = await repository.get_latest_by_entity(EntityType.SPEAKER, 1)
+    latest_log = await repository.get_latest_by_entity(
+        EntityType.SPEAKER, target_entity_id
+    )
 
     assert latest_log is not None
     assert latest_log.id == latest_created.id
@@ -242,30 +259,34 @@ async def test_get_by_pipeline_version(
 @pytest.mark.asyncio
 async def test_search_with_multiple_filters(
     repository: RepositoryAdapter,
+    unique_entity_id: int,
 ):
     """複数条件での検索テスト"""
+    # テスト固有のpipeline_versionを生成
+    unique_pipeline_version = f"test-search-{unique_entity_id}"
+
     # 異なる条件のログを作成
     logs_to_create = [
         ExtractionLog(
             entity_type=EntityType.SPEAKER,
-            entity_id=1,
-            pipeline_version="test-search-v1",
+            entity_id=unique_entity_id,
+            pipeline_version=unique_pipeline_version,
             extracted_data={"name": "高信頼度"},
             confidence_score=0.95,
             extraction_metadata={},
         ),
         ExtractionLog(
             entity_type=EntityType.SPEAKER,
-            entity_id=2,
-            pipeline_version="test-search-v1",
+            entity_id=unique_entity_id + 1,
+            pipeline_version=unique_pipeline_version,
             extracted_data={"name": "低信頼度"},
             confidence_score=0.70,
             extraction_metadata={},
         ),
         ExtractionLog(
             entity_type=EntityType.POLITICIAN,
-            entity_id=1,
-            pipeline_version="test-search-v1",
+            entity_id=unique_entity_id,
+            pipeline_version=unique_pipeline_version,
             extracted_data={"name": "政治家"},
             confidence_score=0.90,
             extraction_metadata={},
@@ -278,7 +299,7 @@ async def test_search_with_multiple_filters(
     # 検索: SPEAKER + min_confidence_score=0.9
     results = await repository.search(
         entity_type=EntityType.SPEAKER,
-        pipeline_version="test-search-v1",
+        pipeline_version=unique_pipeline_version,
         min_confidence_score=0.9,
     )
 
@@ -320,21 +341,25 @@ async def test_count_by_entity_type(
 @pytest.mark.asyncio
 async def test_count_by_pipeline_version(
     repository: RepositoryAdapter,
+    unique_entity_id: int,
 ):
     """パイプラインバージョン別カウントテスト"""
-    # test-count-v1のログを3つ作成
+    # テスト固有のpipeline_versionを生成
+    unique_pipeline_version = f"test-count-{unique_entity_id}"
+
+    # 3つのログを作成
     for i in range(3):
         log = ExtractionLog(
             entity_type=EntityType.SPEAKER,
-            entity_id=i,
-            pipeline_version="test-count-v1",
+            entity_id=unique_entity_id + i,
+            pipeline_version=unique_pipeline_version,
             extracted_data={"index": i},
             confidence_score=0.9,
             extraction_metadata={},
         )
         await repository.create(log)
 
-    count = await repository.count_by_pipeline_version("test-count-v1")
+    count = await repository.count_by_pipeline_version(unique_pipeline_version)
 
     assert count == 3
 
@@ -359,12 +384,13 @@ async def test_count_by_pipeline_version(
 async def test_all_entity_types(
     repository: RepositoryAdapter,
     entity_type: EntityType,
+    unique_entity_id: int,
 ):
     """全エンティティタイプでの動作確認"""
     log = ExtractionLog(
         entity_type=entity_type,
-        entity_id=1,
-        pipeline_version=f"test-{entity_type.value}",
+        entity_id=unique_entity_id,
+        pipeline_version=f"test-{entity_type.value}-{unique_entity_id}",
         extracted_data={"test": "data"},
         confidence_score=0.9,
         extraction_metadata={},
@@ -390,14 +416,18 @@ async def test_all_entity_types(
 @pytest.mark.asyncio
 async def test_pagination(
     repository: RepositoryAdapter,
+    unique_entity_id: int,
 ):
     """ページネーション機能のテスト"""
+    # テスト固有のpipeline_versionを生成
+    unique_pipeline_version = f"test-pagination-{unique_entity_id}"
+
     # 10個のログを作成
     for i in range(10):
         log = ExtractionLog(
             entity_type=EntityType.SPEAKER,
-            entity_id=i,
-            pipeline_version="test-pagination",
+            entity_id=unique_entity_id + i,
+            pipeline_version=unique_pipeline_version,
             extracted_data={"index": i},
             confidence_score=0.9,
             extraction_metadata={},
@@ -406,12 +436,12 @@ async def test_pagination(
 
     # 1ページ目（5件）
     page1 = await repository.get_by_pipeline_version(
-        "test-pagination", limit=5, offset=0
+        unique_pipeline_version, limit=5, offset=0
     )
 
     # 2ページ目（5件）
     page2 = await repository.get_by_pipeline_version(
-        "test-pagination", limit=5, offset=5
+        unique_pipeline_version, limit=5, offset=5
     )
 
     assert len(page1) == 5
