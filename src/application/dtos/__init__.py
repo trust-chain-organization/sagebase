@@ -7,6 +7,18 @@ from src.application.dtos.conference_dto import (
     CreateAffiliationDTO,
     ExtractedConferenceMemberDTO,
 )
+from src.application.dtos.extraction_result.conversation_extraction_result import (
+    ConversationExtractionResult,
+)
+from src.application.dtos.extraction_result.parliamentary_group_membership_extraction_result import (  # noqa: E501
+    ParliamentaryGroupMembershipExtractionResult,
+)
+from src.application.dtos.extraction_result.politician_extraction_result import (
+    PoliticianExtractionResult,
+)
+from src.application.dtos.extraction_result.speaker_extraction_result import (
+    SpeakerExtractionResult,
+)
 from src.application.dtos.minutes_dto import (
     ExtractedSpeechDTO,
     MinutesDTO,
@@ -36,6 +48,11 @@ __all__ = [
     "ConferenceMemberMatchingDTO",
     "CreateAffiliationDTO",
     "ExtractedConferenceMemberDTO",
+    # Extraction Result DTOs
+    "ConversationExtractionResult",
+    "ParliamentaryGroupMembershipExtractionResult",
+    "PoliticianExtractionResult",
+    "SpeakerExtractionResult",
     # Minutes DTOs
     "ExtractedSpeechDTO",
     "MinutesDTO",
