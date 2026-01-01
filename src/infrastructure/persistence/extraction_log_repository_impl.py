@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import Column, DateTime, Float, Integer, String, and_, func
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import ENUM, JSONB
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -33,7 +33,18 @@ class ExtractionLogModel(Base):
 
     id = Column(Integer, primary_key=True)
     # PostgreSQL ENUM型にマッピング（valueはEntityType.valueと一致）
-    entity_type = Column(String(50), nullable=False)
+    entity_type = Column(
+        ENUM(
+            "statement",
+            "politician",
+            "speaker",
+            "conference_member",
+            "parliamentary_group_member",
+            name="entity_type",
+            create_type=False,  # 既存のPostgreSQL ENUM型を使用
+        ),
+        nullable=False,
+    )
     entity_id = Column(Integer, nullable=False)
     pipeline_version = Column(String(100), nullable=False)
     extracted_data = Column(JSONB, nullable=False)
