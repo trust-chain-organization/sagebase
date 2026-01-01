@@ -5,7 +5,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Column, DateTime, Enum, Float, Integer, String, and_, func
+from sqlalchemy import Column, DateTime, Float, Integer, String, and_, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,11 +32,8 @@ class ExtractionLogModel(Base):
     __tablename__ = "extraction_logs"
 
     id = Column(Integer, primary_key=True)
-    # PostgreSQL ENUM型を使用（マイグレーションで作成済み）
-    entity_type = Column(
-        Enum(EntityType, name="entity_type", create_type=False),
-        nullable=False,
-    )
+    # PostgreSQL ENUM型にマッピング（valueはEntityType.valueと一致）
+    entity_type = Column(String(50), nullable=False)
     entity_id = Column(Integer, nullable=False)
     pipeline_version = Column(String(100), nullable=False)
     extracted_data = Column(JSONB, nullable=False)
@@ -83,7 +80,7 @@ class ExtractionLogRepositoryImpl(
                 select(self.model_class)
                 .where(
                     and_(
-                        self.model_class.entity_type == entity_type,
+                        self.model_class.entity_type == entity_type.value,
                         self.model_class.entity_id == entity_id,
                     )
                 )
@@ -167,7 +164,7 @@ class ExtractionLogRepositoryImpl(
         """
         try:
             query = select(self.model_class).where(
-                self.model_class.entity_type == entity_type
+                self.model_class.entity_type == entity_type.value
             )
 
             if offset is not None:
@@ -212,7 +209,7 @@ class ExtractionLogRepositoryImpl(
                 select(self.model_class)
                 .where(
                     and_(
-                        self.model_class.entity_type == entity_type,
+                        self.model_class.entity_type == entity_type.value,
                         self.model_class.entity_id == entity_id,
                     )
                 )
@@ -262,7 +259,7 @@ class ExtractionLogRepositoryImpl(
             conditions: list[Any] = []
 
             if entity_type:
-                conditions.append(self.model_class.entity_type == entity_type)
+                conditions.append(self.model_class.entity_type == entity_type.value)
             if pipeline_version:
                 conditions.append(self.model_class.pipeline_version == pipeline_version)
             if min_confidence_score is not None:
@@ -306,7 +303,7 @@ class ExtractionLogRepositoryImpl(
         """
         try:
             query = select(func.count(self.model_class.id)).where(
-                self.model_class.entity_type == entity_type
+                self.model_class.entity_type == entity_type.value
             )
 
             result = await self.session.execute(query)
@@ -360,7 +357,7 @@ class ExtractionLogRepositoryImpl(
             Domain entity
         """
         entity = ExtractionLog(
-            entity_type=model.entity_type,  # ENUM型なのでそのまま使用
+            entity_type=EntityType(model.entity_type),  # StringからEnumに変換
             entity_id=model.entity_id,
             pipeline_version=model.pipeline_version,
             extracted_data=model.extracted_data,
@@ -382,7 +379,7 @@ class ExtractionLogRepositoryImpl(
             Database model
         """
         return ExtractionLogModel(
-            entity_type=entity.entity_type,  # ENUM型なのでそのまま使用
+            entity_type=entity.entity_type.value,  # EnumからStringに変換
             entity_id=entity.entity_id,
             pipeline_version=entity.pipeline_version,
             extracted_data=entity.extracted_data,

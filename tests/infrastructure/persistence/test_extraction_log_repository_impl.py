@@ -56,7 +56,7 @@ class TestExtractionLogRepositoryImpl:
         """Create sample extraction log model."""
         model = Mock()
         model.id = 1
-        model.entity_type = EntityType.SPEAKER  # ENUM型に変更
+        model.entity_type = "speaker"  # String型（DB値）
         model.entity_id = 123
         model.pipeline_version = "gemini-2.0-flash-v1"
         model.extracted_data = {"name": "田中太郎", "role": "議員"}
@@ -99,7 +99,7 @@ class TestExtractionLogRepositoryImpl:
         model = repository._to_model(sample_entity)
 
         assert isinstance(model, ExtractionLogModel)
-        assert model.entity_type == EntityType.SPEAKER  # ENUM型に変更
+        assert model.entity_type == "speaker"  # String型（DB値）
         assert model.entity_id == sample_entity.entity_id
         assert model.pipeline_version == sample_entity.pipeline_version
         assert model.extracted_data == sample_entity.extracted_data
@@ -370,7 +370,7 @@ class TestExtractionLogRepositoryImpl:
         """Test _to_entity works for all entity types."""
         model = Mock()
         model.id = 1
-        model.entity_type = entity_type  # ENUM型なのでそのまま使用
+        model.entity_type = entity_type.value  # String型（DB値）
         model.entity_id = 100
         model.pipeline_version = "test-v1"
         model.extracted_data = {"test": "data"}
