@@ -7,7 +7,6 @@ import streamlit as st
 from src.application.usecases.authenticate_user_usecase import (
     AuthenticateUserUseCase,
 )
-from src.application.usecases.match_speakers_usecase import MatchSpeakersUseCase
 from src.infrastructure.di.container import Container
 from src.infrastructure.external.langgraph_tools.speaker_matching_tools import (
     create_speaker_matching_tools,
@@ -82,31 +81,15 @@ def render_matching_tab() -> None:
         with st.spinner("マッチング処理を実行中..."):
             try:
                 # Import services directly (same pattern as meeting_presenter.py)
-                from src.domain.services.speaker_domain_service import (
-                    SpeakerDomainService,
-                )
-                from src.infrastructure.external.llm_service import GeminiLLMService
-
-                # Get container for repositories
+                # Get container for repositories and use cases
                 container = Container()
-
-                # Initialize services with default values
-                llm_service = (
-                    GeminiLLMService()
-                )  # Uses defaults, implements ILLMService
-                speaker_domain_service = SpeakerDomainService()
 
                 # Initialize use cases
                 auth_usecase = AuthenticateUserUseCase(
                     user_repository=container.repositories.user_repository()
                 )
-                match_usecase = MatchSpeakersUseCase(
-                    speaker_repository=container.repositories.speaker_repository(),
-                    politician_repository=container.repositories.politician_repository(),
-                    conversation_repository=container.repositories.conversation_repository(),
-                    speaker_domain_service=speaker_domain_service,
-                    llm_service=llm_service,
-                )
+                # DIコンテナからMatchSpeakersUseCaseを取得
+                match_usecase = container.usecases.match_speakers_usecase()
 
                 # Authenticate user and get user_id
                 email = user_info.get("email", "")
