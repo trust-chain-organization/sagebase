@@ -35,6 +35,9 @@ from src.application.usecases.review_extracted_politician_usecase import (
     ReviewExtractedPoliticianUseCase,
 )
 from src.application.usecases.scrape_politicians_usecase import ScrapePoliticiansUseCase
+from src.application.usecases.update_statement_from_extraction_usecase import (
+    UpdateStatementFromExtractionUseCase,
+)
 from src.application.usecases.view_data_coverage_usecase import (
     ViewActivityTrendUseCase,
     ViewGoverningBodyCoverageUseCase,
@@ -112,6 +115,9 @@ from src.infrastructure.persistence.extracted_politician_repository_impl import 
 )
 from src.infrastructure.persistence.extracted_proposal_judge_repository_impl import (
     ExtractedProposalJudgeRepositoryImpl,
+)
+from src.infrastructure.persistence.extraction_log_repository_impl import (
+    ExtractionLogRepositoryImpl,
 )
 from src.infrastructure.persistence.governing_body_repository_impl import (
     GoverningBodyRepositoryImpl,
@@ -298,6 +304,11 @@ class RepositoryContainer(containers.DeclarativeContainer):
 
     conversation_repository = providers.Factory(
         ConversationRepositoryImpl,
+        session=database.async_session,
+    )
+
+    extraction_log_repository = providers.Factory(
+        ExtractionLogRepositoryImpl,
         session=database.async_session,
     )
 
@@ -560,12 +571,21 @@ class UseCaseContainer(containers.DeclarativeContainer):
         session=database.async_session,
     )
 
+    # Update Statement from Extraction UseCase (Issue #865)
+    update_statement_usecase = providers.Factory(
+        UpdateStatementFromExtractionUseCase,
+        conversation_repo=repositories.conversation_repository,
+        extraction_log_repo=repositories.extraction_log_repository,
+        session_adapter=database.async_session,
+    )
+
     minutes_processing_usecase = providers.Factory(
         ExecuteMinutesProcessingUseCase,
         speaker_domain_service=services.speaker_domain_service,
         minutes_processing_service=services.minutes_processing_service,
         storage_service=services.storage_service,
         unit_of_work=unit_of_work,
+        update_statement_usecase=update_statement_usecase,
     )
 
     extract_proposal_judges_usecase = providers.Factory(

@@ -33,8 +33,12 @@ def mock_unit_of_work():
 @pytest.fixture
 def mock_services():
     """モックサービスのフィクスチャ"""
+    speaker_service = MagicMock()
+    # Issue #865: extract_party_from_nameメソッドのモック設定
+    speaker_service.extract_party_from_name.return_value = ("テスト太郎", "テスト党")
+
     return {
-        "speaker_service": MagicMock(),
+        "speaker_service": speaker_service,
         "minutes_processing_service": AsyncMock(),
         "storage_service": AsyncMock(),
     }
@@ -43,11 +47,16 @@ def mock_services():
 @pytest.fixture
 def use_case(mock_unit_of_work, mock_services):
     """ユースケースのフィクスチャ"""
+    # Issue #865: update_statement_usecaseモックを追加
+    mock_update_statement_usecase = AsyncMock()
+    mock_update_statement_usecase.execute = AsyncMock()
+
     return ExecuteMinutesProcessingUseCase(
         speaker_domain_service=mock_services["speaker_service"],
         minutes_processing_service=mock_services["minutes_processing_service"],
         storage_service=mock_services["storage_service"],
         unit_of_work=mock_unit_of_work,
+        update_statement_usecase=mock_update_statement_usecase,
     )
 
 
@@ -118,9 +127,12 @@ async def test_execute_success(
     )
 
     # Speakerの作成をモック
+    # Issue #865: 両メソッドで呼ばれるため4回分設定
     mock_services["speaker_service"].extract_party_from_name.side_effect = [
-        ("田中太郎", "自民党"),
-        ("山田花子", "立憲民主党"),
+        ("田中太郎", "自民党"),  # _save_conversations 1回目
+        ("山田花子", "立憲民主党"),  # _save_conversations 2回目
+        ("田中太郎", "自民党"),  # _extract_and_create_speakers 1回目
+        ("山田花子", "立憲民主党"),  # _extract_and_create_speakers 2回目
     ]
     mock_unit_of_work.speaker_repository.get_by_name_party_position.return_value = None
     mock_unit_of_work.speaker_repository.create.return_value = Mock()

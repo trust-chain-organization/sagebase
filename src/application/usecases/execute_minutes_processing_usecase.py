@@ -8,8 +8,14 @@ GCSまたはPDFから議事録テキストを取得し、MinutesProcessingServic
 from dataclasses import dataclass
 from datetime import datetime
 
+from src.application.dtos.extraction_result.conversation_extraction_result import (
+    ConversationExtractionResult,
+)
 from src.application.dtos.minutes_processing_dto import MinutesProcessingResultDTO
 from src.application.exceptions import ProcessingError
+from src.application.usecases.update_statement_from_extraction_usecase import (
+    UpdateStatementFromExtractionUseCase,
+)
 from src.common.logging import get_logger
 from src.domain.entities.conversation import Conversation
 from src.domain.entities.meeting import Meeting
@@ -48,6 +54,7 @@ class ExecuteMinutesProcessingUseCase:
         minutes_processing_service: IMinutesProcessingService,
         storage_service: IStorageService,
         unit_of_work: IUnitOfWork,
+        update_statement_usecase: UpdateStatementFromExtractionUseCase,
     ):
         """ユースケースを初期化する
 
@@ -56,11 +63,13 @@ class ExecuteMinutesProcessingUseCase:
             minutes_processing_service: 議事録処理サービス
             storage_service: ストレージサービス
             unit_of_work: Unit of Work for transaction management
+            update_statement_usecase: Statement更新UseCase（抽出ログ統合）
         """
         self.speaker_service = speaker_domain_service
         self.minutes_processing_service = minutes_processing_service
         self.storage_service = storage_service
         self.uow = unit_of_work
+        self.update_statement_usecase = update_statement_usecase
 
     async def execute(
         self, request: ExecuteMinutesProcessingDTO
@@ -237,7 +246,10 @@ class ExecuteMinutesProcessingUseCase:
     async def _save_conversations(
         self, results: list[SpeakerSpeech], minutes_id: int
     ) -> list[Conversation]:
-        """発言をデータベースに保存する
+        """発言をデータベースに保存する（抽出ログ統合版）
+
+        Issue #865: Statement処理パイプラインへの抽出ログ統合
+        - Conversationを作成後、UseCaseで抽出ログを記録
 
         Args:
             results: 抽出された発言データ（ドメイン値オブジェクト）
@@ -259,7 +271,70 @@ class ExecuteMinutesProcessingUseCase:
         # バルク作成
         saved = await self.uow.conversation_repository.bulk_create(conversations)
         logger.info(
-            f"Saved {len(saved)} conversations to database", minutes_id=minutes_id
+            f"Created {len(saved)} conversations in database", minutes_id=minutes_id
+        )
+
+        # 各Conversationに対して話者マッチングと抽出ログを記録
+        # Issue #865: Statement処理パイプラインへの抽出ログ統合
+        for idx, (conv, result) in enumerate(zip(saved, results, strict=True)):
+            if conv.id is None:
+                logger.warning(f"Conversation {idx} has no ID, skipping extraction log")
+                continue
+
+            try:
+                # 話者マッチング: speaker_nameからSpeakerを検索してspeaker_idを設定
+                speaker_id = None
+                if result.speaker:
+                    # 名前から政党情報を抽出
+                    clean_name, party_info = (
+                        self.speaker_service.extract_party_from_name(result.speaker)
+                    )
+                    # Speakerを検索
+                    existing_speaker = (
+                        await self.uow.speaker_repository.get_by_name_party_position(
+                            clean_name, party_info, None
+                        )
+                    )
+                    if existing_speaker and existing_speaker.id:
+                        speaker_id = existing_speaker.id
+                        logger.debug(
+                            f"Matched speaker: {result.speaker} "
+                            f"-> Speaker ID {speaker_id}",
+                            conversation_id=conv.id,
+                        )
+
+                # 抽出結果を作成
+                extraction_result = ConversationExtractionResult(
+                    comment=result.speech_content,
+                    speaker_name=result.speaker,
+                    speaker_id=speaker_id,  # マッチしたspeaker_idを設定
+                    sequence_number=idx + 1,
+                    minutes_id=minutes_id,
+                )
+
+                # UseCaseで更新（抽出ログ自動記録）
+                await self.update_statement_usecase.execute(
+                    entity_id=conv.id,
+                    extraction_result=extraction_result,
+                    pipeline_version="minutes-divider-v1",
+                )
+                logger.debug(
+                    f"Extraction log saved for conversation {conv.id}",
+                    conversation_id=conv.id,
+                    speaker_id=speaker_id,
+                )
+
+            except Exception as e:
+                # 抽出ログ記録エラーは警告レベル（処理は継続）
+                logger.warning(
+                    f"Failed to save extraction log for conversation {conv.id}: {e}",
+                    conversation_id=conv.id,
+                    error=str(e),
+                )
+
+        logger.info(
+            f"Saved {len(saved)} conversations with extraction logs",
+            minutes_id=minutes_id,
         )
         return saved
 
