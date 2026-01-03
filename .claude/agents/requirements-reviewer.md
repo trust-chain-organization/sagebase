@@ -1,7 +1,7 @@
 ---
 name: requirements-reviewer
 description: Use this agent when you need to review code changes against requirements, particularly after implementing a feature or fixing a bug. This agent should be invoked proactively after completing a logical chunk of work that addresses specific requirements.\n\nExamples:\n\n<example>\nContext: User has just implemented a new feature for extracting conference members.\nuser: "I've finished implementing the conference member extraction feature. Here's the code:"\n<code implementation details>\nassistant: "Let me use the requirements-reviewer agent to verify this implementation against the requirements."\n<uses Task tool to launch requirements-reviewer agent>\n</example>\n\n<example>\nContext: User has completed a bug fix for the speaker matching logic.\nuser: "Fixed the speaker matching bug. Can you check if this is good?"\nassistant: "I'll use the requirements-reviewer agent to review this fix against the original issue requirements."\n<uses Task tool to launch requirements-reviewer agent>\n</example>\n\n<example>\nContext: User has refactored a module following clean architecture principles.\nuser: "Refactored the politician repository to follow clean architecture."\nassistant: "Let me review this refactoring with the requirements-reviewer agent to ensure it meets the architectural requirements."\n<uses Task tool to launch requirements-reviewer agent>\n</example>
-model: sonnet
+model: opus
 color: pink
 ---
 
