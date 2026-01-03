@@ -12,6 +12,10 @@ _setup_worktree:
 			# Initialize git submodules (for Hugo theme)
 			echo "Initializing git submodules..."
 			git submodule update --init --recursive
+		elif [ -d website/themes/PaperMod ] && [ -z "$(ls -A website/themes/PaperMod)" ]; then
+			# Main branch (non-worktree): Initialize submodules if PaperMod is empty
+			echo "Initializing git submodules..."
+			git submodule update --init --recursive
 		fi
 	elif [ -f docker/docker-compose.override.yml ]; then
 		# Update config.toml if it doesn't exist or if secrets.toml exists
