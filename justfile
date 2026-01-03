@@ -33,6 +33,43 @@ up-detached: _setup_worktree
 	echo "Containers started in detached mode"
 	echo "Run 'just logs' to view logs"
 
+# Fast start without rebuild (use when no Dockerfile/dependency changes)
+up-fast: _setup_worktree
+	#!/bin/bash
+	# Start containers without rebuilding (fast startup)
+	docker compose {{compose_cmd}} up -d
+	# Wait for containers to be healthy
+	echo "Waiting for containers to be ready..."
+	sleep 3
+	# Run test-setup.sh if it exists (for initial database setup)
+	if [ -f scripts/test-setup.sh ] && docker compose {{compose_cmd}} exec postgres psql -U sagebase_user -d sagebase_db -c "SELECT COUNT(*) FROM meetings;" 2>/dev/null | grep -q "0"; then
+		echo "Setting up test data..."
+		./scripts/test-setup.sh
+	fi
+	# Detect actual host port from docker-compose.override.yml if it exists
+	if [ -f docker/docker-compose.override.yml ]; then
+		HOST_PORT=$(grep ":8501" docker/docker-compose.override.yml | awk -F'"' '{print $2}' | cut -d: -f1)
+	else
+		HOST_PORT=8501
+	fi
+	# Check if Streamlit is already running in the container
+	if docker compose {{compose_cmd}} exec sagebase pgrep -f "streamlit run" > /dev/null 2>&1; then
+		echo "🔄 Streamlit is already running, restarting to apply changes..."
+		docker compose {{compose_cmd}} exec sagebase pkill -f "streamlit run" || true
+		sleep 2
+	fi
+	if [ -n "$HOST_PORT" ] && [ "$HOST_PORT" != "8501" ]; then
+		echo "Starting Streamlit on port $HOST_PORT..."
+		echo "Press Ctrl+C to stop the server"
+		echo ""
+		docker compose {{compose_cmd}} exec -e STREAMLIT_HOST_PORT=$HOST_PORT sagebase uv run sagebase streamlit
+	else
+		echo "Starting Streamlit..."
+		echo "Press Ctrl+C to stop the server"
+		echo ""
+		docker compose {{compose_cmd}} exec sagebase uv run sagebase streamlit
+	fi
+
 # Start containers and launch Streamlit (foreground mode with logs)
 up: _setup_worktree
 	#!/bin/bash
@@ -41,9 +78,7 @@ up: _setup_worktree
 	# Wait for containers to be healthy
 	echo "Waiting for containers to be ready..."
 	sleep 3
-	# Install Playwright browsers
-	echo "Installing Playwright browsers..."
-	docker compose {{compose_cmd}} exec sagebase uv run playwright install chromium
+	# Note: Playwright is pre-installed in Dockerfile, no need to install here
 	# Run test-setup.sh if it exists (for initial database setup)
 	if [ -f scripts/test-setup.sh ] && docker compose {{compose_cmd}} exec postgres psql -U sagebase_user -d sagebase_db -c "SELECT COUNT(*) FROM meetings;" 2>/dev/null | grep -q "0"; then
 		echo "Setting up test data..."

@@ -2,7 +2,14 @@
 
 from uuid import UUID
 
+from src.application.dtos.extraction_result.speaker_extraction_result import (
+    SpeakerExtractionResult,
+)
 from src.application.dtos.speaker_dto import SpeakerMatchingDTO
+from src.application.usecases.update_speaker_from_extraction_usecase import (
+    UpdateSpeakerFromExtractionUseCase,
+)
+from src.common.logging import get_logger
 from src.domain.entities.speaker import Speaker
 from src.domain.repositories.conversation_repository import ConversationRepository
 from src.domain.repositories.politician_repository import PoliticianRepository
@@ -10,6 +17,9 @@ from src.domain.repositories.speaker_repository import SpeakerRepository
 from src.domain.services.interfaces.llm_service import ILLMService
 from src.domain.services.speaker_domain_service import SpeakerDomainService
 from src.domain.types.llm import LLMSpeakerMatchContext
+
+
+logger = get_logger(__name__)
 
 
 class MatchSpeakersUseCase:
@@ -43,6 +53,7 @@ class MatchSpeakersUseCase:
         conversation_repository: ConversationRepository,
         speaker_domain_service: SpeakerDomainService,
         llm_service: ILLMService,  # LLMServiceAdapter for sync usage
+        update_speaker_usecase: UpdateSpeakerFromExtractionUseCase,
     ):
         """発言者マッチングユースケースを初期化する
 
@@ -52,12 +63,14 @@ class MatchSpeakersUseCase:
             conversation_repository: 発言リポジトリの実装
             speaker_domain_service: 発言者ドメインサービス
             llm_service: LLMサービスアダプタ（同期版）
+            update_speaker_usecase: Speaker更新UseCase（抽出ログ統合）
         """
         self.speaker_repo = speaker_repository
         self.politician_repo = politician_repository
         self.conversation_repo = conversation_repository
         self.speaker_service = speaker_domain_service
         self.llm_service = llm_service
+        self.update_speaker_usecase = update_speaker_usecase
 
     async def execute(
         self,
@@ -141,6 +154,10 @@ class MatchSpeakersUseCase:
                     speaker.politician_id = match_result.matched_politician_id
                     speaker.matched_by_user_id = user_id
                     await self.speaker_repo.update(speaker)
+
+                    # Issue #865: 抽出ログを記録
+                    await self._record_extraction_log(speaker, match_result)
+
                 results.append(match_result)
             else:
                 # No match found
@@ -270,3 +287,53 @@ class MatchSpeakersUseCase:
                     )
 
         return None
+
+    async def _record_extraction_log(
+        self, speaker: Speaker, match_result: SpeakerMatchingDTO
+    ) -> None:
+        """マッチング結果の抽出ログを記録する
+
+        Issue #865: Statement処理パイプラインへの抽出ログ統合
+
+        Args:
+            speaker: マッチング対象の発言者
+            match_result: マッチング結果DTO
+        """
+        if speaker.id is None:
+            logger.warning("Speaker has no ID, skipping extraction log")
+            return
+
+        try:
+            # pipeline_versionをマッチング手法に基づいて設定
+            pipeline_version = f"speaker-matching-{match_result.matching_method}-v1"
+
+            # 抽出結果を作成
+            extraction_result = SpeakerExtractionResult(
+                name=speaker.name,
+                type=speaker.type,
+                political_party_name=speaker.political_party_name,
+                position=speaker.position,
+                is_politician=speaker.is_politician,
+                politician_id=match_result.matched_politician_id,
+            )
+
+            # UseCaseで更新（抽出ログ自動記録）
+            await self.update_speaker_usecase.execute(
+                entity_id=speaker.id,
+                extraction_result=extraction_result,
+                pipeline_version=pipeline_version,
+            )
+            logger.debug(
+                f"Extraction log saved for speaker {speaker.id}",
+                speaker_id=speaker.id,
+                politician_id=match_result.matched_politician_id,
+                matching_method=match_result.matching_method,
+            )
+
+        except Exception as e:
+            # 抽出ログ記録エラーは警告レベル（処理は継続）
+            logger.warning(
+                f"Failed to save extraction log for speaker {speaker.id}: {e}",
+                speaker_id=speaker.id,
+                error=str(e),
+            )

@@ -106,6 +106,13 @@ class TestMatchSpeakersUseCaseWithHistory:
         )
 
     @pytest.fixture
+    def mock_update_speaker_usecase(self) -> AsyncMock:
+        """Create mock update speaker usecase."""
+        usecase = AsyncMock()
+        usecase.execute = AsyncMock()
+        return usecase
+
+    @pytest.fixture
     def use_case(
         self,
         mock_speaker_repo: MagicMock,
@@ -113,6 +120,7 @@ class TestMatchSpeakersUseCaseWithHistory:
         mock_conversation_repo: MagicMock,
         mock_speaker_service: MagicMock,
         instrumented_llm_service: InstrumentedLLMService,
+        mock_update_speaker_usecase: AsyncMock,
     ) -> MatchSpeakersUseCase:
         """Create MatchSpeakersUseCase with all dependencies."""
         return MatchSpeakersUseCase(
@@ -121,6 +129,7 @@ class TestMatchSpeakersUseCaseWithHistory:
             conversation_repository=mock_conversation_repo,
             speaker_domain_service=mock_speaker_service,
             llm_service=instrumented_llm_service,
+            update_speaker_usecase=mock_update_speaker_usecase,
         )
 
     @pytest.mark.asyncio

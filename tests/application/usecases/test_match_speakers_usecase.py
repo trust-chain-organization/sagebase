@@ -45,6 +45,13 @@ class TestMatchSpeakersUseCase:
         return service
 
     @pytest.fixture
+    def mock_update_speaker_usecase(self):
+        """Create mock update speaker usecase."""
+        usecase = AsyncMock()
+        usecase.execute = AsyncMock()
+        return usecase
+
+    @pytest.fixture
     def use_case(
         self,
         mock_speaker_repo,
@@ -52,6 +59,7 @@ class TestMatchSpeakersUseCase:
         mock_conversation_repo,
         mock_speaker_service,
         mock_llm_service,
+        mock_update_speaker_usecase,
     ):
         """Create MatchSpeakersUseCase instance."""
         return MatchSpeakersUseCase(
@@ -60,11 +68,16 @@ class TestMatchSpeakersUseCase:
             conversation_repository=mock_conversation_repo,
             speaker_domain_service=mock_speaker_service,
             llm_service=mock_llm_service,
+            update_speaker_usecase=mock_update_speaker_usecase,
         )
 
     @pytest.mark.asyncio
     async def test_execute_with_existing_politician_link(
-        self, use_case, mock_speaker_repo, mock_politician_repo
+        self,
+        use_case,
+        mock_speaker_repo,
+        mock_politician_repo,
+        mock_update_speaker_usecase,
     ):
         """Test matching when speaker already has a linked politician."""
         # Setup
@@ -83,10 +96,17 @@ class TestMatchSpeakersUseCase:
         assert results[0].matched_politician_id == 10
         assert results[0].confidence_score == 1.0
         assert results[0].matching_method == "existing"
+        # 既存リンクの場合は抽出ログを記録しない
+        mock_update_speaker_usecase.execute.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_execute_with_rule_based_matching(
-        self, use_case, mock_speaker_repo, mock_politician_repo, mock_speaker_service
+        self,
+        use_case,
+        mock_speaker_repo,
+        mock_politician_repo,
+        mock_speaker_service,
+        mock_update_speaker_usecase,
     ):
         """Test rule-based matching."""
         # Setup
@@ -107,10 +127,20 @@ class TestMatchSpeakersUseCase:
         assert results[0].matched_politician_id == 20
         assert results[0].confidence_score == 0.9
         assert results[0].matching_method == "rule-based"
+        # マッチング成功時は抽出ログを記録する
+        mock_update_speaker_usecase.execute.assert_called_once()
+        call_kwargs = mock_update_speaker_usecase.execute.call_args.kwargs
+        assert call_kwargs["entity_id"] == 2
+        assert "speaker-matching-rule-based-v1" in call_kwargs["pipeline_version"]
 
     @pytest.mark.asyncio
     async def test_execute_with_llm_matching(
-        self, use_case, mock_speaker_repo, mock_politician_repo, mock_llm_service
+        self,
+        use_case,
+        mock_speaker_repo,
+        mock_politician_repo,
+        mock_llm_service,
+        mock_update_speaker_usecase,
     ):
         """Test LLM-based matching."""
         # Setup
@@ -137,10 +167,19 @@ class TestMatchSpeakersUseCase:
         assert results[0].matched_politician_id == 30
         assert results[0].confidence_score == 0.85
         assert results[0].matching_method == "llm"
+        # LLMマッチング成功時は抽出ログを記録する
+        mock_update_speaker_usecase.execute.assert_called_once()
+        call_kwargs = mock_update_speaker_usecase.execute.call_args.kwargs
+        assert call_kwargs["entity_id"] == 3
+        assert "speaker-matching-llm-v1" in call_kwargs["pipeline_version"]
 
     @pytest.mark.asyncio
     async def test_execute_no_match_found(
-        self, use_case, mock_speaker_repo, mock_politician_repo
+        self,
+        use_case,
+        mock_speaker_repo,
+        mock_politician_repo,
+        mock_update_speaker_usecase,
     ):
         """Test when no match is found."""
         # Setup
@@ -159,6 +198,8 @@ class TestMatchSpeakersUseCase:
         assert results[0].matched_politician_id is None
         assert results[0].confidence_score == 0.0
         assert results[0].matching_method == "none"
+        # マッチなしの場合は抽出ログを記録しない
+        mock_update_speaker_usecase.execute.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_execute_with_specific_speaker_ids(
@@ -376,3 +417,34 @@ class TestMatchSpeakersUseCase:
         assert results[0].matching_method == "existing"
         # update should not be called for existing matches
         mock_speaker_repo.update.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_extraction_log_error_does_not_break_matching(
+        self,
+        use_case,
+        mock_speaker_repo,
+        mock_politician_repo,
+        mock_speaker_service,
+        mock_update_speaker_usecase,
+    ):
+        """抽出ログ記録のエラーがマッチング処理を中断しないことを確認"""
+        # Setup
+        speaker = Speaker(id=1, name="山田太郎", is_politician=True)
+        politician = Politician(id=10, name="山田太郎", political_party_id=1)
+
+        mock_speaker_repo.get_politicians.return_value = [speaker]
+        mock_politician_repo.search_by_name.return_value = [politician]
+        mock_speaker_service.calculate_name_similarity.return_value = 0.9
+
+        # 抽出ログ記録で例外を発生させる
+        mock_update_speaker_usecase.execute.side_effect = Exception("Database error")
+
+        # Execute - エラーがあっても処理は継続される
+        results = await use_case.execute(use_llm=False)
+
+        # Verify - マッチング結果は正常に返される
+        assert len(results) == 1
+        assert results[0].matched_politician_id == 10
+        assert results[0].matching_method == "rule-based"
+        # 抽出ログ記録は試みられた
+        mock_update_speaker_usecase.execute.assert_called_once()
