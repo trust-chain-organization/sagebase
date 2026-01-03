@@ -9,11 +9,19 @@ _setup_worktree:
 			./scripts/setup-worktree-ports.sh
 			# Also setup Streamlit secrets with the correct port
 			./scripts/setup-streamlit-secrets.sh
+			# Initialize git submodules (for Hugo theme)
+			echo "Initializing git submodules..."
+			git submodule update --init --recursive
 		fi
 	elif [ -f docker/docker-compose.override.yml ]; then
 		# Update config.toml if it doesn't exist or if secrets.toml exists
 		if [ ! -f .streamlit/config.toml ] || [ -f .streamlit/secrets.toml ]; then
 			./scripts/setup-streamlit-secrets.sh
+		fi
+		# Check if submodules are initialized
+		if [ -d website/themes/PaperMod ] && [ -z "$(ls -A website/themes/PaperMod)" ]; then
+			echo "Initializing git submodules..."
+			git submodule update --init --recursive
 		fi
 	fi
 
