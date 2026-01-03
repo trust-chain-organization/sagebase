@@ -37,6 +37,12 @@ def mock_politician_repository():
 
 
 @pytest.fixture
+def mock_update_politician_usecase():
+    """Mock update politician usecase"""
+    return AsyncMock()
+
+
+@pytest.fixture
 def mock_baml_client():
     """Mock BAML client"""
     with patch("src.domain.services.baml_politician_matching_service.b") as mock_b:
@@ -50,11 +56,14 @@ class TestBAMLPoliticianMatchingService:
 
     @pytest.mark.asyncio
     async def test_rule_based_exact_match_with_party(
-        self, mock_llm_service, mock_politician_repository
+        self,
+        mock_llm_service,
+        mock_politician_repository,
+        mock_update_politician_usecase,
     ):
         """名前と政党の完全一致テスト（ルールベース、LLMスキップ）"""
         service = BAMLPoliticianMatchingService(
-            mock_llm_service, mock_politician_repository
+            mock_llm_service, mock_politician_repository, mock_update_politician_usecase
         )
 
         result = await service.find_best_match("山田太郎", speaker_party="自由民主党")
@@ -68,11 +77,14 @@ class TestBAMLPoliticianMatchingService:
 
     @pytest.mark.asyncio
     async def test_rule_based_name_only_match(
-        self, mock_llm_service, mock_politician_repository
+        self,
+        mock_llm_service,
+        mock_politician_repository,
+        mock_update_politician_usecase,
     ):
         """名前のみ一致テスト（唯一の候補）"""
         service = BAMLPoliticianMatchingService(
-            mock_llm_service, mock_politician_repository
+            mock_llm_service, mock_politician_repository, mock_update_politician_usecase
         )
 
         result = await service.find_best_match("佐藤花子")
@@ -85,7 +97,11 @@ class TestBAMLPoliticianMatchingService:
 
     @pytest.mark.asyncio
     async def test_rule_based_honorific_removal_triggers_baml(
-        self, mock_llm_service, mock_politician_repository, mock_baml_client
+        self,
+        mock_llm_service,
+        mock_politician_repository,
+        mock_update_politician_usecase,
+        mock_baml_client,
     ):
         """敬称除去後の一致でBAMLが呼ばれるテスト（信頼度0.85 < 0.9）"""
         # BAMLの戻り値を設定
@@ -99,7 +115,7 @@ class TestBAMLPoliticianMatchingService:
         )
 
         service = BAMLPoliticianMatchingService(
-            mock_llm_service, mock_politician_repository
+            mock_llm_service, mock_politician_repository, mock_update_politician_usecase
         )
 
         result = await service.find_best_match("山田太郎議員")
@@ -111,7 +127,11 @@ class TestBAMLPoliticianMatchingService:
 
     @pytest.mark.asyncio
     async def test_baml_matching_when_rule_based_fails(
-        self, mock_llm_service, mock_politician_repository, mock_baml_client
+        self,
+        mock_llm_service,
+        mock_politician_repository,
+        mock_update_politician_usecase,
+        mock_baml_client,
     ):
         """ルールベース失敗時にBAMLを使用するテスト"""
         # BAMLの戻り値を設定
@@ -125,7 +145,7 @@ class TestBAMLPoliticianMatchingService:
         )
 
         service = BAMLPoliticianMatchingService(
-            mock_llm_service, mock_politician_repository
+            mock_llm_service, mock_politician_repository, mock_update_politician_usecase
         )
 
         # ルールベースでマッチしない表記
@@ -140,7 +160,11 @@ class TestBAMLPoliticianMatchingService:
 
     @pytest.mark.asyncio
     async def test_baml_low_confidence_returns_no_match(
-        self, mock_llm_service, mock_politician_repository, mock_baml_client
+        self,
+        mock_llm_service,
+        mock_politician_repository,
+        mock_update_politician_usecase,
+        mock_baml_client,
     ):
         """BAML信頼度が低い場合はマッチしないテスト"""
         # BAMLの戻り値を設定（低信頼度）
@@ -154,7 +178,7 @@ class TestBAMLPoliticianMatchingService:
         )
 
         service = BAMLPoliticianMatchingService(
-            mock_llm_service, mock_politician_repository
+            mock_llm_service, mock_politician_repository, mock_update_politician_usecase
         )
 
         result = await service.find_best_match("タナカジロウ")
@@ -166,13 +190,16 @@ class TestBAMLPoliticianMatchingService:
 
     @pytest.mark.asyncio
     async def test_empty_politician_list(
-        self, mock_llm_service, mock_politician_repository
+        self,
+        mock_llm_service,
+        mock_politician_repository,
+        mock_update_politician_usecase,
     ):
         """政治家リストが空の場合のテスト"""
         mock_politician_repository.get_all_for_matching.return_value = []
 
         service = BAMLPoliticianMatchingService(
-            mock_llm_service, mock_politician_repository
+            mock_llm_service, mock_politician_repository, mock_update_politician_usecase
         )
 
         result = await service.find_best_match("山田太郎")
