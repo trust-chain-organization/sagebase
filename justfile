@@ -38,6 +38,12 @@ down: _setup_worktree
 up-detached: _setup_worktree
 	#!/bin/bash
 	docker compose {{compose_cmd}} up -d
+	echo "Waiting for containers to be ready..."
+	sleep 3
+	# Run database migrations (idempotent - safe to run every time)
+	echo "Running database migrations..."
+	docker compose {{compose_cmd}} exec postgres psql -U sagebase_user -d sagebase_db -f /docker-entrypoint-initdb.d/02_run_migrations.sql 2>&1 | grep -v "^psql:" | grep -v "^$" || true
+	echo "✅ Migrations complete!"
 	echo "Containers started in detached mode"
 	echo "Run 'just logs' to view logs"
 
@@ -49,6 +55,10 @@ up-fast: _setup_worktree
 	# Wait for containers to be healthy
 	echo "Waiting for containers to be ready..."
 	sleep 3
+	# Run database migrations (idempotent - safe to run every time)
+	echo "Running database migrations..."
+	docker compose {{compose_cmd}} exec postgres psql -U sagebase_user -d sagebase_db -f /docker-entrypoint-initdb.d/02_run_migrations.sql 2>&1 | grep -v "^psql:" | grep -v "^$" || true
+	echo "✅ Migrations complete!"
 	# Run test-setup.sh if it exists (for initial database setup)
 	if [ -f scripts/test-setup.sh ] && docker compose {{compose_cmd}} exec postgres psql -U sagebase_user -d sagebase_db -c "SELECT COUNT(*) FROM meetings;" 2>/dev/null | grep -q "0"; then
 		echo "Setting up test data..."
@@ -86,6 +96,10 @@ up: _setup_worktree
 	# Wait for containers to be healthy
 	echo "Waiting for containers to be ready..."
 	sleep 3
+	# Run database migrations (idempotent - safe to run every time)
+	echo "Running database migrations..."
+	docker compose {{compose_cmd}} exec postgres psql -U sagebase_user -d sagebase_db -f /docker-entrypoint-initdb.d/02_run_migrations.sql 2>&1 | grep -v "^psql:" | grep -v "^$" || true
+	echo "✅ Migrations complete!"
 	# Note: Playwright is pre-installed in Dockerfile, no need to install here
 	# Run test-setup.sh if it exists (for initial database setup)
 	if [ -f scripts/test-setup.sh ] && docker compose {{compose_cmd}} exec postgres psql -U sagebase_user -d sagebase_db -c "SELECT COUNT(*) FROM meetings;" 2>/dev/null | grep -q "0"; then
