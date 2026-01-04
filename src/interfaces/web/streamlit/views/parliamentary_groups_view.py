@@ -467,36 +467,13 @@ def render_member_extraction_tab(presenter: ParliamentaryGroupPresenter) -> None
                     df_members = pd.DataFrame(members_data)
                     st.dataframe(df_members, use_container_width=True)
 
-                    # Display matching results if not in dry run mode
-                    if result.matching_results:
-                        st.markdown("### マッチング結果")
-
-                        # Summary
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            st.metric("作成済み", result.created_count)
-                        with col2:
-                            st.metric("スキップ", result.skipped_count)
-                        with col3:
-                            st.metric("総数", len(result.matching_results))
-
-                        # Detailed results
-                        matching_data = []
-                        for match in result.matching_results:
-                            matching_data.append(
-                                {
-                                    "メンバー名": match.extracted_member.name,
-                                    "政治家ID": match.politician_id or "-",
-                                    "政治家名": match.politician_name or "-",
-                                    "信頼度": f"{match.confidence_score:.2f}"
-                                    if match.politician_id
-                                    else "-",
-                                    "理由": match.matching_reason,
-                                }
-                            )
-
-                        df_matching = pd.DataFrame(matching_data)
-                        st.dataframe(df_matching, use_container_width=True)
+                    # Note: マッチングは別UseCaseで行われるため、
+                    # 抽出結果確認タブでマッチング・レビューを行ってください
+                    if not dry_run:
+                        st.info(
+                            "💡 抽出されたメンバーは「抽出結果確認」タブで"
+                            "レビュー・マッチングできます"
+                        )
                 else:
                     st.warning("メンバーが抽出されませんでした")
             else:
