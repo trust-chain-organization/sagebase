@@ -13,6 +13,9 @@ from src.application.usecases.manage_parliamentary_groups_usecase import (
     ParliamentaryGroupListInputDto,
     UpdateParliamentaryGroupInputDto,
 )
+from src.application.usecases.update_extracted_parliamentary_group_member_from_extraction_usecase import (  # noqa: E501
+    UpdateExtractedParliamentaryGroupMemberFromExtractionUseCase,
+)
 from src.common.logging import get_logger
 from src.domain.entities import Conference, ParliamentaryGroup
 from src.infrastructure.di.container import Container
@@ -20,11 +23,15 @@ from src.infrastructure.external.llm_service import GeminiLLMService
 from src.infrastructure.external.parliamentary_group_member_extractor.factory import (
     ParliamentaryGroupMemberExtractorFactory,
 )
+from src.infrastructure.persistence.async_session_adapter import AsyncSessionAdapter
 from src.infrastructure.persistence.conference_repository_impl import (
     ConferenceRepositoryImpl,
 )
 from src.infrastructure.persistence.extracted_parliamentary_group_member_repository_impl import (  # noqa: E501
     ExtractedParliamentaryGroupMemberRepositoryImpl,
+)
+from src.infrastructure.persistence.extraction_log_repository_impl import (
+    ExtractionLogRepositoryImpl,
 )
 from src.infrastructure.persistence.parliamentary_group_membership_repository_impl import (  # noqa: E501
     ParliamentaryGroupMembershipRepositoryImpl,
@@ -63,12 +70,25 @@ class ParliamentaryGroupPresenter(BasePresenter[list[ParliamentaryGroup]]):
         # Initialize member extractor using Factory
         self.member_extractor = ParliamentaryGroupMemberExtractorFactory.create()
 
+        # 抽出ログ記録用のUseCaseを作成
+        self.extraction_log_repo = RepositoryAdapter(ExtractionLogRepositoryImpl)
+        session_adapter = AsyncSessionAdapter(self.extracted_member_repo._session)
+
+        self.update_usecase = (
+            UpdateExtractedParliamentaryGroupMemberFromExtractionUseCase(
+                extracted_parliamentary_group_member_repo=self.extracted_member_repo,  # type: ignore[arg-type]
+                extraction_log_repo=self.extraction_log_repo,  # type: ignore[arg-type]
+                session_adapter=session_adapter,
+            )
+        )
+
         # Initialize use case with required dependencies
         # Type: ignore - RepositoryAdapter duck-types as repository protocol
         self.use_case = ManageParliamentaryGroupsUseCase(
             parliamentary_group_repository=self.parliamentary_group_repo,  # type: ignore[arg-type]
             member_extractor=self.member_extractor,  # Injected extractor
             extracted_member_repository=self.extracted_member_repo,  # type: ignore[arg-type]
+            update_usecase=self.update_usecase,  # 抽出ログ記録用UseCase
         )
         self.session = SessionManager()
         self.form_state = self._get_or_create_form_state()

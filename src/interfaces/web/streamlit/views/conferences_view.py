@@ -11,15 +11,22 @@ import streamlit as st
 from src.application.usecases.manage_conferences_usecase import (
     ManageConferencesUseCase,
 )
+from src.application.usecases.update_extracted_conference_member_from_extraction_usecase import (  # noqa: E501
+    UpdateExtractedConferenceMemberFromExtractionUseCase,
+)
 from src.domain.repositories import ConferenceRepository, GoverningBodyRepository
 from src.infrastructure.external.conference_member_extractor.extractor import (
     ConferenceMemberExtractor,
 )
+from src.infrastructure.persistence.async_session_adapter import AsyncSessionAdapter
 from src.infrastructure.persistence.conference_repository_impl import (
     ConferenceRepositoryImpl,
 )
 from src.infrastructure.persistence.extracted_conference_member_repository_impl import (
     ExtractedConferenceMemberRepositoryImpl,
+)
+from src.infrastructure.persistence.extraction_log_repository_impl import (
+    ExtractionLogRepositoryImpl,
 )
 from src.infrastructure.persistence.governing_body_repository_impl import (
     GoverningBodyRepositoryImpl,
@@ -491,7 +498,21 @@ def extract_members_from_conferences(selected_rows: pd.DataFrame) -> None:
 
     # 抽出処理
     results: list[dict[str, Any]] = []
-    extractor = ConferenceMemberExtractor()
+
+    # 抽出ログ記録用のUseCaseを作成
+    extracted_member_repo_for_usecase = RepositoryAdapter(
+        ExtractedConferenceMemberRepositoryImpl
+    )
+    extraction_log_repo = RepositoryAdapter(ExtractionLogRepositoryImpl)
+    session_adapter = AsyncSessionAdapter(extracted_member_repo_for_usecase._session)
+
+    update_usecase = UpdateExtractedConferenceMemberFromExtractionUseCase(
+        extracted_conference_member_repo=extracted_member_repo_for_usecase,  # type: ignore[arg-type]
+        extraction_log_repo=extraction_log_repo,  # type: ignore[arg-type]
+        session_adapter=session_adapter,
+    )
+
+    extractor = ConferenceMemberExtractor(update_usecase=update_usecase)
 
     try:
         for idx, (_, row) in enumerate(rows_with_url.iterrows()):
