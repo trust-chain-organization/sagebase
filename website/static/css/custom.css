@@ -451,6 +451,32 @@ strong {
   background: var(--color-text);
 }
 
+/* Section Lead Text */
+.section-lead {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  max-width: 720px;
+  margin-bottom: var(--space-10);
+}
+
+/* Solution Summary */
+.solution-summary {
+  margin-top: var(--space-10);
+  padding: var(--space-8);
+  background: var(--color-bg-alt);
+  border-left: 3px solid var(--color-border-strong);
+}
+
+.solution-summary p {
+  font-size: var(--text-lg);
+  margin-bottom: 0;
+}
+
+/* Challenges Section */
+.section-challenges {
+  border-bottom: 1px solid var(--color-border);
+}
+
 /* Overview Section */
 .section-overview {
   background: var(--color-bg-alt);
