@@ -11,6 +11,11 @@ import streamlit as st
 from src.application.usecases.manage_conferences_usecase import (
     ManageConferencesUseCase,
 )
+from src.application.usecases.mark_entity_as_verified_usecase import (
+    EntityType,
+    MarkEntityAsVerifiedInputDto,
+    MarkEntityAsVerifiedUseCase,
+)
 from src.application.usecases.update_extracted_conference_member_from_extraction_usecase import (  # noqa: E501
     UpdateExtractedConferenceMemberFromExtractionUseCase,
 )
@@ -32,6 +37,10 @@ from src.infrastructure.persistence.governing_body_repository_impl import (
     GoverningBodyRepositoryImpl,
 )
 from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
+from src.interfaces.web.streamlit.components import (
+    get_verification_badge_text,
+    render_verification_filter,
+)
 from src.interfaces.web.streamlit.presenters.conference_presenter import (
     ConferencePresenter,
 )
@@ -567,32 +576,43 @@ def render_extracted_members(
     """
     st.header("抽出結果確認")
 
-    # 会議体でフィルタリング
-    conferences = conference_repo.get_all()
-    conference_options = {"すべて": None}
-    conference_options.update({conf.name: conf.id for conf in conferences})
+    # フィルタ列
+    col1, col2, col3 = st.columns(3)
 
-    selected_conf = st.selectbox(
-        "会議体で絞り込み",
-        options=list(conference_options.keys()),
-        key="filter_extracted_conference",
-    )
-    conference_id = conference_options[selected_conf]
+    with col1:
+        # 会議体でフィルタリング
+        conferences = conference_repo.get_all()
+        conference_options = {"すべて": None}
+        conference_options.update({conf.name: conf.id for conf in conferences})
 
-    # ステータスでフィルタリング
-    status_options = {
-        "すべて": None,
-        "未マッチング": "pending",
-        "マッチング済み": "matched",
-        "マッチなし": "no_match",
-        "要確認": "needs_review",
-    }
-    selected_status = st.selectbox(
-        "ステータスで絞り込み",
-        options=list(status_options.keys()),
-        key="filter_extracted_status",
-    )
-    status = status_options[selected_status]
+        selected_conf = st.selectbox(
+            "会議体で絞り込み",
+            options=list(conference_options.keys()),
+            key="filter_extracted_conference",
+        )
+        conference_id = conference_options[selected_conf]
+
+    with col2:
+        # ステータスでフィルタリング
+        status_options = {
+            "すべて": None,
+            "未マッチング": "pending",
+            "マッチング済み": "matched",
+            "マッチなし": "no_match",
+            "要確認": "needs_review",
+        }
+        selected_status = st.selectbox(
+            "ステータスで絞り込み",
+            options=list(status_options.keys()),
+            key="filter_extracted_status",
+        )
+        status = status_options[selected_status]
+
+    with col3:
+        # 検証状態でフィルタリング
+        verification_filter = render_verification_filter(
+            key="filter_extracted_verification"
+        )
 
     # サマリー統計を取得（RepositoryAdapterが自動的にasyncio.run()を実行）
     summary = extracted_member_repo.get_extraction_summary(conference_id)
@@ -620,9 +640,18 @@ def render_extracted_members(
     if status:
         members = [m for m in members if m.matching_status == status]
 
+    # 検証状態でフィルタリング
+    if verification_filter is not None:
+        members = [m for m in members if m.is_manually_verified == verification_filter]
+
     if not members:
         st.info("該当する抽出結果がありません。")
         return
+
+    # 検証UseCase初期化
+    verify_use_case = MarkEntityAsVerifiedUseCase(
+        conference_member_repository=extracted_member_repo  # type: ignore[arg-type]
+    )
 
     # DataFrameに変換
     data = []
@@ -635,6 +664,7 @@ def render_extracted_members(
                 "役職": member.extracted_role or "",
                 "政党": member.extracted_party_name or "",
                 "ステータス": member.matching_status,
+                "検証状態": get_verification_badge_text(member.is_manually_verified),
                 "マッチング信頼度": (
                     f"{member.matching_confidence:.2f}"
                     if member.matching_confidence
@@ -660,3 +690,49 @@ def render_extracted_members(
             ),
         },
     )
+
+    # 詳細表示と検証状態更新
+    st.markdown("### メンバー詳細と検証状態更新")
+    for member in members[:20]:  # 最大20件表示
+        badge = get_verification_badge_text(member.is_manually_verified)
+        with st.expander(f"{member.extracted_name} - {badge}"):
+            col1, col2 = st.columns([2, 1])
+
+            with col1:
+                st.write(f"**ID:** {member.id}")
+                st.write(f"**名前:** {member.extracted_name}")
+                st.write(f"**役職:** {member.extracted_role or '-'}")
+                st.write(f"**政党:** {member.extracted_party_name or '-'}")
+                st.write(f"**ステータス:** {member.matching_status}")
+
+            with col2:
+                # 検証状態チェックボックス
+                current_verified = member.is_manually_verified
+                new_verified = st.checkbox(
+                    "手動検証済み",
+                    value=current_verified,
+                    key=f"verify_conf_member_{member.id}",
+                    help="チェックすると、AI再実行でこのデータが上書きされなくなります",
+                )
+
+                if new_verified != current_verified:
+                    if st.button(
+                        "検証状態を更新",
+                        key=f"update_verify_{member.id}",
+                        type="primary",
+                    ):
+                        result = asyncio.run(
+                            verify_use_case.execute(
+                                MarkEntityAsVerifiedInputDto(
+                                    entity_type=EntityType.CONFERENCE_MEMBER,
+                                    entity_id=member.id,  # type: ignore[arg-type]
+                                    is_verified=new_verified,
+                                )
+                            )
+                        )
+                        if result.success:
+                            status_text = "手動検証済み" if new_verified else "未検証"
+                            st.success(f"検証状態を「{status_text}」に更新しました")
+                            st.rerun()
+                        else:
+                            st.error(f"更新に失敗しました: {result.error_message}")
