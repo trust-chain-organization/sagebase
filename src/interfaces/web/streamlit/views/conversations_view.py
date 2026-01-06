@@ -76,14 +76,16 @@ def render_conversations_list_tab() -> None:
 
     # Load conversations
     if meeting_id:
-        conversations = conversation_repo.get_by_meeting(meeting_id, limit=limit)
+        conversations = conversation_repo.get_by_minutes(meeting_id, limit=limit)
     else:
         conversations = conversation_repo.get_all(limit=limit)
 
     # Filter by speaker name
     if search_text:
         conversations = [
-            c for c in conversations if search_text.lower() in c.speaker_name.lower()
+            c
+            for c in conversations
+            if c.speaker_name and search_text.lower() in c.speaker_name.lower()
         ]
 
     # Filter by verification status
@@ -114,14 +116,13 @@ def render_conversations_list_tab() -> None:
     # Convert to DataFrame
     data = []
     for c in conversations:
+        comment_preview = c.comment[:100] + "..." if len(c.comment) > 100 else c.comment
         data.append(
             {
                 "ID": c.id,
-                "発言者": c.speaker_name,
-                "会議ID": c.meeting_id,
-                "発言内容": c.content[:100] + "..."
-                if len(c.content) > 100
-                else c.content,
+                "発言者": c.speaker_name or "-",
+                "議事録ID": c.minutes_id,
+                "発言内容": comment_preview,
                 "検証状態": get_verification_badge_text(c.is_manually_verified),
             }
         )
@@ -133,20 +134,24 @@ def render_conversations_list_tab() -> None:
     st.markdown("### 発言詳細と検証状態更新")
 
     for conversation in conversations[:20]:  # Limit to 20 for performance
-        with st.expander(
-            f"{conversation.speaker_name}: {conversation.content[:50]}... "
-            f"- {get_verification_badge_text(conversation.is_manually_verified)}"
-        ):
+        speaker = conversation.speaker_name or "-"
+        comment_short = (
+            conversation.comment[:50] + "..."
+            if len(conversation.comment) > 50
+            else conversation.comment
+        )
+        badge = get_verification_badge_text(conversation.is_manually_verified)
+        with st.expander(f"{speaker}: {comment_short} - {badge}"):
             col1, col2 = st.columns([2, 1])
 
             with col1:
                 st.write(f"**ID:** {conversation.id}")
-                st.write(f"**発言者:** {conversation.speaker_name}")
-                st.write(f"**会議ID:** {conversation.meeting_id}")
+                st.write(f"**発言者:** {speaker}")
+                st.write(f"**議事録ID:** {conversation.minutes_id}")
                 st.markdown("**発言内容:**")
                 st.text_area(
                     "発言内容",
-                    value=conversation.content,
+                    value=conversation.comment,
                     height=150,
                     disabled=True,
                     label_visibility="collapsed",
