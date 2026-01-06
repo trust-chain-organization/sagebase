@@ -51,8 +51,8 @@ def render_conversations_list_tab() -> None:
 
     # Get all meetings for filter
     meetings = meeting_repo.get_all()
-    meeting_options = {"すべて": None}
-    meeting_options.update({m.title or f"会議 {m.id}": m.id for m in meetings[:100]})
+    meeting_options: dict[str, int | None] = {"すべて": None}
+    meeting_options.update({m.name or f"会議 {m.id}": m.id for m in meetings[:100]})
 
     # Filters
     col1, col2, col3, col4 = st.columns(4)
