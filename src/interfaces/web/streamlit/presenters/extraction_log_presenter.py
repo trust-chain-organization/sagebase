@@ -11,10 +11,7 @@ from src.application.usecases.get_extraction_logs_usecase import (
 )
 from src.common.logging import get_logger
 from src.domain.entities.extraction_log import EntityType, ExtractionLog
-from src.infrastructure.persistence.extraction_log_repository_impl import (
-    ExtractionLogRepositoryImpl,
-)
-from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
+from src.infrastructure.persistence.repository_registry import create_repository_adapter
 from src.interfaces.web.streamlit.dto.base import WebResponseDTO
 from src.interfaces.web.streamlit.presenters.base import BasePresenter
 from src.interfaces.web.streamlit.utils.session_manager import SessionManager
@@ -34,11 +31,11 @@ class ExtractionLogPresenter(BasePresenter[list[ExtractionLog]]):
             container: 依存性注入コンテナ
         """
         super().__init__(container)
-        # RepositoryAdapterを通じてリポジトリを作成
-        self._extraction_log_repo = RepositoryAdapter(ExtractionLogRepositoryImpl)
+        # Repository Registryを通じてリポジトリを作成（具体実装への直接依存を回避）
+        self._extraction_log_repo = create_repository_adapter("extraction_log")
         # UseCaseを初期化（リポジトリをduck typingで渡す）
         self._usecase = GetExtractionLogsUseCase(
-            extraction_log_repository=self._extraction_log_repo  # type: ignore[arg-type]
+            extraction_log_repository=self._extraction_log_repo
         )
         self.session = SessionManager(namespace="extraction_logs")
         self.logger = get_logger(self.__class__.__name__)

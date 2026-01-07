@@ -14,8 +14,8 @@ from src.application.dtos.extraction_log_dto import (
     PaginatedExtractionLogsDTO,
 )
 from src.domain.entities.extraction_log import EntityType, ExtractionLog
+from src.domain.exceptions import RepositoryError
 from src.domain.repositories.extraction_log_repository import ExtractionLogRepository
-from src.infrastructure.exceptions import DatabaseError
 
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class GetExtractionLogsUseCase:
             ページネーション付き抽出ログ
 
         Raises:
-            DatabaseError: データベース操作に失敗した場合
+            RepositoryError: データベース操作に失敗した場合
         """
         try:
             # 検索実行
@@ -79,12 +79,12 @@ class GetExtractionLogsUseCase:
                 current_offset=filter_dto.offset,
             )
 
-        except DatabaseError:
-            # DatabaseErrorはそのまま再送出して呼び出し元に処理を委ねる
+        except RepositoryError:
+            # RepositoryErrorはそのまま再送出して呼び出し元に処理を委ねる
             raise
         except Exception as e:
             logger.error(f"抽出ログの検索中にエラーが発生しました: {e}")
-            raise DatabaseError(f"抽出ログの検索に失敗しました: {e}") from e
+            raise RepositoryError(f"抽出ログの検索に失敗しました: {e}") from e
 
     async def get_statistics(
         self,
@@ -103,7 +103,7 @@ class GetExtractionLogsUseCase:
             抽出統計情報
 
         Raises:
-            DatabaseError: データベース操作に失敗した場合
+            RepositoryError: データベース操作に失敗した場合
         """
         try:
             # デフォルトの日付範囲（過去30日）
@@ -182,12 +182,12 @@ class GetExtractionLogsUseCase:
                 confidence_by_pipeline=confidence_by_pipeline,
             )
 
-        except DatabaseError:
-            # DatabaseErrorはそのまま再送出して呼び出し元に処理を委ねる
+        except RepositoryError:
+            # RepositoryErrorはそのまま再送出して呼び出し元に処理を委ねる
             raise
         except Exception as e:
             logger.error(f"抽出統計情報の取得中にエラーが発生しました: {e}")
-            raise DatabaseError(f"抽出統計情報の取得に失敗しました: {e}") from e
+            raise RepositoryError(f"抽出統計情報の取得に失敗しました: {e}") from e
 
     async def get_by_id(self, log_id: int) -> ExtractionLog | None:
         """IDで抽出ログを取得する。
@@ -199,15 +199,15 @@ class GetExtractionLogsUseCase:
             抽出ログ、存在しない場合はNone
 
         Raises:
-            DatabaseError: データベース操作に失敗した場合
+            RepositoryError: データベース操作に失敗した場合
         """
         try:
             return await self.extraction_log_repository.get_by_id(log_id)
-        except DatabaseError:
+        except RepositoryError:
             raise
         except Exception as e:
             logger.error(f"抽出ログの取得中にエラーが発生しました: {e}")
-            raise DatabaseError(f"抽出ログの取得に失敗しました: {e}") from e
+            raise RepositoryError(f"抽出ログの取得に失敗しました: {e}") from e
 
     async def get_by_entity(
         self, entity_type: EntityType, entity_id: int
@@ -222,18 +222,20 @@ class GetExtractionLogsUseCase:
             抽出ログのリスト
 
         Raises:
-            DatabaseError: データベース操作に失敗した場合
+            RepositoryError: データベース操作に失敗した場合
         """
         try:
             return await self.extraction_log_repository.get_by_entity(
                 entity_type=entity_type,
                 entity_id=entity_id,
             )
-        except DatabaseError:
+        except RepositoryError:
             raise
         except Exception as e:
             logger.error(f"エンティティの抽出ログ取得中にエラーが発生しました: {e}")
-            raise DatabaseError(f"エンティティの抽出ログ取得に失敗しました: {e}") from e
+            raise RepositoryError(
+                f"エンティティの抽出ログ取得に失敗しました: {e}"
+            ) from e
 
     async def get_pipeline_versions(self) -> list[str]:
         """パイプラインバージョン一覧を取得する。
@@ -242,17 +244,17 @@ class GetExtractionLogsUseCase:
             パイプラインバージョンのリスト
 
         Raises:
-            DatabaseError: データベース操作に失敗した場合
+            RepositoryError: データベース操作に失敗した場合
         """
         try:
             return await self.extraction_log_repository.get_distinct_pipeline_versions()
-        except DatabaseError:
+        except RepositoryError:
             raise
         except Exception as e:
             logger.error(
                 f"パイプラインバージョン一覧の取得中にエラーが発生しました: {e}"
             )
-            raise DatabaseError(
+            raise RepositoryError(
                 f"パイプラインバージョン一覧の取得に失敗しました: {e}"
             ) from e
 

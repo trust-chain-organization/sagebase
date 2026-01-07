@@ -12,7 +12,7 @@ from src.application.usecases.get_extraction_logs_usecase import (
     GetExtractionLogsUseCase,
 )
 from src.domain.entities.extraction_log import EntityType, ExtractionLog
-from src.infrastructure.exceptions import DatabaseError
+from src.domain.exceptions import RepositoryError
 
 
 class TestGetExtractionLogsUseCase:
@@ -171,12 +171,12 @@ class TestGetExtractionLogsUseCase:
         assert result.total_count == 0
 
     @pytest.mark.asyncio
-    async def test_execute_raises_database_error_on_exception(
+    async def test_execute_raises_repository_error_on_exception(
         self,
         usecase: GetExtractionLogsUseCase,
         mock_repo: MagicMock,
     ) -> None:
-        """例外発生時にDatabaseErrorを発生させるテスト。"""
+        """例外発生時にRepositoryErrorを発生させるテスト。"""
         # Arrange
         mock_repo.search_with_date_range = AsyncMock(
             side_effect=Exception("Database error")
@@ -185,25 +185,25 @@ class TestGetExtractionLogsUseCase:
         filter_dto = ExtractionLogFilterDTO(limit=10, offset=0)
 
         # Act & Assert
-        with pytest.raises(DatabaseError):
+        with pytest.raises(RepositoryError):
             await usecase.execute(filter_dto)
 
     @pytest.mark.asyncio
-    async def test_execute_propagates_database_error(
+    async def test_execute_propagates_repository_error(
         self,
         usecase: GetExtractionLogsUseCase,
         mock_repo: MagicMock,
     ) -> None:
-        """DatabaseErrorをそのまま伝播するテスト。"""
+        """RepositoryErrorをそのまま伝播するテスト。"""
         # Arrange
         mock_repo.search_with_date_range = AsyncMock(
-            side_effect=DatabaseError("DB connection failed")
+            side_effect=RepositoryError("DB connection failed")
         )
 
         filter_dto = ExtractionLogFilterDTO(limit=10, offset=0)
 
         # Act & Assert
-        with pytest.raises(DatabaseError) as exc_info:
+        with pytest.raises(RepositoryError) as exc_info:
             await usecase.execute(filter_dto)
         assert "DB connection failed" in str(exc_info.value)
 
@@ -287,19 +287,19 @@ class TestGetExtractionLogsUseCase:
         assert result.average_confidence == 0.90
 
     @pytest.mark.asyncio
-    async def test_get_statistics_raises_database_error_on_exception(
+    async def test_get_statistics_raises_repository_error_on_exception(
         self,
         usecase: GetExtractionLogsUseCase,
         mock_repo: MagicMock,
     ) -> None:
-        """統計情報取得時に例外発生でDatabaseErrorを発生させるテスト。"""
+        """統計情報取得時に例外発生でRepositoryErrorを発生させるテスト。"""
         # Arrange
         mock_repo.count_with_filters = AsyncMock(
             side_effect=Exception("Database error")
         )
 
         # Act & Assert
-        with pytest.raises(DatabaseError):
+        with pytest.raises(RepositoryError):
             await usecase.get_statistics()
 
     @pytest.mark.asyncio
@@ -340,17 +340,17 @@ class TestGetExtractionLogsUseCase:
         mock_repo.get_by_id.assert_called_once_with(999)
 
     @pytest.mark.asyncio
-    async def test_get_by_id_raises_database_error_on_exception(
+    async def test_get_by_id_raises_repository_error_on_exception(
         self,
         usecase: GetExtractionLogsUseCase,
         mock_repo: MagicMock,
     ) -> None:
-        """get_by_idで例外発生時にDatabaseErrorを発生させるテスト。"""
+        """get_by_idで例外発生時にRepositoryErrorを発生させるテスト。"""
         # Arrange
         mock_repo.get_by_id = AsyncMock(side_effect=Exception("Database error"))
 
         # Act & Assert
-        with pytest.raises(DatabaseError):
+        with pytest.raises(RepositoryError):
             await usecase.get_by_id(1)
 
     @pytest.mark.asyncio
@@ -376,17 +376,17 @@ class TestGetExtractionLogsUseCase:
         )
 
     @pytest.mark.asyncio
-    async def test_get_by_entity_raises_database_error_on_exception(
+    async def test_get_by_entity_raises_repository_error_on_exception(
         self,
         usecase: GetExtractionLogsUseCase,
         mock_repo: MagicMock,
     ) -> None:
-        """get_by_entityで例外発生時にDatabaseErrorを発生させるテスト。"""
+        """get_by_entityで例外発生時にRepositoryErrorを発生させるテスト。"""
         # Arrange
         mock_repo.get_by_entity = AsyncMock(side_effect=Exception("Database error"))
 
         # Act & Assert
-        with pytest.raises(DatabaseError):
+        with pytest.raises(RepositoryError):
             await usecase.get_by_entity(EntityType.POLITICIAN, 100)
 
     @pytest.mark.asyncio
@@ -408,19 +408,19 @@ class TestGetExtractionLogsUseCase:
         mock_repo.get_distinct_pipeline_versions.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_pipeline_versions_raises_database_error_on_exception(
+    async def test_get_pipeline_versions_raises_repository_error_on_exception(
         self,
         usecase: GetExtractionLogsUseCase,
         mock_repo: MagicMock,
     ) -> None:
-        """get_pipeline_versionsで例外発生時にDatabaseErrorを発生させるテスト。"""
+        """get_pipeline_versionsで例外発生時にRepositoryErrorを発生させるテスト。"""
         # Arrange
         mock_repo.get_distinct_pipeline_versions = AsyncMock(
             side_effect=Exception("Database error")
         )
 
         # Act & Assert
-        with pytest.raises(DatabaseError):
+        with pytest.raises(RepositoryError):
             await usecase.get_pipeline_versions()
 
     def test_get_entity_types(
