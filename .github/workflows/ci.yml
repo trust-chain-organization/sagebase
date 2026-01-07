@@ -466,3 +466,71 @@ jobs:
         if: steps.baml-changes.outputs.has_changes != 'true'
         run: |
           echo "Skipping BAML tests - no BAML-related changes detected"
+
+  # Lane 10: E2E Tests - Parallel execution (~2-3分)
+  e2e-tests:
+    name: E2E Tests - ${{ matrix.test }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - statement
+          - politician
+          - speaker
+          - conference_member
+          - parliamentary_group_member
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13.3
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --extra dev
+
+      - name: Run E2E tests
+        env:
+          TESTING: "true"
+          GOOGLE_API_KEY: "test-api-key-not-used"
+          CI: "true"
+        run: |
+          uv run pytest tests/e2e/test_${{ matrix.test }}_extraction_e2e.py -v
+
+  # Lane 11: Performance Tests (~2-3分)
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13.3
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --extra dev
+
+      - name: Run performance tests
+        env:
+          TESTING: "true"
+          GOOGLE_API_KEY: "test-api-key-not-used"
+          CI: "true"
+        run: |
+          uv run pytest tests/performance/ -v --tb=short
