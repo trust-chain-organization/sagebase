@@ -5,12 +5,13 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Column, DateTime, Float, Integer, String, and_, func
+from sqlalchemy import Column, DateTime, Float, Integer, String, and_, cast, func
 from sqlalchemy.dialects.postgresql import ENUM, JSONB
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import declarative_base
+from sqlalchemy.sql.sqltypes import Date
 
 from src.domain.entities.extraction_log import EntityType, ExtractionLog
 from src.domain.repositories.extraction_log_repository import (
@@ -415,3 +416,254 @@ class ExtractionLogRepositoryImpl(
             "ExtractionLog is immutable and cannot be updated. "
             "Create a new log entry instead."
         )
+
+    async def search_with_date_range(
+        self,
+        entity_type: EntityType | None = None,
+        entity_id: int | None = None,
+        pipeline_version: str | None = None,
+        min_confidence_score: float | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[ExtractionLog]:
+        """日時範囲を含む複数の条件で抽出ログを検索する。
+
+        Args:
+            entity_type: エンティティタイプ（フィルタ）
+            entity_id: エンティティID（フィルタ）
+            pipeline_version: パイプラインバージョン（フィルタ）
+            min_confidence_score: 最小信頼度スコア（フィルタ）
+            date_from: 検索開始日時（フィルタ）
+            date_to: 検索終了日時（フィルタ）
+            limit: 取得件数の上限
+            offset: 取得開始位置
+
+        Returns:
+            抽出ログのリスト（作成日時の降順）
+
+        Raises:
+            DatabaseError: データベース操作に失敗した場合
+        """
+        try:
+            conditions: list[Any] = []
+
+            if entity_type:
+                conditions.append(self.model_class.entity_type == entity_type.value)
+            if entity_id is not None:
+                conditions.append(self.model_class.entity_id == entity_id)
+            if pipeline_version:
+                conditions.append(self.model_class.pipeline_version == pipeline_version)
+            if min_confidence_score is not None:
+                conditions.append(
+                    self.model_class.confidence_score >= min_confidence_score
+                )
+            if date_from:
+                conditions.append(self.model_class.created_at >= date_from)
+            if date_to:
+                conditions.append(self.model_class.created_at <= date_to)
+
+            query = select(self.model_class)
+            if conditions:
+                query = query.where(and_(*conditions))
+
+            query = query.order_by(self.model_class.created_at.desc())
+
+            if offset is not None:
+                query = query.offset(offset)
+            if limit is not None:
+                query = query.limit(limit)
+
+            result = await self.session.execute(query)
+            models = result.scalars().all()
+
+            return [self._to_entity(model) for model in models]
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to search extraction logs with date range: {e}")
+            raise DatabaseError("Failed to search extraction logs") from e
+
+    async def count_with_filters(
+        self,
+        entity_type: EntityType | None = None,
+        entity_id: int | None = None,
+        pipeline_version: str | None = None,
+        min_confidence_score: float | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+    ) -> int:
+        """フィルター条件に一致するログ件数を取得する。
+
+        Args:
+            entity_type: エンティティタイプ（フィルタ）
+            entity_id: エンティティID（フィルタ）
+            pipeline_version: パイプラインバージョン（フィルタ）
+            min_confidence_score: 最小信頼度スコア（フィルタ）
+            date_from: 検索開始日時（フィルタ）
+            date_to: 検索終了日時（フィルタ）
+
+        Returns:
+            ログ件数
+
+        Raises:
+            DatabaseError: データベース操作に失敗した場合
+        """
+        try:
+            conditions: list[Any] = []
+
+            if entity_type:
+                conditions.append(self.model_class.entity_type == entity_type.value)
+            if entity_id is not None:
+                conditions.append(self.model_class.entity_id == entity_id)
+            if pipeline_version:
+                conditions.append(self.model_class.pipeline_version == pipeline_version)
+            if min_confidence_score is not None:
+                conditions.append(
+                    self.model_class.confidence_score >= min_confidence_score
+                )
+            if date_from:
+                conditions.append(self.model_class.created_at >= date_from)
+            if date_to:
+                conditions.append(self.model_class.created_at <= date_to)
+
+            query = select(func.count(self.model_class.id))
+            if conditions:
+                query = query.where(and_(*conditions))
+
+            result = await self.session.execute(query)
+            return result.scalar() or 0
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to count extraction logs with filters: {e}")
+            raise DatabaseError("Failed to count extraction logs") from e
+
+    async def get_distinct_pipeline_versions(self) -> list[str]:
+        """登録されている全てのパイプラインバージョンを取得する。
+
+        Returns:
+            パイプラインバージョンのリスト（重複なし）
+
+        Raises:
+            DatabaseError: データベース操作に失敗した場合
+        """
+        try:
+            query = select(self.model_class.pipeline_version).distinct()
+
+            result = await self.session.execute(query)
+            versions = result.scalars().all()
+
+            return list(versions)
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to get distinct pipeline versions: {e}")
+            raise DatabaseError("Failed to get pipeline versions") from e
+
+    async def get_total_count(self) -> int:
+        """全ての抽出ログ件数を取得する。
+
+        Returns:
+            総ログ件数
+
+        Raises:
+            DatabaseError: データベース操作に失敗した場合
+        """
+        try:
+            query = select(func.count(self.model_class.id))
+
+            result = await self.session.execute(query)
+            return result.scalar() or 0
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to get total count: {e}")
+            raise DatabaseError("Failed to get total count") from e
+
+    async def get_average_confidence_score(
+        self,
+        entity_type: EntityType | None = None,
+        pipeline_version: str | None = None,
+    ) -> float | None:
+        """平均信頼度スコアを取得する。
+
+        Args:
+            entity_type: エンティティタイプ（フィルタ）
+            pipeline_version: パイプラインバージョン（フィルタ）
+
+        Returns:
+            平均信頼度スコア、データがない場合はNone
+
+        Raises:
+            DatabaseError: データベース操作に失敗した場合
+        """
+        try:
+            conditions: list[Any] = []
+
+            if entity_type:
+                conditions.append(self.model_class.entity_type == entity_type.value)
+            if pipeline_version:
+                conditions.append(self.model_class.pipeline_version == pipeline_version)
+
+            query = select(func.avg(self.model_class.confidence_score))
+            if conditions:
+                query = query.where(and_(*conditions))
+
+            result = await self.session.execute(query)
+            avg_score = result.scalar()
+
+            return float(avg_score) if avg_score is not None else None
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to get average confidence score: {e}")
+            raise DatabaseError("Failed to get average confidence score") from e
+
+    async def get_count_by_date(
+        self,
+        entity_type: EntityType | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+    ) -> list[tuple[datetime, int]]:
+        """日別の抽出ログ件数を取得する。
+
+        Args:
+            entity_type: エンティティタイプ（フィルタ）
+            date_from: 検索開始日時（フィルタ）
+            date_to: 検索終了日時（フィルタ）
+
+        Returns:
+            (日付, 件数)のタプルのリスト
+
+        Raises:
+            DatabaseError: データベース操作に失敗した場合
+        """
+        try:
+            conditions: list[Any] = []
+
+            if entity_type:
+                conditions.append(self.model_class.entity_type == entity_type.value)
+            if date_from:
+                conditions.append(self.model_class.created_at >= date_from)
+            if date_to:
+                conditions.append(self.model_class.created_at <= date_to)
+
+            # 日付でグループ化してカウント
+            date_column = cast(self.model_class.created_at, Date)
+            query = (
+                select(
+                    date_column.label("date"),
+                    func.count(self.model_class.id).label("count"),
+                )
+                .group_by(date_column)
+                .order_by(date_column)
+            )
+
+            if conditions:
+                query = query.where(and_(*conditions))
+
+            result = await self.session.execute(query)
+            rows = result.all()
+
+            # rowはタプル(date, count)として取得される
+            return_list: list[tuple[datetime, int]] = []
+            for row in rows:
+                date_val = datetime.combine(row[0], datetime.min.time())
+                count_val = int(row[1])  # type: ignore[arg-type]
+                return_list.append((date_val, count_val))
+            return return_list
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to get count by date: {e}")
+            raise DatabaseError("Failed to get count by date") from e

@@ -1,5 +1,8 @@
 """Application use cases package."""
 
+from src.application.usecases.get_extraction_logs_usecase import (
+    GetExtractionLogsUseCase,
+)
 from src.application.usecases.manage_conference_members_usecase import (
     ManageConferenceMembersUseCase,
 )
@@ -33,6 +36,7 @@ from src.application.usecases.update_speaker_from_extraction_usecase import (
 
 
 __all__ = [
+    "GetExtractionLogsUseCase",
     "ManageConferenceMembersUseCase",
     "ManageGoverningBodiesUseCase",
     "ManagePoliticalPartiesUseCase",
