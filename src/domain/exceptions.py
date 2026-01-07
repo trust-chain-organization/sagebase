@@ -238,3 +238,24 @@ class ExternalServiceException(DomainException):
                 "reason": reason,
             },
         )
+
+
+class RepositoryError(DomainException):
+    """リポジトリ操作失敗の例外
+
+    リポジトリ操作（データの取得・保存・更新・削除）が失敗した場合に発生。
+    Application層がInfrastructure層の例外に直接依存しないようにするための
+    Domain層の例外クラス。
+    """
+
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
+        """
+        Args:
+            message: エラーメッセージ
+            details: 追加の詳細情報
+        """
+        super().__init__(
+            message=message,
+            error_code="DOM-008",
+            details=details or {},
+        )

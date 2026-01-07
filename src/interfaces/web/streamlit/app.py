@@ -27,6 +27,9 @@ from src.interfaces.web.streamlit.views.conversations_view import (
 from src.interfaces.web.streamlit.views.extracted_politicians_view import (
     render_extracted_politicians_page,
 )
+from src.interfaces.web.streamlit.views.extraction_logs_view import (
+    render_extraction_logs_page,
+)
 from src.interfaces.web.streamlit.views.governing_bodies_view import (
     render_governing_bodies_page,
 )
@@ -133,6 +136,12 @@ def main():
         ),
         st.Page(
             render_llm_history_page, title="LLM履歴", icon="🤖", url_path="llm_history"
+        ),
+        st.Page(
+            render_extraction_logs_page,
+            title="抽出ログ",
+            icon="📋",
+            url_path="extraction_logs",
         ),
         st.Page(
             render_work_history_page,

@@ -7,6 +7,13 @@ from src.application.dtos.conference_dto import (
     CreateAffiliationDTO,
     ExtractedConferenceMemberDTO,
 )
+from src.application.dtos.extraction_log_dto import (
+    DailyCountDTO,
+    ExtractionLogDetailDTO,
+    ExtractionLogFilterDTO,
+    ExtractionStatisticsDTO,
+    PaginatedExtractionLogsDTO,
+)
 from src.application.dtos.extraction_result.conversation_extraction_result import (
     ConversationExtractionResult,
 )
@@ -70,4 +77,10 @@ __all__ = [
     "SpeakerDTO",
     "SpeakerMatchingDTO",
     "UpdateSpeakerDTO",
+    # Extraction Log DTOs
+    "DailyCountDTO",
+    "ExtractionLogDetailDTO",
+    "ExtractionLogFilterDTO",
+    "ExtractionStatisticsDTO",
+    "PaginatedExtractionLogsDTO",
 ]
