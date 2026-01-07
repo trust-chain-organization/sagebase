@@ -158,7 +158,7 @@ Sagebaseは**Clean Architecture**を採用しており、ビジネスロジッ�
 
 ### ドキュメント
 
-- **[DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)** - 新規開発者向けガイド
+- **[DEVELOPMENT_GUIDE.md](docs/guides/DEVELOPMENT_GUIDE.md)** - 新規開発者向けガイド
 - **各層の詳細ガイド**:
   - [DOMAIN_LAYER.md](docs/architecture/DOMAIN_LAYER.md) - エンティティ、リポジトリ、ドメインサービス
   - [APPLICATION_LAYER.md](docs/architecture/APPLICATION_LAYER.md) - ユースケース、DTO
@@ -168,7 +168,7 @@ Sagebaseは**Clean Architecture**を採用しており、ビジネスロジッ�
   - [ADR 0001: Clean Architecture採用](docs/ADR/0001-clean-architecture-adoption.md)
   - [ADR 0002: BAML for LLM Outputs](docs/ADR/0002-baml-for-llm-outputs.md)
   - [ADR 0003: リポジトリパターン](docs/ADR/0003-repository-pattern.md)
-- **[CLEAN_ARCHITECTURE_MIGRATION.md](docs/CLEAN_ARCHITECTURE_MIGRATION.md)** - 移行の進捗状況
+- **[CLEAN_ARCHITECTURE_MIGRATION.md](docs/architecture/CLEAN_ARCHITECTURE_MIGRATION.md)** - 移行の進捗状況
 
 ### コマンドリファレンス
 
@@ -236,7 +236,7 @@ docker compose -f docker/docker-compose.yml logs -f bi-dashboard
 
 アクセスURL: http://localhost:8050
 
-詳細は [docs/BI_DASHBOARD.md](docs/BI_DASHBOARD.md) を参照してください。
+詳細は [docs/guides/BI_DASHBOARD.md](docs/guides/BI_DASHBOARD.md) を参照してください。
 
 ### テストの実行
 ```bash
@@ -702,8 +702,8 @@ gsutil iam get gs://YOUR_BUCKET_NAME/
 ## 🏗️ アーキテクチャ
 
 > 📚 **詳細な図とガイド**: [docs/diagrams/](docs/diagrams/) にすべてのアーキテクチャ図と詳細な説明があります
-> 📖 **包括的なドキュメント**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) でアーキテクチャの全体像を参照
-> ☁️ **クラウドアーキテクチャ**: GCP上でのデプロイメント設計については [docs/ARCHITECTURE.md#クラウドアーキテクチャ-google-cloud-platform](docs/ARCHITECTURE.md#クラウドアーキテクチャ-google-cloud-platform) を参照
+> 📖 **包括的なドキュメント**: [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) でアーキテクチャの全体像を参照
+> ☁️ **クラウドアーキテクチャ**: GCP上でのデプロイメント設計については [docs/architecture/ARCHITECTURE.md#クラウドアーキテクチャ-google-cloud-platform](docs/architecture/ARCHITECTURE.md#クラウドアーキテクチャ-google-cloud-platform) を参照
 
 ### Clean Architecture
 
@@ -711,7 +711,7 @@ Sagebaseは、保守性と拡張性を向上させるためClean Architectureを
 
 **移行状況**: 🟢 **90%完了** - コアアーキテクチャは完全に実装され、レガシーコードのクリーンアップが進行中です。
 
-**注**: 以下はアーキテクチャの概要です。詳細な説明、データフロー図、セキュリティ設計、クラウド構成などは **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** を参照してください。
+**注**: 以下はアーキテクチャの概要です。詳細な説明、データフロー図、セキュリティ設計、クラウド構成などは **[docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)** を参照してください。
 
 ### アーキテクチャ概要図
 
@@ -839,7 +839,7 @@ graph TB
 
 #### 参考ドキュメント
 
-- [Clean Architecture移行ガイド](docs/CLEAN_ARCHITECTURE_MIGRATION.md) - 移行の詳細手順
+- [Clean Architecture移行ガイド](docs/architecture/CLEAN_ARCHITECTURE_MIGRATION.md) - 移行の詳細手順
 - [アーキテクチャ分析レポート](tmp/clean_architecture_analysis_2025.md) - 実装状況の詳細分析
 
 ## 🗂️ データの流れ

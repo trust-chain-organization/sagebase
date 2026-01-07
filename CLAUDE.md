@@ -79,7 +79,7 @@ src/
 - [Speaker Matching Flow](docs/diagrams/data-flow-speaker-matching.mmd)
 - [Repository Pattern](docs/diagrams/repository-pattern.mmd)
 
-**📖 Full documentation**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+**📖 Full documentation**: [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)
 
 ## Technology Stack
 
@@ -220,9 +220,9 @@ src/
 ### Architecture & Development
 
 **📖 Overview Documents**:
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: Complete system architecture
-- **[CLEAN_ARCHITECTURE_MIGRATION.md](docs/CLEAN_ARCHITECTURE_MIGRATION.md)**: Migration progress
-- **[DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)**: Development workflows
+- **[ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)**: Complete system architecture
+- **[CLEAN_ARCHITECTURE_MIGRATION.md](docs/architecture/CLEAN_ARCHITECTURE_MIGRATION.md)**: Migration progress
+- **[DEVELOPMENT_GUIDE.md](docs/guides/DEVELOPMENT_GUIDE.md)**: Development workflows
 
 **📁 Architecture Decision Records (ADR)** - `docs/ADR/`:
 アーキテクチャに関する重要な意思決定の記録を保管
@@ -243,11 +243,11 @@ Clean Architectureの各層の詳細な実装ガイドを保管（責務、実�
 - [INTERFACE_LAYER.md](docs/architecture/INTERFACE_LAYER.md): CLI、Streamlit UI、プレゼンター
 
 ### Operations
-- **[DEPLOYMENT.md](docs/DEPLOYMENT.md)**: Deployment procedures
-- **[BI_DASHBOARD.md](docs/BI_DASHBOARD.md)**: BI Dashboard (Plotly Dash) setup and usage
-- **[CICD.md](docs/CICD.md)**: CI/CD workflows
-- **[OPERATIONS.md](docs/OPERATIONS.md)**: Operations guide
-- **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)**: Troubleshooting guide
+- **[DEPLOYMENT.md](docs/guides/DEPLOYMENT.md)**: Deployment procedures
+- **[BI_DASHBOARD.md](docs/guides/BI_DASHBOARD.md)**: BI Dashboard (Plotly Dash) setup and usage
+- **[CICD.md](docs/guides/CICD.md)**: CI/CD workflows
+- **[OPERATIONS.md](docs/guides/OPERATIONS.md)**: Operations guide
+- **[TROUBLESHOOTING.md](docs/guides/TROUBLESHOOTING.md)**: Troubleshooting guide
 - **[docs/monitoring/](docs/monitoring/)**: Monitoring setup (Grafana, Prometheus)
 
 ## Important Notes

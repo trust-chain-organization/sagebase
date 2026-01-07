@@ -51,15 +51,8 @@ jobs:
             # docs/monitoring
             "^docs/monitoring/.*\.md$"
 
-            # docs/のルートレベルファイル
-            "^docs/ARCHITECTURE\.md$"
-            "^docs/BI_DASHBOARD\.md$"
-            "^docs/CICD\.md$"
-            "^docs/CLEAN_ARCHITECTURE_MIGRATION\.md$"
-            "^docs/DEPLOYMENT\.md$"
-            "^docs/DEVELOPMENT_GUIDE\.md$"
-            "^docs/OPERATIONS\.md$"
-            "^docs/TROUBLESHOOTING\.md$"
+            # docs/guides
+            "^docs/guides/.*\.md$"
 
             # その他の許可されたディレクトリ
             "^terraform/.*\.md$"
@@ -71,7 +64,7 @@ jobs:
             "^src/.*\.md$"
           )
 
-          # 全ての.mdファイルを検索（.git, tmp, .venvを除外）
+          # 全ての.mdファイルを検索（.git, tmp, .venv, .pytest_cacheを除外）
           echo "Checking markdown file locations..."
           UNAUTHORIZED_FILES=()
 
@@ -86,7 +79,7 @@ jobs:
             if [ "$ALLOWED" = false ]; then
               UNAUTHORIZED_FILES+=("$file")
             fi
-          done < <(find . -name "*.md" -not -path "./.git/*" -not -path "./tmp/*" -not -path "./.venv/*" -not -path "./node_modules/*" | sed 's|^\./||')
+          done < <(find . -name "*.md" -not -path "./.git/*" -not -path "./tmp/*" -not -path "./.venv/*" -not -path "./node_modules/*" -not -path "./.pytest_cache/*" -not -path "./tests/.pytest_cache/*" | sed 's|^\./||')
 
           # 結果の出力
           if [ ${#UNAUTHORIZED_FILES[@]} -gt 0 ]; then
