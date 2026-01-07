@@ -8,6 +8,11 @@ import pandas as pd
 from src.application.usecases.create_parliamentary_group_memberships_usecase import (
     CreateParliamentaryGroupMembershipsUseCase,
 )
+from src.application.usecases.mark_entity_as_verified_usecase import (
+    EntityType,
+    MarkEntityAsVerifiedInputDto,
+    MarkEntityAsVerifiedUseCase,
+)
 from src.application.usecases.match_parliamentary_group_members_usecase import (
     MatchParliamentaryGroupMembersUseCase,
 )
@@ -43,6 +48,7 @@ from src.infrastructure.persistence.politician_repository_impl import (
     PoliticianRepositoryImpl,
 )
 from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
+from src.interfaces.web.streamlit.components import get_verification_badge_text
 from src.interfaces.web.streamlit.presenters.base import BasePresenter
 from src.interfaces.web.streamlit.utils.session_manager import SessionManager
 
@@ -533,6 +539,7 @@ class ParliamentaryGroupMemberPresenter(
                     "選挙区": m.extracted_district or "-",
                     "議員団": group_name,
                     "ステータス": status_display,
+                    "検証状態": get_verification_badge_text(m.is_manually_verified),
                     "マッチした政治家": politician_name,
                     "信頼度": (
                         f"{m.matching_confidence:.2f}"
@@ -545,6 +552,46 @@ class ParliamentaryGroupMemberPresenter(
             )
 
         return pd.DataFrame(data)
+
+    def update_verification_status(
+        self, member_id: int, is_verified: bool
+    ) -> tuple[bool, str | None]:
+        """Update the verification status of an extracted member.
+
+        Args:
+            member_id: The ID of the member to update
+            is_verified: The new verification status
+
+        Returns:
+            Tuple of (success, error_message)
+        """
+        return self._run_async(
+            self._update_verification_status_async(member_id, is_verified)
+        )
+
+    async def _update_verification_status_async(
+        self, member_id: int, is_verified: bool
+    ) -> tuple[bool, str | None]:
+        """Update verification status async implementation."""
+        try:
+            verify_use_case = MarkEntityAsVerifiedUseCase(
+                parliamentary_group_member_repository=self.extracted_member_repo  # type: ignore[arg-type]
+            )
+            result = await verify_use_case.execute(
+                MarkEntityAsVerifiedInputDto(
+                    entity_type=EntityType.PARLIAMENTARY_GROUP_MEMBER,
+                    entity_id=member_id,
+                    is_verified=is_verified,
+                )
+            )
+            if result.success:
+                return True, None
+            else:
+                return False, result.error_message
+        except Exception as e:
+            error_msg = f"Failed to update verification status: {e}"
+            self.logger.error(error_msg)
+            return False, error_msg
 
     def handle_action(self, action: str, **kwargs: Any) -> Any:
         """Handle user actions.

@@ -2,6 +2,11 @@
 
 import streamlit as st
 
+from src.interfaces.web.streamlit.components import (
+    render_verification_badge,
+    render_verification_checkbox_with_warning,
+    render_verification_filter,
+)
 from src.interfaces.web.streamlit.presenters.politician_presenter import (
     PoliticianPresenter,
 )
@@ -73,7 +78,7 @@ def render_politicians_list_tab(presenter: PoliticianPresenter) -> None:
     parties = presenter.get_all_parties()
 
     # Filters
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
 
     with col1:
         party_options = ["すべて"] + [p.name for p in parties]
@@ -83,10 +88,13 @@ def render_politicians_list_tab(presenter: PoliticianPresenter) -> None:
     with col2:
         search_name = st.text_input("名前で検索", placeholder="例: 山田")
 
+    with col3:
+        verification_filter = render_verification_filter(key="politician_verification")
+
     # Load politicians
     party_id = party_map.get(selected_party) if selected_party != "すべて" else None
-    politicians = presenter.load_politicians_with_filters(
-        party_id, search_name if search_name else None
+    politicians = presenter.load_politicians_with_verification_filter(
+        party_id, search_name if search_name else None, verification_filter
     )
 
     if politicians:
@@ -190,6 +198,10 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
     selected_id = int(selected_politician_str.split("ID: ")[1].replace(")", ""))
     selected_politician = next(p for p in politicians if p.id == selected_id)
 
+    # Display current verification status
+    st.markdown("#### 検証状態")
+    render_verification_badge(selected_politician.is_manually_verified)
+
     # Edit and delete forms
     col1, col2 = st.columns(2)
 
@@ -244,6 +256,24 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
                         st.error(f"更新に失敗しました: {error}")
 
     with col2:
+        st.markdown("#### 手動検証")
+        new_verified, changed = render_verification_checkbox_with_warning(
+            current_value=selected_politician.is_manually_verified,
+            key=f"verify_politician_{selected_id}",
+        )
+
+        if changed:
+            if st.button("検証状態を更新", type="primary"):
+                success, error = presenter.update_verification_status(
+                    selected_id, new_verified
+                )
+                if success:
+                    status_text = "手動検証済み" if new_verified else "未検証"
+                    st.success(f"検証状態を「{status_text}」に更新しました")
+                    st.rerun()
+                else:
+                    st.error(f"検証状態の更新に失敗しました: {error}")
+
         st.markdown("#### 削除")
         st.warning("⚠️ 政治家を削除すると、関連する発言記録も影響を受けます")
 
