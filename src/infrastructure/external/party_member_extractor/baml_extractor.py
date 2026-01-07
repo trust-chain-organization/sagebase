@@ -2,22 +2,30 @@
 
 政党のURLから所属議員情報を抽出する。
 BAMLを使用してトークン効率とパース精度を向上。
+抽出結果はExtractionLogに自動記録される。
 """
+
+from __future__ import annotations
 
 import logging
 import re
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup, Tag
 
 from baml_client.async_client import b
 
+from src.application.dtos.extraction_result.politician_extraction_result import (
+    PoliticianExtractionResult,
+)
 from src.domain.dtos.party_member_dto import (
     ExtractedPartyMemberDTO,
     PartyMemberExtractionResultDTO,
 )
+from src.domain.entities.politician import Politician
 from src.domain.interfaces.party_member_extractor_service import (
     IPartyMemberExtractorService,
 )
@@ -29,6 +37,13 @@ from src.party_member_extractor.models import (
 )
 
 
+if TYPE_CHECKING:
+    from src.application.usecases.update_politician_from_extraction_usecase import (
+        UpdatePoliticianFromExtractionUseCase,
+    )
+    from src.domain.repositories.politician_repository import PoliticianRepository
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,7 +52,25 @@ class BAMLPartyMemberExtractor(IPartyMemberExtractorService):
 
     BAMLを使用して政党メンバー情報を抽出するクラス。
     Pydantic実装と比較して、トークン効率とパース精度の向上を目指します。
+
+    Attributes:
+        _politician_repository: 政治家リポジトリ（オプション）
+        _update_politician_usecase: 政治家更新UseCase（オプション）
     """
+
+    def __init__(
+        self,
+        politician_repository: PoliticianRepository | None = None,
+        update_politician_usecase: UpdatePoliticianFromExtractionUseCase | None = None,
+    ) -> None:
+        """BAMLPartyMemberExtractorを初期化する。
+
+        Args:
+            politician_repository: 政治家リポジトリ（抽出ログ記録時に使用）
+            update_politician_usecase: 政治家更新UseCase（抽出ログ記録用）
+        """
+        self._politician_repository = politician_repository
+        self._update_politician_usecase = update_politician_usecase
 
     async def extract_members(
         self, party_id: int, url: str
@@ -94,6 +127,9 @@ class BAMLPartyMemberExtractor(IPartyMemberExtractorService):
 
             # LLMで議員情報を抽出（BAML使用）
             members_dto = await self._extract_members_with_baml(main_content, url)
+
+            # 抽出ログを記録（依存関係が注入されている場合のみ）
+            await self._log_extraction_results(members_dto, party_id)
 
             return PartyMemberExtractionResultDTO(
                 party_id=party_id,
@@ -478,3 +514,117 @@ class BAMLPartyMemberExtractor(IPartyMemberExtractorService):
                 )
             )
         return result
+
+    async def _log_extraction_results(
+        self,
+        members_dto: list[ExtractedPartyMemberDTO],
+        party_id: int,
+    ) -> None:
+        """抽出結果を抽出ログに記録する。
+
+        依存関係が注入されていない場合は何もしない（後方互換性）。
+
+        Args:
+            members_dto: 抽出されたメンバーリスト
+            party_id: 政党ID
+        """
+        if not self._politician_repository or not self._update_politician_usecase:
+            logger.debug("Skipping extraction log: dependencies not injected")
+            return
+
+        for member_dto in members_dto:
+            try:
+                await self._log_single_extraction(member_dto, party_id)
+            except Exception as e:
+                # ログ記録の失敗は抽出処理に影響しない
+                logger.error(
+                    f"Failed to log extraction for member '{member_dto.name}': {e}"
+                )
+
+    async def _log_single_extraction(
+        self,
+        member_dto: ExtractedPartyMemberDTO,
+        party_id: int,
+    ) -> None:
+        """単一メンバーの抽出結果をログに記録する。
+
+        Args:
+            member_dto: 抽出されたメンバーDTO
+            party_id: 政党ID
+        """
+        if not self._politician_repository or not self._update_politician_usecase:
+            return
+
+        # 既存の政治家を検索
+        existing_politician = await self._politician_repository.get_by_name_and_party(
+            name=member_dto.name,
+            political_party_id=party_id,
+        )
+
+        if existing_politician:
+            # 既存の政治家が見つかった場合、そのIDを使用
+            politician_id = existing_politician.id
+            if politician_id is None:
+                logger.warning(
+                    f"Existing politician '{member_dto.name}' has no ID, skipping log"
+                )
+                return
+        else:
+            # 新規の政治家を作成
+            new_politician = Politician(
+                name=member_dto.name,
+                political_party_id=party_id,
+                district=member_dto.electoral_district,
+                profile_page_url=member_dto.profile_url,
+                party_position=member_dto.party_position,
+            )
+            created_politician = await self._politician_repository.upsert(
+                new_politician
+            )
+            politician_id = created_politician.id
+            if politician_id is None:
+                logger.warning(
+                    f"Failed to get ID for new politician '{member_dto.name}', "
+                    "skipping log"
+                )
+                return
+            logger.debug(
+                f"Created new politician: {member_dto.name} (id={politician_id})"
+            )
+
+        # 抽出結果を変換
+        extraction_result = self._convert_to_extraction_result(member_dto, party_id)
+
+        # UseCaseを呼び出して抽出ログを記録
+        await self._update_politician_usecase.execute(
+            entity_id=politician_id,
+            extraction_result=extraction_result,
+            pipeline_version="party-member-extraction-v1",
+        )
+
+        logger.debug(
+            f"Extraction logged for politician '{member_dto.name}' (id={politician_id})"
+        )
+
+    def _convert_to_extraction_result(
+        self,
+        member_dto: ExtractedPartyMemberDTO,
+        party_id: int,
+    ) -> PoliticianExtractionResult:
+        """ExtractedPartyMemberDTOをPoliticianExtractionResultに変換する。
+
+        Args:
+            member_dto: 変換元のDTO
+            party_id: 政党ID
+
+        Returns:
+            PoliticianExtractionResult: 変換後の抽出結果
+        """
+        return PoliticianExtractionResult(
+            name=member_dto.name,
+            political_party_id=party_id,
+            district=member_dto.electoral_district,
+            profile_page_url=member_dto.profile_url,
+            party_position=member_dto.party_position,
+            confidence_score=1.0,  # スクレイピング結果は高信頼
+        )
