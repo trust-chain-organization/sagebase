@@ -1,5 +1,8 @@
 """Use case for matching speakers to politicians."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from src.application.dtos.extraction_result.speaker_extraction_result import (
@@ -17,6 +20,12 @@ from src.domain.repositories.speaker_repository import SpeakerRepository
 from src.domain.services.interfaces.llm_service import ILLMService
 from src.domain.services.speaker_domain_service import SpeakerDomainService
 from src.domain.types.llm import LLMSpeakerMatchContext
+
+
+if TYPE_CHECKING:
+    from src.domain.services.baml_politician_matching_service import (
+        BAMLPoliticianMatchingService,
+    )
 
 
 logger = get_logger(__name__)
@@ -54,6 +63,7 @@ class MatchSpeakersUseCase:
         speaker_domain_service: SpeakerDomainService,
         llm_service: ILLMService,  # LLMServiceAdapter for sync usage
         update_speaker_usecase: UpdateSpeakerFromExtractionUseCase,
+        baml_matching_service: BAMLPoliticianMatchingService | None = None,
     ):
         """発言者マッチングユースケースを初期化する
 
@@ -64,6 +74,7 @@ class MatchSpeakersUseCase:
             speaker_domain_service: 発言者ドメインサービス
             llm_service: LLMサービスアダプタ（同期版）
             update_speaker_usecase: Speaker更新UseCase（抽出ログ統合）
+            baml_matching_service: BAMLベースの政治家マッチングサービス（Issue #885）
         """
         self.speaker_repo = speaker_repository
         self.politician_repo = politician_repository
@@ -71,10 +82,12 @@ class MatchSpeakersUseCase:
         self.speaker_service = speaker_domain_service
         self.llm_service = llm_service
         self.update_speaker_usecase = update_speaker_usecase
+        self.baml_matching_service = baml_matching_service
 
     async def execute(
         self,
         use_llm: bool = True,
+        use_baml: bool = False,
         speaker_ids: list[int] | None = None,
         limit: int | None = None,
         user_id: UUID | None = None,
@@ -85,9 +98,14 @@ class MatchSpeakersUseCase:
         1. 既にリンクされている発言者をスキップ
         2. ルールベースマッチング（名前の類似度）
         3. LLMベースマッチング（コンテキストを考慮）
+           - use_baml=Trueの場合: BAMLベースのマッチング（推奨）
+           - use_baml=Falseの場合: 従来のLLMマッチング
 
         Args:
             use_llm: LLMマッチングを使用するか（デフォルト: True）
+            use_baml: BAMLベースのマッチングを使用するか（デフォルト: False）
+                     use_llm=Trueの場合のみ有効。Trueの場合、BAMLPoliticianMatchingService
+                     を使用して高精度なマッチングを実行します。
             speaker_ids: 処理対象の発言者IDリスト（Noneの場合は全件）
             limit: 処理する発言者数の上限
             user_id: マッチング作業を実行したユーザーのID（UUID）
@@ -99,7 +117,7 @@ class MatchSpeakersUseCase:
             - matched_politician_id: マッチした政治家ID（マッチなしの場合None）
             - matched_politician_name: マッチした政治家名
             - confidence_score: マッチング信頼度（0.0〜1.0）
-            - matching_method: マッチング手法（existing/rule-based/llm/none）
+            - matching_method: マッチング手法（existing/rule-based/baml/llm/none）
             - matching_reason: マッチング理由の説明
         """
         # Get speakers to process
@@ -145,8 +163,11 @@ class MatchSpeakersUseCase:
             match_result = await self._rule_based_matching(speaker)
 
             if not match_result and use_llm:
-                # Try LLM-based matching
-                match_result = await self._llm_based_matching(speaker)
+                # Try LLM-based matching (BAML or traditional)
+                if use_baml and self.baml_matching_service:
+                    match_result = await self._baml_based_matching(speaker)
+                else:
+                    match_result = await self._llm_based_matching(speaker)
 
             if match_result:
                 # Update speaker with matched politician_id and user_id
@@ -287,6 +308,51 @@ class MatchSpeakersUseCase:
                     )
 
         return None
+
+    async def _baml_based_matching(self, speaker: Speaker) -> SpeakerMatchingDTO | None:
+        """BAMLベースの政治家マッチングを実行する
+
+        BAMLPoliticianMatchingServiceを使用して、高精度なマッチングを行います。
+        ルールベースマッチング（高速パス）とBAMLマッチングのハイブリッドアプローチを採用。
+
+        Args:
+            speaker: マッチング対象の発言者
+
+        Returns:
+            マッチング結果DTO（マッチなしの場合None）
+        """
+        if not self.baml_matching_service:
+            logger.warning("BAML matching service not configured")
+            return None
+
+        try:
+            # BAMLPoliticianMatchingServiceのfind_best_matchを呼び出し
+            result = await self.baml_matching_service.find_best_match(
+                speaker_name=speaker.name,
+                speaker_type=speaker.type,
+                speaker_party=speaker.political_party_name,
+            )
+
+            if result.matched and result.politician_id:
+                return SpeakerMatchingDTO(
+                    speaker_id=speaker.id if speaker.id is not None else 0,
+                    speaker_name=speaker.name,
+                    matched_politician_id=result.politician_id,
+                    matched_politician_name=result.politician_name,
+                    confidence_score=result.confidence,
+                    matching_method="baml",
+                    matching_reason=result.reason,
+                )
+
+            return None
+
+        except Exception as e:
+            logger.error(
+                f"BAML matching failed for speaker {speaker.name}: {e}",
+                speaker_id=speaker.id,
+                error=str(e),
+            )
+            return None
 
     async def _record_extraction_log(
         self, speaker: Speaker, match_result: SpeakerMatchingDTO

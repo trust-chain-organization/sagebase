@@ -420,7 +420,7 @@ class PoliticianRepositoryImpl(BaseRepositoryImpl[Politician], PoliticianReposit
                 "name": row.name,
                 "party_position": row.party_position,
                 "district": row.district,
-                "party": row.party_name,
+                "party_name": row.party_name,
             }
             for row in rows
         ]

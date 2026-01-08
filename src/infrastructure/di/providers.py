@@ -41,6 +41,9 @@ from src.application.usecases.update_extracted_conference_member_from_extraction
 from src.application.usecases.update_extracted_parliamentary_group_member_from_extraction_usecase import (  # noqa: E501
     UpdateExtractedParliamentaryGroupMemberFromExtractionUseCase,
 )
+from src.application.usecases.update_politician_from_extraction_usecase import (
+    UpdatePoliticianFromExtractionUseCase,
+)
 from src.application.usecases.update_speaker_from_extraction_usecase import (
     UpdateSpeakerFromExtractionUseCase,
 )
@@ -52,6 +55,9 @@ from src.application.usecases.view_data_coverage_usecase import (
     ViewGoverningBodyCoverageUseCase,
     ViewMeetingCoverageUseCase,
     ViewSpeakerMatchingStatsUseCase,
+)
+from src.domain.services.baml_politician_matching_service import (
+    BAMLPoliticianMatchingService,
 )
 from src.domain.services.interfaces.html_link_extractor_service import (
     IHtmlLinkExtractorService,
@@ -530,6 +536,22 @@ class UseCaseContainer(containers.DeclarativeContainer):
         session_adapter=database.async_session,
     )
 
+    # Update Politician from Extraction UseCase (Issue #885)
+    update_politician_usecase = providers.Factory(
+        UpdatePoliticianFromExtractionUseCase,
+        politician_repo=repositories.politician_repository,
+        extraction_log_repo=repositories.extraction_log_repository,
+        session_adapter=database.async_session,
+    )
+
+    # BAML Politician Matching Service (Issue #885)
+    baml_politician_matching_service = providers.Factory(
+        BAMLPoliticianMatchingService,
+        llm_service=services.async_llm_service,
+        politician_repository=repositories.politician_repository,
+        update_politician_usecase=update_politician_usecase,
+    )
+
     match_speakers_usecase = providers.Factory(
         MatchSpeakersUseCase,
         speaker_repository=repositories.speaker_repository,
@@ -538,6 +560,7 @@ class UseCaseContainer(containers.DeclarativeContainer):
         speaker_domain_service=services.speaker_domain_service,
         llm_service=services.async_llm_service,  # Use async service directly
         update_speaker_usecase=update_speaker_usecase,
+        baml_matching_service=baml_politician_matching_service,  # Issue #885
     )
 
     # Define analyze_party_page_links_usecase, link_analyzer_service, and party_scraping_agent
