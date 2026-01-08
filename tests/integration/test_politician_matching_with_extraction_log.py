@@ -10,10 +10,10 @@ from src.application.usecases.update_politician_from_extraction_usecase import (
 from src.domain.entities.extraction_log import EntityType, ExtractionLog
 from src.domain.entities.politician import Politician
 from src.domain.repositories.politician_repository import PoliticianRepository
-from src.domain.services.baml_politician_matching_service import (
+from src.domain.services.interfaces.llm_service import ILLMService
+from src.infrastructure.external.politician_matching import (
     BAMLPoliticianMatchingService,
 )
-from src.domain.services.interfaces.llm_service import ILLMService
 
 
 class TestPoliticianMatchingWithExtractionLog:

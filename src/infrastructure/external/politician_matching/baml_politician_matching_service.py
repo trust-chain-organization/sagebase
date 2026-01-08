@@ -1,15 +1,19 @@
 """BAML-based Politician Matching Service
 
 このモジュールは、BAMLを使用して政治家マッチング処理を行います。
-既存のPydantic実装と並行して動作し、フィーチャーフラグで切り替え可能です。
+Infrastructure層に配置され、Domain層のIPoliticianMatchingServiceインターフェースを実装します。
+
+Clean Architecture準拠:
+    - Infrastructure層に配置
+    - Domain層のインターフェース（IPoliticianMatchingService）を実装
+    - Domain層のValue Object（PoliticianMatch）を戻り値として使用
+    - Application層のDTO/UseCaseに依存（Infrastructure層なので許可）
 """
 
 import logging
 import re
 
 from typing import Any
-
-from pydantic import BaseModel, Field
 
 from baml_client.async_client import b
 
@@ -22,32 +26,22 @@ from src.application.usecases.update_politician_from_extraction_usecase import (
 from src.domain.exceptions import ExternalServiceException
 from src.domain.repositories.politician_repository import PoliticianRepository
 from src.domain.services.interfaces.llm_service import ILLMService
+from src.domain.value_objects.politician_match import PoliticianMatch
 
 
 logger = logging.getLogger(__name__)
-
-
-class PoliticianMatch(BaseModel):
-    """政治家マッチング結果のデータモデル"""
-
-    matched: bool = Field(description="マッチングが成功したかどうか")
-    politician_id: int | None = Field(description="マッチした政治家のID", default=None)
-    politician_name: str | None = Field(
-        description="マッチした政治家の名前", default=None
-    )
-    political_party_name: str | None = Field(
-        description="マッチした政治家の所属政党", default=None
-    )
-    confidence: float = Field(description="マッチングの信頼度 (0.0-1.0)", default=0.0)
-    reason: str = Field(description="マッチング判定の理由")
 
 
 class BAMLPoliticianMatchingService:
     """BAML-based 発言者-政治家マッチングサービス
 
     BAMLを使用して政治家マッチング処理を行うクラス。
-    既存のPoliticianMatchingServiceと同じインターフェースを持ち、
-    トークン効率とパース精度の向上を目指します。
+    IPoliticianMatchingServiceインターフェースを実装します。
+
+    特徴:
+        - ルールベースマッチング（高速パス）とBAMLマッチングのハイブリッド
+        - トークン効率とパース精度の向上
+        - 抽出ログの自動記録
     """
 
     def __init__(
@@ -121,7 +115,7 @@ class BAMLPoliticianMatchingService:
                 ),
             )
 
-            # BAML結果をPydanticモデルに変換
+            # BAML結果をPoliticianMatchに変換
             match_result = PoliticianMatch(
                 matched=baml_result.matched,
                 politician_id=baml_result.politician_id,
@@ -133,10 +127,14 @@ class BAMLPoliticianMatchingService:
 
             # 信頼度が低い場合はマッチしないとして扱う
             if match_result.confidence < 0.7:
-                match_result.matched = False
-                match_result.politician_id = None
-                match_result.politician_name = None
-                match_result.political_party_name = None
+                match_result = PoliticianMatch(
+                    matched=False,
+                    politician_id=None,
+                    politician_name=None,
+                    political_party_name=None,
+                    confidence=match_result.confidence,
+                    reason=match_result.reason,
+                )
 
             logger.info(
                 f"BAML match result for '{speaker_name}': "

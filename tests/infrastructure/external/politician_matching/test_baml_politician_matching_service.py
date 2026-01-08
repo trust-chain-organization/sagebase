@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.domain.services.baml_politician_matching_service import (
+from src.infrastructure.external.politician_matching import (
     BAMLPoliticianMatchingService,
 )
 
@@ -45,7 +45,9 @@ def mock_update_politician_usecase():
 @pytest.fixture
 def mock_baml_client():
     """Mock BAML client"""
-    with patch("src.domain.services.baml_politician_matching_service.b") as mock_b:
+    with patch(
+        "src.infrastructure.external.politician_matching.baml_politician_matching_service.b"
+    ) as mock_b:
         mock_match_politician = AsyncMock()
         mock_b.MatchPolitician = mock_match_politician
         yield mock_b

@@ -23,8 +23,8 @@ from src.domain.types.llm import LLMSpeakerMatchContext
 
 
 if TYPE_CHECKING:
-    from src.domain.services.baml_politician_matching_service import (
-        BAMLPoliticianMatchingService,
+    from src.domain.services.interfaces.politician_matching_service import (
+        IPoliticianMatchingService,
     )
 
 
@@ -63,7 +63,7 @@ class MatchSpeakersUseCase:
         speaker_domain_service: SpeakerDomainService,
         llm_service: ILLMService,  # LLMServiceAdapter for sync usage
         update_speaker_usecase: UpdateSpeakerFromExtractionUseCase,
-        baml_matching_service: BAMLPoliticianMatchingService | None = None,
+        baml_matching_service: IPoliticianMatchingService | None = None,
     ):
         """発言者マッチングユースケースを初期化する
 

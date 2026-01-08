@@ -7,7 +7,7 @@ import pytest
 from src.application.usecases.match_speakers_usecase import MatchSpeakersUseCase
 from src.domain.entities.politician import Politician
 from src.domain.entities.speaker import Speaker
-from src.domain.services.baml_politician_matching_service import PoliticianMatch
+from src.domain.value_objects.politician_match import PoliticianMatch
 
 
 class TestMatchSpeakersUseCaseBAML:

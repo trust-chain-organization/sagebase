@@ -56,9 +56,6 @@ from src.application.usecases.view_data_coverage_usecase import (
     ViewMeetingCoverageUseCase,
     ViewSpeakerMatchingStatsUseCase,
 )
-from src.domain.services.baml_politician_matching_service import (
-    BAMLPoliticianMatchingService,
-)
 from src.domain.services.interfaces.html_link_extractor_service import (
     IHtmlLinkExtractorService,
 )
@@ -107,6 +104,9 @@ from src.infrastructure.external.minutes_processing_service import (
 )
 from src.infrastructure.external.party_member_extraction_service_impl import (
     PartyMemberExtractionServiceImpl,
+)
+from src.infrastructure.external.politician_matching import (
+    BAMLPoliticianMatchingService,
 )
 from src.infrastructure.external.web_scraper_service import (
     IWebScraperService,

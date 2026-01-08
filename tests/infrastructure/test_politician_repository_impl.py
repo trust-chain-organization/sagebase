@@ -510,9 +510,9 @@ class TestPoliticianRepositoryImplQueryMethods:
 
         assert len(results) == 2
         assert results[0]["name"] == "マッチ太郎"
-        assert results[0]["party"] == "テスト党"
+        assert results[0]["party_name"] == "テスト党"
         assert results[1]["name"] == "マッチ次郎"
-        assert results[1]["party"] == "サンプル党"
+        assert results[1]["party_name"] == "サンプル党"
 
     @pytest.mark.asyncio
     async def test_get_by_name_and_party_found(

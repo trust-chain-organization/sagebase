@@ -7,6 +7,9 @@ from src.domain.services.interfaces.minutes_processing_service import (
 from src.domain.services.interfaces.page_classifier_service import (
     IPageClassifierService,
 )
+from src.domain.services.interfaces.politician_matching_service import (
+    IPoliticianMatchingService,
+)
 from src.domain.services.interfaces.proposal_scraper_service import (
     IProposalScraperService,
 )
@@ -17,6 +20,7 @@ __all__ = [
     "ILLMService",
     "IMinutesProcessingService",
     "IPageClassifierService",
+    "IPoliticianMatchingService",
     "IProposalScraperService",
     "IWebScraperService",
 ]
