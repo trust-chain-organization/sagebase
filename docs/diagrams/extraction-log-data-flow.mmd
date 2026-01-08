@@ -1,0 +1,144 @@
+# 抽出ログ データフロー
+
+この図は、LLM抽出からGold Layer更新までのデータフローを示しています。
+
+## シーケンス図
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant LLM as LLM Service<br/>(Gemini API)
+    participant UseCase as UpdateEntityFromExtractionUseCase
+    participant LogRepo as ExtractionLogRepository
+    participant EntityRepo as EntityRepository
+    participant DB as Database
+
+    Note over LLM,DB: Phase 1: LLM抽出
+
+    LLM->>UseCase: 抽出結果 (ExtractionResult)
+
+    Note over LLM,DB: Phase 2: Bronze Layer 保存（常に実行）
+
+    UseCase->>UseCase: ExtractionLog作成
+    UseCase->>LogRepo: create(extraction_log)
+    LogRepo->>DB: INSERT INTO extraction_logs
+    DB-->>LogRepo: log_id
+    LogRepo-->>UseCase: log_id
+
+    Note over LLM,DB: Phase 3: Gold Layer 更新判定
+
+    UseCase->>EntityRepo: find_by_id(entity_id)
+    EntityRepo->>DB: SELECT * FROM entities
+    DB-->>EntityRepo: entity data
+    EntityRepo-->>UseCase: entity
+
+    alt is_manually_verified = true
+        Note right of UseCase: 人間が検証済み
+        UseCase-->>UseCase: スキップ
+        UseCase-->>LLM: UpdateEntityResult(updated=false, reason="manually_verified")
+    else is_manually_verified = false
+        Note right of UseCase: 未検証（AI更新可能）
+
+        Note over LLM,DB: Phase 4: Gold Layer 更新
+
+        UseCase->>UseCase: エンティティに抽出結果を適用
+        UseCase->>EntityRepo: save(entity)
+        EntityRepo->>DB: UPDATE entities SET ... , latest_extraction_log_id = log_id
+        DB-->>EntityRepo: success
+        EntityRepo-->>UseCase: success
+        UseCase-->>LLM: UpdateEntityResult(updated=true, extraction_log_id=log_id)
+    end
+```
+
+## 手動検証フロー
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User as ユーザー
+    participant UI as Streamlit UI
+    participant UseCase as MarkEntityAsVerifiedUseCase
+    participant EntityRepo as EntityRepository
+    participant DB as Database
+
+    User->>UI: エンティティを修正
+    User->>UI: 「検証済み」ボタンをクリック
+
+    UI->>UseCase: execute(entity_type, entity_id, is_verified=true)
+    UseCase->>EntityRepo: find_by_id(entity_id)
+    EntityRepo->>DB: SELECT * FROM entities
+    DB-->>EntityRepo: entity data
+    EntityRepo-->>UseCase: entity
+
+    UseCase->>UseCase: entity.mark_as_manually_verified()
+    UseCase->>EntityRepo: save(entity)
+    EntityRepo->>DB: UPDATE entities SET is_manually_verified = true
+    DB-->>EntityRepo: success
+    EntityRepo-->>UseCase: success
+    UseCase-->>UI: MarkEntityAsVerifiedOutputDto(success=true)
+    UI-->>User: "検証済みとしてマークしました"
+
+    Note over User,DB: 以降のAI抽出では更新されない
+```
+
+## 更新判定ロジック
+
+```mermaid
+flowchart TD
+    START([LLM抽出完了]) --> SAVE_LOG[Bronze Layer に保存<br/>extraction_logs]
+    SAVE_LOG --> GET_ENTITY[Gold Entity を取得]
+    GET_ENTITY --> CHECK{is_manually_verified?}
+
+    CHECK -->|true| SKIP[Gold 更新スキップ<br/>reason: manually_verified]
+    CHECK -->|false| UPDATE[Gold Entity 更新<br/>latest_extraction_log_id 設定]
+
+    SKIP --> RETURN_FALSE([UpdateEntityResult<br/>updated: false])
+    UPDATE --> RETURN_TRUE([UpdateEntityResult<br/>updated: true])
+
+    style SAVE_LOG fill:#fff3e0,stroke:#e65100
+    style SKIP fill:#ffebee,stroke:#c62828
+    style UPDATE fill:#e8f5e9,stroke:#2e7d32
+```
+
+## UseCase 実装パターン
+
+### UpdateEntityFromExtractionUseCase（基底クラス）
+
+```python
+async def execute(
+    self,
+    entity_id: int,
+    extraction_result: TExtractionResult,
+    pipeline_version: str
+) -> UpdateEntityResult:
+    # Phase 1: Bronze Layer 保存（常に実行）
+    log = ExtractionLog(
+        entity_type=self._get_entity_type(),
+        entity_id=entity_id,
+        pipeline_version=pipeline_version,
+        extracted_data=self._to_extracted_data(extraction_result),
+        confidence_score=self._get_confidence_score(extraction_result),
+        extraction_metadata=self._get_metadata(extraction_result)
+    )
+    created_log = await self._extraction_log_repo.create(log)
+    log_id = created_log.id
+
+    # Phase 2: Gold Layer 取得
+    entity = await self._get_entity(entity_id)
+    if entity is None:
+        return UpdateEntityResult(updated=False, reason="entity_not_found", extraction_log_id=log_id)
+
+    # Phase 3: 更新判定
+    if not entity.can_be_updated_by_ai():
+        return UpdateEntityResult(updated=False, reason="manually_verified", extraction_log_id=log_id)
+
+    # Phase 4: Gold Layer 更新
+    await self._apply_extraction(entity, extraction_result, log_id)
+    await self._save_entity(entity)
+
+    return UpdateEntityResult(updated=True, extraction_log_id=log_id)
+```
+
+## 関連ADR
+
+- [ADR 0005: 抽出層とGold Layer分離](../ADR/0005-extraction-layer-gold-layer-separation.md)

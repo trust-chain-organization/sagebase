@@ -195,6 +195,22 @@ erDiagram
         varchar created_by
         timestamp created_at
     }
+
+    extraction_logs ||--o{ conversations : "tracks"
+    extraction_logs ||--o{ politicians : "tracks"
+    extraction_logs ||--o{ speakers : "tracks"
+    extraction_logs ||--o{ politician_affiliations : "tracks"
+    extraction_logs ||--o{ parliamentary_group_memberships : "tracks"
+    extraction_logs {
+        int id PK
+        entity_type entity_type "ENUM"
+        int entity_id
+        varchar pipeline_version
+        jsonb extracted_data
+        decimal confidence_score
+        jsonb extraction_metadata
+        timestamp created_at
+    }
 ```
 
 ## テーブル定義
@@ -454,6 +470,68 @@ LLM処理の履歴とメトリクスを記録。
 | is_active | BOOLEAN | DEFAULT FALSE | アクティブフラグ |
 | created_by | VARCHAR | | 作成者 |
 | created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | 作成日時 |
+
+### 抽出ログ・検証関連テーブル
+
+> 📖 詳細: [ADR 0005: 抽出層とGold Layer分離](../ADR/0005-extraction-layer-gold-layer-separation.md)
+
+#### extraction_logs（抽出ログ）
+LLM抽出結果の履歴を保持するBronze Layerテーブル。
+
+| カラム名 | 型 | 制約 | 説明 |
+|---------|-----|------|------|
+| id | SERIAL | PRIMARY KEY | 主キー |
+| entity_type | ENTITY_TYPE | NOT NULL | エンティティタイプ（ENUM） |
+| entity_id | INTEGER | NOT NULL | 対象GoldエンティティのID |
+| pipeline_version | VARCHAR(100) | NOT NULL | パイプラインバージョン（例: gemini-2.0-flash-v1） |
+| extracted_data | JSONB | NOT NULL | LLM出力の生データ |
+| confidence_score | DECIMAL(5,4) | | 抽出信頼度（0.0〜1.0） |
+| extraction_metadata | JSONB | DEFAULT '{}' | メタデータ（モデル名、トークン数等） |
+| created_at | TIMESTAMPTZ | DEFAULT NOW() | 作成日時 |
+
+**ENTITY_TYPE ENUM**:
+- `statement`: Conversation（発言）
+- `politician`: Politician（政治家）
+- `speaker`: Speaker（発言者）
+- `conference_member`: PoliticianAffiliation（会議体メンバー）
+- `parliamentary_group_member`: ParliamentaryGroupMembership（議員団メンバー）
+
+**特徴**:
+- 追記専用（Immutable）: 作成後は更新・削除されない
+- 精度分析・トレーサビリティのための履歴保持
+- entity_type + entity_id でGoldエンティティを特定
+
+**インデックス**:
+- `(entity_type, entity_id)`: エンティティ別履歴取得
+- `pipeline_version`: パイプライン別分析
+- `created_at`: 時系列分析
+- `confidence_score`: 信頼度別分析
+
+#### Gold Layerエンティティの検証フィールド
+
+以下のGoldエンティティテーブルには、手動検証と抽出ログ参照のためのフィールドが追加されています：
+
+| テーブル | is_manually_verified | latest_extraction_log_id |
+|---------|---------------------|-------------------------|
+| conversations | ✅ | ✅ |
+| politicians | ✅ | ✅ |
+| speakers | ✅ | ✅ |
+| politician_affiliations | ✅ | ✅ |
+| parliamentary_group_memberships | ✅ | ✅ |
+| extracted_conference_members | ✅ | ✅ |
+| extracted_parliamentary_group_members | ✅ | ✅ |
+
+**追加カラム**:
+
+| カラム名 | 型 | 制約 | 説明 |
+|---------|-----|------|------|
+| is_manually_verified | BOOLEAN | DEFAULT FALSE | 手動検証済みフラグ |
+| latest_extraction_log_id | INTEGER | REFERENCES extraction_logs(id) | 最新抽出ログへの参照 |
+
+**動作**:
+- `is_manually_verified = true`: AI再抽出で上書きされない
+- `is_manually_verified = false`: AI再抽出で更新される
+- `latest_extraction_log_id`: 最新の抽出ログへの参照（トレーサビリティ）
 
 ## インデックス設計
 

@@ -1,0 +1,108 @@
+# 抽出層（Bronze Layer）とGold Layer アーキテクチャ
+
+この図は、LLM抽出結果と確定データの分離アーキテクチャを示しています。
+
+## 概念図
+
+```mermaid
+graph TB
+    subgraph "LLM抽出処理"
+        LLM["LLM Service<br/>(Gemini API)"]
+        EXTRACTOR["Extractor<br/>(BAML/Pydantic)"]
+    end
+
+    subgraph bronze["Bronze Layer（抽出ログ層）"]
+        direction TB
+        EXTRACTION_LOG["extraction_logs<br/>━━━━━━━━━━━━━━━<br/>id, entity_type, entity_id<br/>pipeline_version<br/>extracted_data (JSONB)<br/>confidence_score<br/>extraction_metadata<br/>created_at"]
+
+        NOTE_BRONZE["特性:<br/>・追記専用（Immutable）<br/>・全抽出結果を保存<br/>・精度分析・履歴用"]
+    end
+
+    subgraph gold["Gold Layer（確定データ層）"]
+        direction TB
+
+        subgraph entities["Goldエンティティ"]
+            CONVERSATION["conversations<br/>(Statement)"]
+            POLITICIAN["politicians"]
+            SPEAKER["speakers"]
+            AFFILIATION["politician_affiliations<br/>(ConferenceMember)"]
+            PG_MEMBER["parliamentary_group_memberships"]
+        end
+
+        NOTE_GOLD["特性:<br/>・人間の修正が最優先<br/>・is_manually_verified で保護<br/>・latest_extraction_log_id で参照"]
+    end
+
+    subgraph ui["Interface Layer"]
+        STREAMLIT["Streamlit UI<br/>━━━━━━━━━━━━━━━<br/>・手動修正<br/>・検証マーク<br/>・履歴閲覧"]
+    end
+
+    %% LLM抽出フロー
+    LLM --> EXTRACTOR
+    EXTRACTOR --> EXTRACTION_LOG
+
+    %% Gold更新フロー（条件付き）
+    EXTRACTION_LOG -->|is_manually_verified = false| CONVERSATION
+    EXTRACTION_LOG -->|is_manually_verified = false| POLITICIAN
+    EXTRACTION_LOG -->|is_manually_verified = false| SPEAKER
+    EXTRACTION_LOG -->|is_manually_verified = false| AFFILIATION
+    EXTRACTION_LOG -->|is_manually_verified = false| PG_MEMBER
+
+    %% 人間修正フロー
+    STREAMLIT -->|手動修正| CONVERSATION
+    STREAMLIT -->|手動修正| POLITICIAN
+    STREAMLIT -->|手動修正| SPEAKER
+    STREAMLIT -->|手動修正| AFFILIATION
+    STREAMLIT -->|手動修正| PG_MEMBER
+
+    %% 履歴参照
+    STREAMLIT -.->|履歴閲覧| EXTRACTION_LOG
+
+    %% Styling
+    classDef bronzeStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef goldStyle fill:#fff8e1,stroke:#f9a825,stroke-width:2px
+    classDef llmStyle fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef uiStyle fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+
+    class bronze bronzeStyle
+    class gold,entities goldStyle
+    class LLM,EXTRACTOR llmStyle
+    class STREAMLIT,ui uiStyle
+```
+
+## エンティティタイプ対応表
+
+| EntityType | Bronze Layer | Gold Layer |
+|------------|--------------|------------|
+| STATEMENT | ExtractionLog | Conversation |
+| POLITICIAN | ExtractionLog | Politician |
+| SPEAKER | ExtractionLog | Speaker |
+| CONFERENCE_MEMBER | ExtractionLog | PoliticianAffiliation |
+| PARLIAMENTARY_GROUP_MEMBER | ExtractionLog | ParliamentaryGroupMembership |
+
+## 主要コンポーネント
+
+### ExtractionLog（Bronze Layer）
+
+```
+extraction_logs
+├── id: シリアル主キー
+├── entity_type: エンティティタイプ（ENUM）
+├── entity_id: 対象GoldエンティティのID
+├── pipeline_version: "gemini-2.0-flash-v1" など
+├── extracted_data: LLM出力の生データ（JSONB）
+├── confidence_score: 抽出信頼度（0.0〜1.0）
+├── extraction_metadata: メタデータ（モデル名、トークン数等）
+└── created_at: 作成日時（Immutable）
+```
+
+### VerifiableEntity（Gold Layer共通フィールド）
+
+```
+各Goldエンティティに追加されるフィールド
+├── is_manually_verified: 手動検証済みフラグ（DEFAULT FALSE）
+└── latest_extraction_log_id: 最新抽出ログへの参照（FK）
+```
+
+## 関連ADR
+
+- [ADR 0005: 抽出層とGold Layer分離](../ADR/0005-extraction-layer-gold-layer-separation.md)
