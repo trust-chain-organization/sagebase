@@ -730,6 +730,134 @@ async def test_with_mock(mock_llm_service):
 
 ---
 
+## 抽出ログの使用方法
+
+> 📖 詳細: [ADR 0005: 抽出層とGold Layer分離](../ADR/0005-extraction-layer-gold-layer-separation.md)
+
+LLM抽出処理では、抽出結果の履歴管理と人間の修正保護のために、Bronze Layer / Gold Layer アーキテクチャを使用します。
+
+### 基本概念
+
+**Bronze Layer（抽出ログ層）**: すべてのLLM抽出結果を追記専用で保存
+**Gold Layer（確定データ層）**: アプリケーションが参照する正解データ
+
+### 新しい抽出処理を実装する
+
+#### 1. UpdateEntityFromExtractionUseCaseを継承
+
+```python
+from src.application.usecases.base.update_entity_from_extraction_usecase import (
+    UpdateEntityFromExtractionUseCase,
+    UpdateEntityResult,
+)
+from src.domain.entities.extraction_log import EntityType
+
+class UpdateMyEntityFromExtractionUseCase(
+    UpdateEntityFromExtractionUseCase[MyEntity, MyExtractionResult]
+):
+    def _get_entity_type(self) -> EntityType:
+        return EntityType.MY_ENTITY  # Enumに追加が必要
+
+    async def _get_entity(self, entity_id: int) -> MyEntity | None:
+        return await self._entity_repo.find_by_id(entity_id)
+
+    async def _save_entity(self, entity: MyEntity) -> None:
+        await self._entity_repo.save(entity)
+
+    def _to_extracted_data(self, result: MyExtractionResult) -> dict[str, Any]:
+        return result.model_dump()
+
+    async def _apply_extraction(
+        self, entity: MyEntity, result: MyExtractionResult, log_id: int
+    ) -> None:
+        # 抽出結果をエンティティに適用
+        entity.name = result.name
+        entity.update_from_extraction_log(log_id)
+```
+
+#### 2. エンティティにVerifiableEntityプロトコルを実装
+
+```python
+class MyEntity(BaseEntity):
+    def __init__(
+        self,
+        # ... 他のフィールド ...
+        is_manually_verified: bool = False,
+        latest_extraction_log_id: int | None = None,
+    ) -> None:
+        super().__init__()
+        self.is_manually_verified = is_manually_verified
+        self.latest_extraction_log_id = latest_extraction_log_id
+
+    def mark_as_manually_verified(self) -> None:
+        self.is_manually_verified = True
+
+    def update_from_extraction_log(self, log_id: int) -> None:
+        self.latest_extraction_log_id = log_id
+
+    def can_be_updated_by_ai(self) -> bool:
+        return not self.is_manually_verified
+```
+
+#### 3. データベースマイグレーションを追加
+
+```sql
+-- database/migrations/XXX_add_verification_fields_to_my_entity.sql
+ALTER TABLE my_entities
+ADD COLUMN is_manually_verified BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE my_entities
+ADD COLUMN latest_extraction_log_id INTEGER REFERENCES extraction_logs(id);
+
+CREATE INDEX idx_my_entities_is_manually_verified
+ON my_entities(is_manually_verified);
+```
+
+### 手動検証のマーク
+
+```python
+# MarkEntityAsVerifiedUseCaseを使用
+result = await mark_entity_as_verified_usecase.execute(
+    MarkEntityAsVerifiedInputDto(
+        entity_type=EntityType.MY_ENTITY,
+        entity_id=entity_id,
+        is_verified=True  # Trueで検証済み、Falseで解除
+    )
+)
+```
+
+### 抽出履歴の取得
+
+```python
+# 特定エンティティの抽出履歴を取得
+logs = await extraction_log_repo.get_by_entity(
+    entity_type=EntityType.MY_ENTITY,
+    entity_id=entity_id
+)
+
+# パイプラインバージョン別の統計
+count = await extraction_log_repo.count_by_pipeline_version("gemini-2.0-flash-v1")
+
+# 信頼度の平均
+avg_confidence = await extraction_log_repo.get_average_confidence_score(
+    entity_type=EntityType.MY_ENTITY
+)
+```
+
+### チェックリスト
+
+新しい抽出処理を実装する際は以下を確認してください：
+
+- [ ] `UpdateEntityFromExtractionUseCase`を継承している
+- [ ] `EntityType` Enumに新しいタイプを追加した
+- [ ] エンティティに`VerifiableEntity`プロトコルを実装した
+- [ ] データベースマイグレーションを追加した
+- [ ] `is_manually_verified`のチェックが正しく行われている
+- [ ] 抽出ログが必ず保存されている（エラー時も）
+- [ ] テストを作成した
+
+---
+
 ## 参考リソース
 
 ### プロジェクトドキュメント
@@ -751,6 +879,7 @@ async def test_with_mock(mock_llm_service):
 - **[ADR 0001: Clean Architecture採用](ADR/0001-clean-architecture-adoption.md)**
 - **[ADR 0002: BAML for LLM Outputs](ADR/0002-baml-for-llm-outputs.md)**
 - **[ADR 0003: リポジトリパターン](ADR/0003-repository-pattern.md)**
+- **[ADR 0005: 抽出層とGold Layer分離](ADR/0005-extraction-layer-gold-layer-separation.md)**
 
 #### その他のドキュメント
 

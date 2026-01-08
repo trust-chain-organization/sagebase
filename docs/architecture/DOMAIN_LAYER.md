@@ -200,6 +200,162 @@ class Politician(BaseEntity):
 - **複数のエンティティにまたがるロジック**はドメインサービスに実装
 - **データベースアクセスを必要とするロジック**はドメインサービスまたはユースケースに実装
 
+### 抽出層・検証関連エンティティ
+
+> 📖 詳細: [ADR 0005: 抽出層とGold Layer分離](../ADR/0005-extraction-layer-gold-layer-separation.md)
+
+LLM抽出結果と確定データを分離するために、以下のエンティティとプロトコルが実装されています。
+
+#### ExtractionLog エンティティ
+
+**ファイル**: `src/domain/entities/extraction_log.py`
+
+ExtractionLogはLLM抽出結果の履歴を保持するBronze Layerエンティティです。
+
+```python
+from enum import Enum
+from typing import Any
+
+from src.domain.entities.base import BaseEntity
+
+
+class EntityType(Enum):
+    """抽出対象のエンティティタイプ."""
+    STATEMENT = "statement"
+    POLITICIAN = "politician"
+    SPEAKER = "speaker"
+    CONFERENCE_MEMBER = "conference_member"
+    PARLIAMENTARY_GROUP_MEMBER = "parliamentary_group_member"
+
+
+class ExtractionLog(BaseEntity):
+    """LLM抽出結果の履歴を記録するエンティティ."""
+
+    def __init__(
+        self,
+        entity_type: EntityType,
+        entity_id: int,
+        pipeline_version: str,
+        extracted_data: dict[str, Any],
+        confidence_score: float | None = None,
+        extraction_metadata: dict[str, Any] | None = None,
+        id: int | None = None,
+    ) -> None:
+        super().__init__(id)
+        self.entity_type = entity_type
+        self.entity_id = entity_id
+        self.pipeline_version = pipeline_version
+        self.extracted_data = extracted_data
+        self.confidence_score = confidence_score
+        self.extraction_metadata = extraction_metadata or {}
+
+    @property
+    def model_name(self) -> str | None:
+        """メタデータからモデル名を取得."""
+        return self.extraction_metadata.get("model_name")
+
+    @property
+    def token_count_input(self) -> int | None:
+        """入力トークン数を取得."""
+        return self.extraction_metadata.get("token_count_input")
+
+    @property
+    def token_count_output(self) -> int | None:
+        """出力トークン数を取得."""
+        return self.extraction_metadata.get("token_count_output")
+```
+
+**設計のポイント:**
+- **Immutable**: 作成後は更新・削除されない（履歴として保持）
+- **汎用性**: EntityTypeで複数のエンティティタイプに対応
+- **トレーサビリティ**: パイプラインバージョン、信頼度、メタデータを記録
+
+#### VerifiableEntity プロトコル
+
+**ファイル**: `src/domain/entities/verifiable_entity.py`
+
+VerifiableEntityは手動検証可能なエンティティの共通インターフェースを定義するプロトコルです。
+
+```python
+from typing import Protocol
+
+class VerifiableEntity(Protocol):
+    """手動検証可能なエンティティのプロトコル."""
+
+    is_manually_verified: bool
+    latest_extraction_log_id: int | None
+
+    def mark_as_manually_verified(self) -> None:
+        """手動検証済みとしてマーク."""
+        ...
+
+    def update_from_extraction_log(self, log_id: int) -> None:
+        """抽出ログIDを更新."""
+        ...
+
+    def can_be_updated_by_ai(self) -> bool:
+        """AI更新可能かどうか判定."""
+        ...
+```
+
+**実装エンティティ:**
+- `Politician` - 政治家
+- `Speaker` - 発言者
+- `Conversation` - 発言（Statement相当）
+- `PoliticianAffiliation` - 所属（ConferenceMember相当）
+- `ParliamentaryGroupMembership` - 議員団メンバー
+- `ExtractedConferenceMember` - 抽出会議体メンバー
+- `ExtractedParliamentaryGroupMember` - 抽出議員団メンバー
+
+**各エンティティでの実装例:**
+
+```python
+class Politician(BaseEntity):
+    """政治家エンティティ."""
+
+    def __init__(
+        self,
+        name: str,
+        # ... 他のフィールド ...
+        is_manually_verified: bool = False,
+        latest_extraction_log_id: int | None = None,
+    ) -> None:
+        super().__init__()
+        self.name = name
+        # VerifiableEntity プロトコルのフィールド
+        self.is_manually_verified = is_manually_verified
+        self.latest_extraction_log_id = latest_extraction_log_id
+
+    def mark_as_manually_verified(self) -> None:
+        """手動検証済みとしてマーク."""
+        self.is_manually_verified = True
+
+    def update_from_extraction_log(self, log_id: int) -> None:
+        """抽出ログIDを更新."""
+        self.latest_extraction_log_id = log_id
+
+    def can_be_updated_by_ai(self) -> bool:
+        """AI更新可能かどうか判定."""
+        return not self.is_manually_verified
+```
+
+**使用パターン:**
+
+```python
+# AI抽出結果の適用
+if entity.can_be_updated_by_ai():
+    # 未検証なら更新可能
+    entity.name = extraction_result.name
+    entity.update_from_extraction_log(log_id)
+else:
+    # 検証済みなら更新スキップ
+    pass  # ログは保存済み
+
+# 手動検証のマーク
+entity.mark_as_manually_verified()
+# 以降のAI抽出では更新されない
+```
+
 ## リポジトリインターフェース（Repository Interfaces）
 
 リポジトリインターフェースは、データアクセスを抽象化します。Domain層ではインターフェースのみを定義し、実装はInfrastructure層で行います。
@@ -676,6 +832,7 @@ def politician_from_dict(data: dict) -> Politician:
 
 - [ADR-001: Clean Architecture採用](../ADR/0001-clean-architecture-adoption.md)
 - [ADR-003: リポジトリパターン](../ADR/0003-repository-pattern.md)
+- [ADR-005: 抽出層とGold Layer分離](../ADR/0005-extraction-layer-gold-layer-separation.md)
 
 ### 実装例
 

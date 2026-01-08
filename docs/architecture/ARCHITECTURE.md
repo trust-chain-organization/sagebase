@@ -406,6 +406,76 @@ erDiagram
     }
 ```
 
+## 抽出層とGold Layer
+
+> 📖 詳細: [diagrams/extraction-layer-architecture.mmd](diagrams/extraction-layer-architecture.mmd)
+> 📖 ADR: [ADR 0005: 抽出層とGold Layer分離](ADR/0005-extraction-layer-gold-layer-separation.md)
+
+LLM抽出結果と確定データを分離する2層アーキテクチャを採用しています。
+
+### 概念図
+
+```mermaid
+graph TB
+    subgraph bronze["Bronze Layer（抽出ログ層）"]
+        EXTRACTION_LOG["extraction_logs<br/>・追記専用（Immutable）<br/>・全抽出結果を保存<br/>・精度分析・履歴用"]
+    end
+
+    subgraph gold["Gold Layer（確定データ層）"]
+        CONVERSATION["conversations"]
+        POLITICIAN["politicians"]
+        SPEAKER["speakers"]
+        AFFILIATION["politician_affiliations"]
+        PG_MEMBER["parliamentary_group_memberships"]
+    end
+
+    LLM["LLM抽出"] --> EXTRACTION_LOG
+    EXTRACTION_LOG -->|is_manually_verified = false| gold
+    UI["Streamlit UI"] -->|手動修正| gold
+
+    classDef bronzeStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef goldStyle fill:#fff8e1,stroke:#f9a825,stroke-width:2px
+
+    class bronze bronzeStyle
+    class gold goldStyle
+```
+
+### 設計原則
+
+**Bronze Layer（抽出ログ層）**:
+- すべてのLLM抽出結果を追記専用で保存
+- パイプラインバージョン、信頼度、メタデータを記録
+- 精度分析・トレーサビリティに使用
+
+**Gold Layer（確定データ層）**:
+- アプリケーションが参照する正解データ
+- `is_manually_verified` フラグで人間の修正を保護
+- `latest_extraction_log_id` で最新抽出ログを参照
+
+### 更新ロジック
+
+| 状態 | AI再抽出時の動作 | 理由 |
+|------|-----------------|------|
+| `is_manually_verified = false` | Gold Layerを更新 | 最新AIの精度向上を反映 |
+| `is_manually_verified = true` | Gold Layerは更新しない | 人間の判断を最優先 |
+| （両方） | Bronze Layerには常に保存 | 履歴・分析用 |
+
+### 対象エンティティ
+
+| EntityType | Bronze Layer | Gold Layer |
+|------------|--------------|------------|
+| STATEMENT | ExtractionLog | Conversation |
+| POLITICIAN | ExtractionLog | Politician |
+| SPEAKER | ExtractionLog | Speaker |
+| CONFERENCE_MEMBER | ExtractionLog | PoliticianAffiliation |
+| PARLIAMENTARY_GROUP_MEMBER | ExtractionLog | ParliamentaryGroupMembership |
+
+### 主要コンポーネント
+
+- **ExtractionLog**: 抽出結果の履歴エンティティ（`src/domain/entities/extraction_log.py`）
+- **VerifiableEntity**: 検証可能エンティティのプロトコル（`src/domain/entities/verifiable_entity.py`）
+- **UpdateEntityFromExtractionUseCase**: 抽出結果からGold更新の基底UseCase
+
 ## 技術スタック
 
 ### バックエンド

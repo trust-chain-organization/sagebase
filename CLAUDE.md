@@ -233,6 +233,7 @@ src/
   - [0002-baml-for-llm-outputs.md](docs/ADR/0002-baml-for-llm-outputs.md): BAML採用の経緯
   - [0003-repository-pattern.md](docs/ADR/0003-repository-pattern.md): Repository Pattern採用
   - [0004-langgraph-adapter-pattern.md](docs/ADR/0004-langgraph-adapter-pattern.md): LangGraph Adapter Pattern
+  - [0005-extraction-layer-gold-layer-separation.md](docs/ADR/0005-extraction-layer-gold-layer-separation.md): 抽出層とGold Layer分離
 
 **📁 Layer Guides** - `docs/architecture/`:
 Clean Architectureの各層の詳細な実装ガイドを保管（責務、実装例、落とし穴、チェックリスト）

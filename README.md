@@ -168,6 +168,8 @@ Sagebaseは**Clean Architecture**を採用しており、ビジネスロジッ�
   - [ADR 0001: Clean Architecture採用](docs/ADR/0001-clean-architecture-adoption.md)
   - [ADR 0002: BAML for LLM Outputs](docs/ADR/0002-baml-for-llm-outputs.md)
   - [ADR 0003: リポジトリパターン](docs/ADR/0003-repository-pattern.md)
+  - [ADR 0004: LangGraph Adapter Pattern](docs/ADR/0004-langgraph-adapter-pattern.md)
+  - [ADR 0005: 抽出層とGold Layer分離](docs/ADR/0005-extraction-layer-gold-layer-separation.md)
 - **[CLEAN_ARCHITECTURE_MIGRATION.md](docs/architecture/CLEAN_ARCHITECTURE_MIGRATION.md)** - 移行の進捗状況
 
 ### コマンドリファレンス
