@@ -222,7 +222,7 @@ class ParliamentaryGroupMemberExtractor:
                         extracted_role=member.role,
                         extracted_party_name=member.party_name,
                         extracted_district=member.district,
-                        additional_data=member.additional_info,
+                        additional_info=member.additional_info,
                     )
 
                     created_entity = await self.repo.create(entity)
