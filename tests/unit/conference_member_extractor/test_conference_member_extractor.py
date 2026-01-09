@@ -32,7 +32,7 @@ class TestConferenceMemberExtractor:
     def extractor(self, mock_llm_service, mock_repo):
         """Create a ConferenceMemberExtractor instance"""
         with patch(
-            "src.infrastructure.external.conference_member_extractor.extractor.MemberExtractorFactory.create"
+            "src.infrastructure.external.conference_member_extractor.extractor.MemberExtractorFactory.create_agent"
         ):
             with patch(
                 "src.infrastructure.external.conference_member_extractor.extractor.RepositoryAdapter",

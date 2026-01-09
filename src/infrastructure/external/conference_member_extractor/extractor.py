@@ -1,4 +1,8 @@
-"""Conference member extractor that saves to staging table"""
+"""Conference member extractor that saves to staging table
+
+LangGraph + BAML の二層構造で会議体メンバー抽出を実現。
+Issue #903: [LangGraph+BAML] 会議体メンバー抽出のエージェント化
+"""
 
 from __future__ import annotations
 
@@ -27,26 +31,34 @@ if TYPE_CHECKING:
     from src.application.usecases.update_extracted_conference_member_from_extraction_usecase import (  # noqa: E501
         UpdateExtractedConferenceMemberFromExtractionUseCase,
     )
+    from src.domain.interfaces.conference_member_extraction_agent import (
+        IConferenceMemberExtractionAgent,
+    )
 
 
 logger = logging.getLogger(__name__)
 
 
 class ConferenceMemberExtractor:
-    """会議体メンバー情報を抽出してステージングテーブルに保存するクラス"""
+    """会議体メンバー情報を抽出してステージングテーブルに保存するクラス
+
+    LangGraph ReActエージェントを使用して、試行錯誤による高精度な抽出を実現。
+    """
 
     def __init__(
         self,
         update_usecase: UpdateExtractedConferenceMemberFromExtractionUseCase
         | None = None,
+        agent: IConferenceMemberExtractionAgent | None = None,
     ):
         """初期化する。
 
         Args:
             update_usecase: 抽出ログを記録するためのUseCase（オプション）
+            agent: 会議体メンバー抽出エージェント（省略時はファクトリから作成）
         """
-        # ファクトリーからextractorを取得
-        self._extractor = MemberExtractorFactory.create()
+        # ファクトリーからLangGraphエージェントを作成
+        self._agent = agent or MemberExtractorFactory.create_agent()
         self.repo = RepositoryAdapter(ExtractedConferenceMemberRepositoryImpl)
         self._update_usecase = update_usecase
 
@@ -149,10 +161,12 @@ class ConferenceMemberExtractor:
     async def extract_members_with_llm(
         self, html_content: str, conference_name: str
     ) -> list[ExtractedMemberDTO]:
-        """LLMを使用してHTMLから議員情報を抽出
+        """LangGraphエージェントを使用してHTMLから議員情報を抽出
 
-        ファクトリーから取得した実装を使用してメンバー情報を抽出します。
-        フィーチャーフラグに応じて、Pydantic、BAML、またはA/Bテスト実装が使用されます。
+        ReActエージェントが以下の手順でメンバーを抽出します:
+        1. BAMLを使用してHTMLからメンバーを抽出
+        2. 抽出結果を検証
+        3. 重複メンバーを除去
 
         Args:
             html_content: HTMLコンテンツ
@@ -167,9 +181,27 @@ class ConferenceMemberExtractor:
         # HTMLをクリーニング
         cleaned_html = self.clean_html(html_content)
 
-        # ファクトリーから取得したextractorを使用（非同期）
-        # 戻り値は既にExtractedMemberDTOのリスト（型安全性向上）
-        return await self._extractor.extract_members(cleaned_html, conference_name)
+        # LangGraphエージェントでメンバーを抽出
+        result = await self._agent.extract_members(
+            html_content=cleaned_html,
+            conference_name=conference_name,
+        )
+
+        # エラーがあればログ出力
+        if not result["success"]:
+            if result["error_message"]:
+                logger.warning(
+                    f"Agent extraction had issues for '{conference_name}': "
+                    f"{result['error_message']}"
+                )
+            if result["validation_errors"]:
+                logger.warning(
+                    f"Validation errors for '{conference_name}': "
+                    f"{result['validation_errors']}"
+                )
+
+        # 抽出されたメンバーを返す（空でも返す）
+        return result["members"]
 
     async def extract_and_save_members(
         self, conference_id: int, conference_name: str, url: str
