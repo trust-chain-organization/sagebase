@@ -307,6 +307,51 @@ class ParliamentaryGroupPresenter(BasePresenter[list[ParliamentaryGroup]]):
             self.logger.error(error_msg)
             return False, None, error_msg
 
+    def extract_members_with_agent(
+        self,
+        parliamentary_group_id: int,
+        parliamentary_group_name: str,
+        url: str,
+    ) -> tuple[bool, Any, str | None]:
+        """Extract members using LangGraph agent (Issue #905).
+
+        LangGraphエージェントを使用してメンバーを抽出します。
+        """
+        return self._run_async(
+            self._extract_members_with_agent_async(
+                parliamentary_group_id, parliamentary_group_name, url
+            )
+        )
+
+    async def _extract_members_with_agent_async(
+        self,
+        parliamentary_group_id: int,
+        parliamentary_group_name: str,
+        url: str,
+    ) -> tuple[bool, Any, str | None]:
+        """Extract members using LangGraph agent (async implementation)."""
+        try:
+            from src.infrastructure.external.parliamentary_group_member_extractor.extractor import (  # noqa: E501
+                ParliamentaryGroupMemberExtractor,
+            )
+
+            extractor = ParliamentaryGroupMemberExtractor()
+            try:
+                result = await extractor.extract_and_save_members(
+                    parliamentary_group_id=parliamentary_group_id,
+                    parliamentary_group_name=parliamentary_group_name,
+                    url=url,
+                )
+                if "error" in result:
+                    return False, None, result["error"]
+                return True, result, None
+            finally:
+                extractor.close()
+        except Exception as e:
+            error_msg = f"Failed to extract members with agent: {e}"
+            self.logger.error(error_msg)
+            return False, None, error_msg
+
     def generate_seed_file(self) -> tuple[bool, str | None, str | None]:
         """Generate seed file for parliamentary groups."""
         return self._run_async(self._generate_seed_file_async())

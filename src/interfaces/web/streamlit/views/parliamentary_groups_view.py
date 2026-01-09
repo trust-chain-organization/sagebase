@@ -434,53 +434,90 @@ def render_member_extraction_tab(presenter: ParliamentaryGroupPresenter) -> None
         help="チェックすると、抽出結果の確認のみ行い、データベースには保存しません",
     )
 
-    # Execute extraction
-    if st.button("🔍 メンバー抽出を実行", type="primary"):
-        with st.spinner("メンバー情報を抽出中..."):
-            success, result, error = presenter.extract_members(
-                selected_group.id,
-                cast(str, selected_group.url),
-                confidence_threshold,
-                start_date,
-                dry_run,
-            )
+    # 抽出方式の選択
+    use_agent = st.checkbox(
+        "🤖 LangGraphエージェントを使用（推奨）",
+        value=True,
+        help="LangGraphエージェントによる高精度な抽出を使用します。"
+        "検証・重複除去を自動で行います。",
+    )
 
-            if success and result:
-                if result.extracted_members:
-                    st.success(
-                        f"✅ {len(result.extracted_members)}名のメンバーを抽出しました"
+    # Execute extraction
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("🔍 メンバー抽出を実行", type="primary"):
+            if use_agent:
+                # LangGraphエージェントを使用
+                with st.spinner("🤖 LangGraphエージェントでメンバー情報を抽出中..."):
+                    success, result, error = presenter.extract_members_with_agent(
+                        selected_group.id,
+                        selected_group.name,
+                        cast(str, selected_group.url),
                     )
 
-                    # Display extracted members
-                    st.markdown("### 抽出されたメンバー")
+                    if success and result:
+                        extracted_count = result.get("extracted_count", 0)
+                        saved_count = result.get("saved_count", 0)
 
-                    # Create a DataFrame for display
-                    members_data = []
-                    for member in result.extracted_members:
-                        members_data.append(
-                            {
-                                "名前": member.name,
-                                "役職": member.role or "-",
-                                "政党": member.party_name or "-",
-                                "選挙区": member.district or "-",
-                                "備考": member.additional_info or "-",
-                            }
-                        )
-
-                    df_members = pd.DataFrame(members_data)
-                    st.dataframe(df_members, use_container_width=True)
-
-                    # Note: マッチングは別UseCaseで行われるため、
-                    # 抽出結果確認タブでマッチング・レビューを行ってください
-                    if not dry_run:
-                        st.info(
-                            "💡 抽出されたメンバーは「抽出結果確認」タブで"
-                            "レビュー・マッチングできます"
-                        )
-                else:
-                    st.warning("メンバーが抽出されませんでした")
+                        if extracted_count > 0:
+                            st.success(
+                                f"✅ {extracted_count}名のメンバーを抽出、"
+                                f"{saved_count}名を保存しました"
+                            )
+                            st.info(
+                                "💡 抽出されたメンバーは「メンバーレビュー」タブで"
+                                "レビュー・マッチングできます"
+                            )
+                        else:
+                            st.warning("メンバーが抽出されませんでした")
+                    else:
+                        st.error(f"抽出エラー: {error}")
             else:
-                st.error(f"抽出エラー: {error}")
+                # 既存のBAML抽出器を使用
+                with st.spinner("メンバー情報を抽出中..."):
+                    success, result, error = presenter.extract_members(
+                        selected_group.id,
+                        cast(str, selected_group.url),
+                        confidence_threshold,
+                        start_date,
+                        dry_run,
+                    )
+
+                    if success and result:
+                        if result.extracted_members:
+                            st.success(
+                                f"✅ {len(result.extracted_members)}名の"
+                                "メンバーを抽出しました"
+                            )
+
+                            # Display extracted members
+                            st.markdown("### 抽出されたメンバー")
+
+                            members_data = []
+                            for member in result.extracted_members:
+                                members_data.append(
+                                    {
+                                        "名前": member.name,
+                                        "役職": member.role or "-",
+                                        "政党": member.party_name or "-",
+                                        "選挙区": member.district or "-",
+                                        "備考": member.additional_info or "-",
+                                    }
+                                )
+
+                            df_members = pd.DataFrame(members_data)
+                            st.dataframe(df_members, use_container_width=True)
+
+                            if not dry_run:
+                                st.info(
+                                    "💡 抽出されたメンバーは「メンバーレビュー」タブで"
+                                    "レビュー・マッチングできます"
+                                )
+                        else:
+                            st.warning("メンバーが抽出されませんでした")
+                    else:
+                        st.error(f"抽出エラー: {error}")
 
 
 def render_member_review_tab() -> None:
