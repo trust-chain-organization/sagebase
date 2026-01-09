@@ -189,6 +189,25 @@ def _create_conference_member_extraction_agent():
     return MemberExtractorFactory.create_agent()
 
 
+def _create_politician_matching_agent():
+    """政治家マッチングエージェントを作成するヘルパー関数
+
+    遅延インポートを使用して循環参照を回避します。
+    Issue #904: LangGraph+BAML統合（政治家マッチング）
+    """
+    from langchain_google_genai import ChatGoogleGenerativeAI
+
+    from src.infrastructure.external.langgraph_politician_matching_agent import (
+        PoliticianMatchingAgent,
+    )
+
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.0-flash",
+        temperature=0.0,
+    )
+    return PoliticianMatchingAgent(llm=llm)
+
+
 # Mock SQLAlchemy model classes for repositories that don't have them yet
 class MockSpeakerModel:
     """Mock SQLAlchemy model for Speaker entity."""
@@ -509,6 +528,12 @@ class ServiceContainer(containers.DeclarativeContainer):
     # LangGraph + BAMLの二層構造を持つエージェント
     conference_member_extraction_agent = providers.Factory(
         lambda: _create_conference_member_extraction_agent()
+    )
+
+    # Politician matching agent (Issue #904)
+    # LangGraph + BAMLの二層構造を持つエージェント
+    politician_matching_agent = providers.Factory(
+        lambda: _create_politician_matching_agent()
     )
 
 
