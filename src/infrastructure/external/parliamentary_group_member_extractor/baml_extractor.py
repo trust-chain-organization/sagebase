@@ -30,7 +30,54 @@ class BAMLParliamentaryGroupMemberExtractor(IParliamentaryGroupMemberExtractorSe
 
     BAMLを使用して議員団メンバー情報を抽出するクラス。
     Pydantic実装と比較して、トークン効率とパース精度の向上を目指します。
+
+    Issue #905: LangGraphエージェント用にextract_members_from_htmlメソッドを追加
     """
+
+    async def extract_members_from_html(
+        self, html_content: str, parliamentary_group_name: str
+    ) -> list[ExtractedParliamentaryGroupMemberDTO]:
+        """HTMLコンテンツから議員団メンバーを抽出（LangGraphエージェント用）
+
+        LangGraphエージェントから呼び出されることを想定したメソッドです。
+        HTMLコンテンツを解析してテキストを抽出し、BAMLで議員情報を抽出します。
+
+        Args:
+            html_content: 解析対象のHTMLコンテンツ
+            parliamentary_group_name: 議員団名（ログ出力に使用）
+
+        Returns:
+            抽出された議員リスト（ExtractedParliamentaryGroupMemberDTO）
+        """
+        try:
+            logger.info(
+                f"Starting member extraction from HTML for "
+                f"'{parliamentary_group_name}' (HTML: {len(html_content)} chars)"
+            )
+
+            # BeautifulSoupでHTMLを解析
+            soup = BeautifulSoup(html_content, "html.parser")
+
+            # スクリプトとスタイルを削除
+            for script in soup(["script", "style"]):
+                script.decompose()
+
+            # テキストを抽出
+            text = soup.get_text()
+            lines = (line.strip() for line in text.splitlines())
+            chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+            text_content = "\n".join(chunk for chunk in chunks if chunk)
+
+            # LLMで議員情報を抽出（BAML使用）
+            return await self._extract_members_with_baml(text_content, str(soup))
+
+        except Exception as e:
+            logger.error(
+                f"Error extracting members from HTML for "
+                f"'{parliamentary_group_name}': {e}",
+                exc_info=True,
+            )
+            return []
 
     async def extract_members(
         self, parliamentary_group_id: int, url: str

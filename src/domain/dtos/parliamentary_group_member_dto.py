@@ -46,3 +46,25 @@ class ParliamentaryGroupMemberExtractionResultDTO:
     extracted_members: list[ExtractedParliamentaryGroupMemberDTO]
     extraction_date: datetime | None = None
     error: str | None = None
+
+
+@dataclass
+class ParliamentaryGroupMemberExtractionResult:
+    """議員団メンバー抽出エージェントの結果DTO
+
+    LangGraphエージェントによる議員団メンバー抽出の結果を表現します。
+    会議体メンバー抽出エージェントと同様の構造を持ちます。
+
+    Issue #905: [LangGraph+BAML] 議員団メンバー抽出のエージェント化
+
+    Attributes:
+        members: 抽出されたメンバーのリスト
+        success: 抽出成功フラグ
+        validation_errors: 検証エラーのリスト
+        error_message: エラーメッセージ（エラー時のみ）
+    """
+
+    members: list[ExtractedParliamentaryGroupMemberDTO]
+    success: bool
+    validation_errors: list[str]
+    error_message: str | None = None
