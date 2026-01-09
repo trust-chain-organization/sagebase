@@ -63,5 +63,28 @@ function MatchPolitician(
         - 役職名のみの入力（例：「委員長」「副議長」「事務局長」）は個人を特定できないため、
           matched: false, confidence: 0.0, reason: "役職名のみのため個人を特定できません" を返してください。
         - マッチする政治家がいない場合も、必ず構造化された形式で出力してください。
+
+        # 出力形式（この形式に厳密に従ってください）
+        マッチ成功の場合:
+        {
+          "matched": true,
+          "politician_id": <政治家ID>,
+          "politician_name": "<政治家名>",
+          "political_party_name": "<政党名>",
+          "confidence": <0.0-1.0>,
+          "reason": "<マッチング判定の理由を必ず記述>"
+        }
+
+        マッチ失敗の場合:
+        {
+          "matched": false,
+          "politician_id": null,
+          "politician_name": null,
+          "political_party_name": null,
+          "confidence": <0.0-1.0>,
+          "reason": "<マッチしない理由を必ず記述>"
+        }
+
+        {{ ctx.output_format }}
     "#
 }
