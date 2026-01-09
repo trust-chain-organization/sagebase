@@ -3,7 +3,7 @@
 Issue #903: [LangGraph+BAML] 会議体メンバー抽出のエージェント化
 """
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -66,8 +66,8 @@ class TestConferenceMemberExtractionTools:
         assert "会議体名が空です" in result["error"]
 
     @pytest.mark.asyncio
-    async def test_extract_members_from_html_with_mock(self, extract_tool):
-        """BAMLを使用してメンバーを抽出すること（モック使用）"""
+    async def test_extract_members_from_html_with_mock(self):
+        """BAMLを使用してメンバーを抽出すること（依存性注入でモック使用）"""
         from src.domain.dtos.conference_member_dto import ExtractedMemberDTO
 
         mock_members = [
@@ -85,22 +85,25 @@ class TestConferenceMemberExtractionTools:
             ),
         ]
 
-        with patch(
-            "src.infrastructure.external.langgraph_tools.conference_member_extraction_tools.BAMLMemberExtractor"
-        ) as mock_extractor_class:
-            mock_extractor = AsyncMock()
-            mock_extractor.extract_members.return_value = mock_members
-            mock_extractor_class.return_value = mock_extractor
+        # 依存性注入でモックを渡す
+        mock_extractor = AsyncMock()
+        mock_extractor.extract_members.return_value = mock_members
 
-            result = await extract_tool.ainvoke(
-                {"html_content": "<html>test</html>", "conference_name": "総務委員会"}
-            )
+        tools = create_conference_member_extraction_tools(
+            member_extractor=mock_extractor
+        )
+        extract_tool = tools[0]
 
-            assert result["success"] is True
-            assert result["count"] == 2
-            assert len(result["members"]) == 2
-            assert result["members"][0]["name"] == "田中太郎"
-            assert result["members"][1]["name"] == "山田花子"
+        result = await extract_tool.ainvoke(
+            {"html_content": "<html>test</html>", "conference_name": "総務委員会"}
+        )
+
+        assert result["success"] is True
+        assert result["count"] == 2
+        assert len(result["members"]) == 2
+        assert result["members"][0]["name"] == "田中太郎"
+        assert result["members"][1]["name"] == "山田花子"
+        mock_extractor.extract_members.assert_called_once()
 
     # validate_extracted_members テスト
 
@@ -241,3 +244,77 @@ class TestConferenceMemberExtractionTools:
         assert result["original_count"] == 2
         assert result["unique_count"] == 2
         assert len(result["duplicates_removed"]) == 0
+
+    # 追加テスト: BAMLエラー、エッジケース
+
+    @pytest.mark.asyncio
+    async def test_extract_members_from_html_baml_error(self):
+        """BAMLでエラーが発生した場合、エラーを返すこと"""
+        mock_extractor = AsyncMock()
+        mock_extractor.extract_members.side_effect = Exception("BAML extraction error")
+
+        # 依存性注入でモックを渡す
+        tools = create_conference_member_extraction_tools(
+            member_extractor=mock_extractor
+        )
+        extract_tool = tools[0]
+
+        result = await extract_tool.ainvoke(
+            {"html_content": "<html>test</html>", "conference_name": "総務委員会"}
+        )
+
+        assert result["success"] is False
+        assert "BAML extraction error" in result["error"]
+
+    @pytest.mark.asyncio
+    async def test_extract_members_with_dependency_injection(self):
+        """依存性注入でextractorを渡せること"""
+        from src.domain.dtos.conference_member_dto import ExtractedMemberDTO
+
+        mock_extractor = AsyncMock()
+        mock_extractor.extract_members.return_value = [
+            ExtractedMemberDTO(
+                name="テスト太郎",
+                role="委員",
+                party_name=None,
+                additional_info=None,
+            )
+        ]
+
+        # 依存性注入でモックを渡す
+        tools = create_conference_member_extraction_tools(
+            member_extractor=mock_extractor
+        )
+        extract_tool = tools[0]
+
+        result = await extract_tool.ainvoke(
+            {"html_content": "<html>test</html>", "conference_name": "総務委員会"}
+        )
+
+        assert result["success"] is True
+        assert result["count"] == 1
+        assert result["members"][0]["name"] == "テスト太郎"
+        mock_extractor.extract_members.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_validate_members_with_none_name(self, validate_tool):
+        """Noneの名前を含むメンバーが無効として検出されること"""
+        members = [
+            {"name": None, "role": "委員"},
+        ]
+        result = await validate_tool.ainvoke({"members": members})
+        assert result["valid_count"] == 0
+        assert result["invalid_count"] == 1
+        assert "名前が空です" in result["validation_errors"][0]
+
+    @pytest.mark.asyncio
+    async def test_deduplicate_with_empty_names(self, deduplicate_tool):
+        """空の名前を含むメンバーが適切にスキップされること"""
+        members = [
+            {"name": "", "role": "委員"},
+            {"name": "田中太郎", "role": "委員長"},
+        ]
+        result = await deduplicate_tool.ainvoke({"members": members})
+        # 空の名前はスキップされるので、1人だけがユニークとしてカウント
+        assert result["unique_count"] == 1
+        assert result["unique_members"][0]["name"] == "田中太郎"

@@ -4,7 +4,13 @@
 レイヤー間でメンバー情報をやり取りする際に使用されます。
 """
 
+from typing import TYPE_CHECKING, TypedDict
+
 from pydantic import BaseModel, Field
+
+
+if TYPE_CHECKING:
+    pass
 
 
 class ExtractedMemberDTO(BaseModel):
@@ -19,3 +25,17 @@ class ExtractedMemberDTO(BaseModel):
     role: str | None = Field(None, description="役職（議長、副議長、委員長、委員など）")
     party_name: str | None = Field(None, description="所属政党名")
     additional_info: str | None = Field(None, description="その他の情報")
+
+
+class ConferenceMemberExtractionResult(TypedDict):
+    """会議体メンバー抽出結果のDTO
+
+    LangGraphエージェントによるメンバー抽出の結果を表現します。
+    抽出されたメンバーリスト、成功フラグ、検証エラー、
+    エラーメッセージを含みます。
+    """
+
+    members: list[ExtractedMemberDTO]
+    success: bool
+    validation_errors: list[str]
+    error_message: str | None

@@ -216,3 +216,138 @@ class TestMemberExtractorFactory:
             agent = MemberExtractorFactory.create_agent(llm=mock_llm)
             assert isinstance(agent, ConferenceMemberExtractionAgent)
             assert agent.llm == mock_llm
+
+
+class TestExtractMembersFromMessages:
+    """_extract_members_from_messagesメソッドのテスト"""
+
+    @pytest.fixture
+    def agent(self):
+        """テスト用エージェントを作成"""
+        mock_llm = MagicMock()
+        with patch(
+            "src.infrastructure.external.langgraph_conference_member_extraction_agent.create_conference_member_extraction_tools"
+        ):
+            from src.infrastructure.external.langgraph_conference_member_extraction_agent import (
+                ConferenceMemberExtractionAgent,
+            )
+
+            return ConferenceMemberExtractionAgent(llm=mock_llm)
+
+    def test_extract_from_unique_members(self, agent):
+        """unique_membersからメンバーを抽出できること"""
+        import json
+
+        from langchain_core.messages import ToolMessage
+
+        members_data = [{"name": "田中太郎", "role": "委員長"}]
+        messages = [
+            ToolMessage(
+                content=json.dumps({"unique_members": members_data}),
+                tool_call_id="test_id",
+            )
+        ]
+
+        result = agent._extract_members_from_messages(messages)
+        assert len(result) == 1
+        assert result[0]["name"] == "田中太郎"
+
+    def test_extract_from_valid_members(self, agent):
+        """valid_membersからメンバーを抽出できること"""
+        import json
+
+        from langchain_core.messages import ToolMessage
+
+        members_data = [{"name": "山田花子", "role": "委員"}]
+        messages = [
+            ToolMessage(
+                content=json.dumps({"valid_members": members_data}),
+                tool_call_id="test_id",
+            )
+        ]
+
+        result = agent._extract_members_from_messages(messages)
+        assert len(result) == 1
+        assert result[0]["name"] == "山田花子"
+
+    def test_extract_from_members(self, agent):
+        """membersからメンバーを抽出できること"""
+        import json
+
+        from langchain_core.messages import ToolMessage
+
+        members_data = [{"name": "鈴木一郎", "role": "副委員長"}]
+        messages = [
+            ToolMessage(
+                content=json.dumps({"members": members_data}),
+                tool_call_id="test_id",
+            )
+        ]
+
+        result = agent._extract_members_from_messages(messages)
+        assert len(result) == 1
+        assert result[0]["name"] == "鈴木一郎"
+
+    def test_extract_empty_messages(self, agent):
+        """空のメッセージリストから空のリストを返すこと"""
+        result = agent._extract_members_from_messages([])
+        assert result == []
+
+    def test_extract_invalid_json(self, agent):
+        """無効なJSONを含むメッセージをスキップすること"""
+        from langchain_core.messages import ToolMessage
+
+        messages = [
+            ToolMessage(
+                content="invalid json",
+                tool_call_id="test_id",
+            )
+        ]
+
+        result = agent._extract_members_from_messages(messages)
+        assert result == []
+
+    def test_priority_unique_over_valid(self, agent):
+        """unique_membersがvalid_membersより優先されること"""
+        import json
+
+        from langchain_core.messages import ToolMessage
+
+        messages = [
+            ToolMessage(
+                content=json.dumps(
+                    {"valid_members": [{"name": "山田", "role": "委員"}]}
+                ),
+                tool_call_id="test_id_1",
+            ),
+            ToolMessage(
+                content=json.dumps(
+                    {"unique_members": [{"name": "田中", "role": "委員長"}]}
+                ),
+                tool_call_id="test_id_2",
+            ),
+        ]
+
+        result = agent._extract_members_from_messages(messages)
+        # unique_membersが優先されるので田中が返る（逆順で検索）
+        assert result[0]["name"] == "田中"
+
+
+class TestInterfaceCompliance:
+    """インターフェース準拠のテスト"""
+
+    def test_agent_implements_interface(self):
+        """エージェントがインターフェースを実装していること"""
+        mock_llm = MagicMock()
+        with patch(
+            "src.infrastructure.external.langgraph_conference_member_extraction_agent.create_conference_member_extraction_tools"
+        ):
+            from src.domain.interfaces.conference_member_extraction_agent import (
+                IConferenceMemberExtractionAgent,
+            )
+            from src.infrastructure.external.langgraph_conference_member_extraction_agent import (
+                ConferenceMemberExtractionAgent,
+            )
+
+            agent = ConferenceMemberExtractionAgent(llm=mock_llm)
+            assert isinstance(agent, IConferenceMemberExtractionAgent)

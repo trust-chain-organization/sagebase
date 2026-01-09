@@ -9,13 +9,23 @@ Issue #903: [LangGraph+BAML] 会議体メンバー抽出のエージェント化
 import json
 import logging
 
-from typing import Any, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage, HumanMessage
 from langgraph.prebuilt import create_react_agent
 
-from src.domain.dtos.conference_member_dto import ExtractedMemberDTO
+from src.domain.dtos.conference_member_dto import (
+    ConferenceMemberExtractionResult,
+    ExtractedMemberDTO,
+)
+from src.domain.interfaces.conference_member_extraction_agent import (
+    IConferenceMemberExtractionAgent,
+)
+
+
+if TYPE_CHECKING:
+    from src.domain.interfaces.member_extractor_service import IMemberExtractorService
 
 # ruff: noqa: E501  # 長いインポートパスは許容
 from src.infrastructure.external.langgraph_tools.conference_member_extraction_tools import (  # noqa: E501
@@ -55,35 +65,37 @@ class ConferenceMemberExtractionAgentState(TypedDict, total=False):
     error_message: str | None
 
 
-class ConferenceMemberExtractionResult(TypedDict):
-    """会議体メンバー抽出結果"""
-
-    members: list[ExtractedMemberDTO]
-    success: bool
-    validation_errors: list[str]
-    error_message: str | None
-
-
-class ConferenceMemberExtractionAgent:
+class ConferenceMemberExtractionAgent(IConferenceMemberExtractionAgent):
     """会議体メンバー抽出用のReActエージェント
 
+    IConferenceMemberExtractionAgentインターフェースの実装。
     LangGraphのサブグラフとして動作し、ツールを使用した試行錯誤により
     会議体メンバーの高精度な抽出を実現します。
 
     Attributes:
         llm: 使用するLangChainチャットモデル
+        member_extractor: メンバー抽出サービス（依存性注入用）
         tools: メンバー抽出用のツールリスト
         agent: コンパイル済みのReActエージェント
     """
 
-    def __init__(self, llm: BaseChatModel):
+    def __init__(
+        self,
+        llm: BaseChatModel,
+        member_extractor: "IMemberExtractorService | None" = None,
+    ):
         """エージェントを初期化
 
         Args:
             llm: LangChainのチャットモデル（例: ChatGoogleGenerativeAI）
+            member_extractor: メンバー抽出サービス（省略時はファクトリから取得）
+                テスト時にモックを注入可能
         """
         self.llm = llm
-        self.tools = create_conference_member_extraction_tools()
+        self.member_extractor = member_extractor
+        self.tools = create_conference_member_extraction_tools(
+            member_extractor=self.member_extractor
+        )
         self.agent = self._create_workflow()
         logger.info(
             f"ConferenceMemberExtractionAgent initialized with {len(self.tools)} tools"

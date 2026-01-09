@@ -9,21 +9,28 @@ Issue #903: [LangGraph+BAML] 会議体メンバー抽出のエージェント化
 import logging
 
 from difflib import SequenceMatcher
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from langchain_core.tools import tool
 
 from src.domain.dtos.conference_member_dto import ExtractedMemberDTO
-from src.infrastructure.external.conference_member_extractor.baml_extractor import (
-    BAMLMemberExtractor,
-)
+
+
+if TYPE_CHECKING:
+    from src.domain.interfaces.member_extractor_service import IMemberExtractorService
 
 
 logger = logging.getLogger(__name__)
 
 
-def create_conference_member_extraction_tools() -> list[Any]:
+def create_conference_member_extraction_tools(
+    member_extractor: "IMemberExtractorService | None" = None,
+) -> list[Any]:
     """会議体メンバー抽出用のLangGraphツールを作成
+
+    Args:
+        member_extractor: メンバー抽出サービス（省略時はファクトリから取得）
+            テスト時にモックを注入可能
 
     Returns:
         LangGraphツールのリスト:
@@ -31,6 +38,8 @@ def create_conference_member_extraction_tools() -> list[Any]:
         - validate_extracted_members: 抽出結果を検証
         - deduplicate_members: 重複メンバーを除去
     """
+    # 外部からextractorが渡されない場合はファクトリから取得
+    _extractor = member_extractor
 
     @tool
     async def extract_members_from_html(
@@ -91,9 +100,16 @@ def create_conference_member_extraction_tools() -> list[Any]:
                 f"(HTML size: {len(html_content)} chars)"
             )
 
-            # BAMLMemberExtractorを使用して抽出
-            extractor = BAMLMemberExtractor()
-            members: list[ExtractedMemberDTO] = await extractor.extract_members(
+            # 依存性注入: 外部からextractorが渡されていない場合はファクトリから取得
+            nonlocal _extractor
+            if _extractor is None:
+                from src.infrastructure.external.conference_member_extractor.factory import (  # noqa: E501
+                    MemberExtractorFactory,
+                )
+
+                _extractor = MemberExtractorFactory.create()
+
+            members: list[ExtractedMemberDTO] = await _extractor.extract_members(
                 html_content=html_content,
                 conference_name=conference_name,
             )
