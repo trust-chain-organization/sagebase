@@ -189,6 +189,36 @@ def _create_conference_member_extraction_agent():
     return MemberExtractorFactory.create_agent()
 
 
+def _create_politician_matching_agent(
+    politician_repo: "PoliticianRepositoryImpl",
+    affiliation_repo: "PoliticianAffiliationRepositoryImpl",
+):
+    """政治家マッチングエージェントを作成するヘルパー関数
+
+    遅延インポートを使用して循環参照を回避します。
+    Issue #904: LangGraph+BAML統合（政治家マッチング）
+
+    Args:
+        politician_repo: PoliticianRepository（必須）
+        affiliation_repo: PoliticianAffiliationRepository（必須）
+    """
+    from langchain_google_genai import ChatGoogleGenerativeAI
+
+    from src.infrastructure.external.langgraph_politician_matching_agent import (
+        PoliticianMatchingAgent,
+    )
+
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.0-flash",
+        temperature=0.0,
+    )
+    return PoliticianMatchingAgent(
+        llm=llm,
+        politician_repo=politician_repo,
+        affiliation_repo=affiliation_repo,
+    )
+
+
 # Mock SQLAlchemy model classes for repositories that don't have them yet
 class MockSpeakerModel:
     """Mock SQLAlchemy model for Speaker entity."""
@@ -701,4 +731,13 @@ class UseCaseContainer(containers.DeclarativeContainer):
     view_activity_trend_usecase = providers.Factory(
         ViewActivityTrendUseCase,
         data_coverage_repo=repositories.data_coverage_repository,
+    )
+
+    # Politician matching agent (Issue #904)
+    # LangGraph + BAMLの二層構造を持つエージェント
+    # リポジトリを注入してService Locatorパターンを回避
+    politician_matching_agent = providers.Factory(
+        _create_politician_matching_agent,
+        politician_repo=repositories.politician_repository,
+        affiliation_repo=repositories.politician_affiliation_repository,
     )

@@ -8,6 +8,9 @@ from src.application.usecases.authenticate_user_usecase import (
     AuthenticateUserUseCase,
 )
 from src.infrastructure.di.container import Container
+from src.infrastructure.external.langgraph_tools.politician_matching_tools import (
+    create_politician_matching_tools,
+)
 from src.infrastructure.external.langgraph_tools.speaker_matching_tools import (
     create_speaker_matching_tools,
 )
@@ -21,7 +24,14 @@ def render_conversations_speakers_page() -> None:
 
     # Create tabs
     tabs = st.tabs(
-        ["発言者一覧", "発言マッチング", "統計情報", "ツールテスト", "Agentテスト"]
+        [
+            "発言者一覧",
+            "発言マッチング",
+            "統計情報",
+            "ツールテスト",
+            "Agentテスト",
+            "政治家マッチングAgent",
+        ]
     )
 
     with tabs[0]:
@@ -38,6 +48,9 @@ def render_conversations_speakers_page() -> None:
 
     with tabs[4]:
         render_agent_test_tab()
+
+    with tabs[5]:
+        render_politician_matching_agent_tab()
 
 
 def render_speakers_list_tab() -> None:
@@ -732,6 +745,427 @@ def render_agent_test_tab() -> None:
     2. 上位候補の追加情報を検索
     3. 確信度判定ツールで最終判定
     4. 確信度0.8以上ならマッチング成功
+
+    **注意:**
+    - エージェントの実行には数秒〜十数秒かかることがあります
+    - LLM API（Gemini）を使用するため、API キーが必要です
+    """)
+
+
+def render_politician_matching_agent_tab() -> None:
+    """Test PoliticianMatchingAgent (Issue #904)."""
+    st.subheader("🤖 政治家マッチングAgentテスト")
+
+    st.markdown("""
+    ### PoliticianMatchingAgent の動作確認 (Issue #904)
+
+    LangGraphのReActエージェントを使用した政治家マッチングをテストします。
+    BAMLをLLM通信層として使用し、反復的推論で高精度なマッチングを実現します。
+
+    **使用するツール:**
+    1. `search_politician_candidates`: 候補検索・スコアリング
+    2. `verify_politician_affiliation`: 所属情報検証
+    3. `match_politician_with_baml`: BAMLマッチング実行
+    """)
+
+    # Create sub-tabs for tools and agent test
+    sub_tabs = st.tabs(["🛠️ ツール個別テスト", "🚀 Agentテスト"])
+
+    with sub_tabs[0]:
+        render_politician_matching_tools_test()
+
+    with sub_tabs[1]:
+        render_politician_matching_agent_test()
+
+
+def render_politician_matching_tools_test() -> None:
+    """Test politician matching tools individually."""
+    st.markdown("### 政治家マッチング用ツールの個別テスト")
+
+    tool_tabs = st.tabs(["① 候補検索", "② 所属検証", "③ BAMLマッチング"])
+
+    with tool_tabs[0]:
+        render_politician_search_test()
+
+    with tool_tabs[1]:
+        render_politician_affiliation_test()
+
+    with tool_tabs[2]:
+        render_politician_baml_match_test()
+
+
+def render_politician_search_test() -> None:
+    """Test search_politician_candidates tool."""
+    st.subheader("政治家候補の検索・スコアリング")
+
+    st.markdown("発言者名を入力すると、政治家候補をスコア順に表示します。")
+
+    speaker_name = st.text_input(
+        "発言者名",
+        value="田中太郎",
+        help="マッチング対象の発言者名",
+        key="pol_search_speaker_name",
+    )
+
+    speaker_party = st.text_input(
+        "所属政党（オプション）",
+        value="",
+        help="政党が一致するとスコアがブーストされます",
+        key="pol_search_party",
+    )
+
+    max_candidates = st.slider(
+        "最大候補数",
+        min_value=5,
+        max_value=30,
+        value=10,
+        key="pol_search_max",
+    )
+
+    if st.button("候補を検索", type="primary", key="pol_search_button"):
+        if not speaker_name:
+            st.warning("発言者名を入力してください")
+            return
+
+        with st.spinner("候補を検索中..."):
+            try:
+                container = Container.create_for_environment()
+                tools = create_politician_matching_tools(
+                    politician_repo=container.repositories.politician_repository(),
+                    affiliation_repo=(
+                        container.repositories.politician_affiliation_repository()
+                    ),
+                )
+                search_tool = tools[0]
+
+                tool_input = {
+                    "speaker_name": speaker_name,
+                    "max_candidates": max_candidates,
+                }
+                if speaker_party:
+                    tool_input["speaker_party"] = speaker_party
+
+                result = asyncio.run(search_tool.ainvoke(tool_input))
+
+                if "error" in result:
+                    st.error(f"エラー: {result['error']}")
+                else:
+                    st.success(
+                        f"✅ {result['total_candidates']}人の候補から"
+                        f"上位{len(result['candidates'])}人を表示"
+                    )
+
+                    for i, candidate in enumerate(result.get("candidates", []), 1):
+                        col1, col2, col3 = st.columns([3, 2, 2])
+                        with col1:
+                            st.markdown(f"**{i}. {candidate.get('politician_name')}**")
+                        with col2:
+                            score = candidate.get("score", 0.0)
+                            st.metric("スコア", f"{score:.2f}")
+                        with col3:
+                            match_type = candidate.get("match_type", "")
+                            type_label = {
+                                "exact": "🎯 完全一致",
+                                "partial": "📍 部分一致",
+                                "fuzzy": "🔍 類似",
+                                "none": "❓ なし",
+                            }.get(match_type, match_type)
+                            st.write(type_label)
+
+                        party = candidate.get("party_name")
+                        if party:
+                            st.caption(f"政党: {party}")
+                        st.divider()
+
+            except Exception as e:
+                st.error(f"エラーが発生しました: {e}")
+                import traceback
+
+                with st.expander("エラー詳細"):
+                    st.code(traceback.format_exc())
+
+
+def render_politician_affiliation_test() -> None:
+    """Test verify_politician_affiliation tool."""
+    st.subheader("政治家所属情報の検証")
+
+    st.markdown("政治家IDを指定して、所属情報を検証します。")
+
+    politician_id = st.number_input(
+        "政治家ID",
+        value=1,
+        min_value=1,
+        key="pol_aff_id",
+    )
+
+    expected_party = st.text_input(
+        "期待される政党（オプション）",
+        value="",
+        help="指定すると、政党の一致を確認します",
+        key="pol_aff_party",
+    )
+
+    if st.button("所属を検証", type="primary", key="pol_aff_button"):
+        with st.spinner("所属情報を検証中..."):
+            try:
+                container = Container.create_for_environment()
+                tools = create_politician_matching_tools(
+                    politician_repo=container.repositories.politician_repository(),
+                    affiliation_repo=(
+                        container.repositories.politician_affiliation_repository()
+                    ),
+                )
+                verify_tool = tools[1]
+
+                tool_input: dict[str, int | str] = {"politician_id": politician_id}
+                if expected_party:
+                    tool_input["expected_party"] = expected_party
+
+                result = asyncio.run(verify_tool.ainvoke(tool_input))
+
+                if "error" in result:
+                    st.error(f"エラー: {result['error']}")
+                else:
+                    st.success(f"✅ {result['politician_name']} の情報を取得しました")
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric("政治家名", result.get("politician_name", "N/A"))
+                    with col2:
+                        st.metric("所属政党", result.get("current_party", "N/A"))
+
+                    if expected_party:
+                        party_matches = result.get("party_matches")
+                        if party_matches:
+                            st.success("✅ 政党が一致しています")
+                        else:
+                            st.warning("⚠️ 政党が一致しません")
+
+                    affiliations = result.get("affiliations", [])
+                    if affiliations:
+                        st.markdown("### 所属会議体")
+                        for aff in affiliations:
+                            st.write(
+                                f"- 会議体ID: {aff.get('conference_id')}, "
+                                f"開始: {aff.get('start_date')}, "
+                                f"終了: {aff.get('end_date', '現在')}"
+                            )
+
+            except Exception as e:
+                st.error(f"エラーが発生しました: {e}")
+                import traceback
+
+                with st.expander("エラー詳細"):
+                    st.code(traceback.format_exc())
+
+
+def render_politician_baml_match_test() -> None:
+    """Test match_politician_with_baml tool."""
+    st.subheader("BAMLによる政治家マッチング")
+
+    st.markdown("BAMLを使用して、候補から最適な政治家を選択します。")
+
+    speaker_name = st.text_input(
+        "発言者名",
+        value="田中太郎",
+        key="pol_baml_speaker",
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        speaker_type = st.text_input(
+            "発言者種別",
+            value="議員",
+            key="pol_baml_type",
+        )
+    with col2:
+        speaker_party = st.text_input(
+            "発言者政党",
+            value="〇〇党",
+            key="pol_baml_party",
+        )
+
+    st.markdown("### 候補政治家（JSON）")
+    default_json = (
+        '[{"politician_id": 1, "politician_name": "田中太郎", "party_name": "〇〇党"}]'
+    )
+    candidates_json = st.text_area(
+        "候補JSON",
+        value=default_json,
+        height=100,
+        key="pol_baml_candidates",
+    )
+
+    if st.button("BAMLマッチング実行", type="primary", key="pol_baml_button"):
+        if not speaker_name:
+            st.warning("発言者名を入力してください")
+            return
+
+        with st.spinner("BAMLマッチング中..."):
+            try:
+                container = Container.create_for_environment()
+                tools = create_politician_matching_tools(
+                    politician_repo=container.repositories.politician_repository(),
+                    affiliation_repo=(
+                        container.repositories.politician_affiliation_repository()
+                    ),
+                )
+                match_tool = tools[2]
+
+                result = asyncio.run(
+                    match_tool.ainvoke(
+                        {
+                            "speaker_name": speaker_name,
+                            "speaker_type": speaker_type,
+                            "speaker_party": speaker_party,
+                            "candidates_json": candidates_json,
+                        }
+                    )
+                )
+
+                if "error" in result:
+                    st.error(f"エラー: {result['error']}")
+                else:
+                    if result.get("matched"):
+                        st.success("✅ マッチング成功！")
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.metric(
+                                "マッチした政治家",
+                                result.get("politician_name"),
+                            )
+                        with col2:
+                            st.metric(
+                                "信頼度",
+                                f"{result.get('confidence', 0):.2f}",
+                            )
+                        st.info(f"理由: {result.get('reason')}")
+                    else:
+                        st.warning("⚠️ マッチなし")
+                        st.info(f"理由: {result.get('reason')}")
+
+            except Exception as e:
+                st.error(f"エラーが発生しました: {e}")
+                import traceback
+
+                with st.expander("エラー詳細"):
+                    st.code(traceback.format_exc())
+
+
+def render_politician_matching_agent_test() -> None:
+    """Test PoliticianMatchingAgent."""
+    st.markdown("### PoliticianMatchingAgent の実行")
+
+    st.info(
+        "このエージェントはReActパターンで動作し、"
+        "3つのツールを使って反復的にマッチングを行います。"
+    )
+
+    speaker_name = st.text_input(
+        "発言者名",
+        value="田中太郎",
+        help="マッチング対象の発言者名",
+        key="pol_agent_speaker",
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        speaker_type = st.text_input(
+            "発言者種別（オプション）",
+            value="",
+            help="例: 議員、委員",
+            key="pol_agent_type",
+        )
+    with col2:
+        speaker_party = st.text_input(
+            "発言者政党（オプション）",
+            value="",
+            help="所属政党",
+            key="pol_agent_party",
+        )
+
+    with st.expander("⚙️ 詳細設定"):
+        st.info(
+            "エージェントの設定（現在は固定値）\n\n"
+            "- MAX_REACT_STEPS: 10\n"
+            "- 信頼度閾値: 0.7"
+        )
+
+    if st.button("🚀 政治家マッチングAgentを実行", type="primary", key="pol_agent_btn"):
+        if not speaker_name:
+            st.warning("発言者名を入力してください")
+            return
+
+        with st.spinner("エージェントを実行中..."):
+            try:
+                # DIコンテナからエージェントを取得（Clean Architecture準拠）
+                container = Container.create_for_environment()
+                agent = container.use_cases.politician_matching_agent()
+
+                result = asyncio.run(
+                    agent.match_politician(
+                        speaker_name=speaker_name,
+                        speaker_type=speaker_type or None,
+                        speaker_party=speaker_party or None,
+                    )
+                )
+
+                st.markdown("### 🎯 マッチング結果")
+
+                if result.get("error_message"):
+                    st.error(f"エラー: {result['error_message']}")
+                elif result["matched"]:
+                    st.success("✅ マッチング成功！")
+
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric(
+                            "政治家名",
+                            result.get("politician_name", "Unknown"),
+                        )
+                    with col2:
+                        st.metric(
+                            "政党",
+                            result.get("political_party_name", "N/A"),
+                        )
+                    with col3:
+                        st.metric(
+                            "信頼度",
+                            f"{result.get('confidence', 0):.2f}",
+                        )
+
+                    st.markdown("### 判定理由")
+                    st.info(result.get("reason", ""))
+
+                    with st.expander("📋 詳細結果（JSON）"):
+                        st.json(dict(result))
+                else:
+                    st.warning("⚠️ マッチする政治家が見つかりませんでした")
+                    st.info(result.get("reason", ""))
+
+                    with st.expander("📋 詳細結果（JSON）"):
+                        st.json(dict(result))
+
+            except Exception as e:
+                st.error(f"エラーが発生しました: {e}")
+                import traceback
+
+                with st.expander("エラー詳細"):
+                    st.code(traceback.format_exc())
+
+    st.markdown("---")
+    st.markdown("""
+    ### 💡 使い方
+
+    1. **発言者名** を入力（例: 田中太郎）
+    2. 必要に応じて **発言者種別** と **発言者政党** を入力
+    3. **「🚀 政治家マッチングAgentを実行」** ボタンをクリック
+
+    **動作の流れ:**
+    1. エージェントが候補検索ツールで政治家候補を取得
+    2. 上位候補の所属情報を検証
+    3. BAMLを使用して最終的なマッチング判定
+    4. 信頼度0.7以上ならマッチング成功
 
     **注意:**
     - エージェントの実行には数秒〜十数秒かかることがあります
