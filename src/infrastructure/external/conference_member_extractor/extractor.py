@@ -58,7 +58,11 @@ class ConferenceMemberExtractor:
             agent: 会議体メンバー抽出エージェント（省略時はファクトリから作成）
         """
         # ファクトリーからLangGraphエージェントを作成
+        print("=" * 60)
+        print("★★★ ConferenceMemberExtractor.__init__ 呼び出し ★★★")
+        print("=" * 60)
         self._agent = agent or MemberExtractorFactory.create_agent()
+        print(f"★★★ エージェント作成完了: {type(self._agent).__name__} ★★★")
         self.repo = RepositoryAdapter(ExtractedConferenceMemberRepositoryImpl)
         self._update_usecase = update_usecase
         logger.info(
@@ -184,7 +188,10 @@ class ConferenceMemberExtractor:
         # HTMLをクリーニング
         cleaned_html = self.clean_html(html_content)
 
-        logger.info(f"★★★ LangGraphエージェント呼び出し: {conference_name} ★★★")
+        print("=" * 60)
+        print(f"★★★ LangGraphエージェント呼び出し: {conference_name} ★★★")
+        print(f"★★★ エージェントタイプ: {type(self._agent).__name__} ★★★")
+        print("=" * 60)
 
         # LangGraphエージェントでメンバーを抽出
         result = await self._agent.extract_members(
