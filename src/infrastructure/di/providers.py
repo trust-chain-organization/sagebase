@@ -176,6 +176,19 @@ from src.infrastructure.persistence.unit_of_work_impl import UnitOfWorkImpl
 from src.infrastructure.persistence.user_repository_impl import UserRepositoryImpl
 
 
+def _create_conference_member_extraction_agent():
+    """会議体メンバー抽出エージェントを作成するヘルパー関数
+
+    遅延インポートを使用して循環参照を回避します。
+    Issue #903: LangGraph+BAML統合
+    """
+    from src.infrastructure.external.conference_member_extractor.factory import (
+        MemberExtractorFactory,
+    )
+
+    return MemberExtractorFactory.create_agent()
+
+
 # Mock SQLAlchemy model classes for repositories that don't have them yet
 class MockSpeakerModel:
     """Mock SQLAlchemy model for Speaker entity."""
@@ -491,6 +504,12 @@ class ServiceContainer(containers.DeclarativeContainer):
     pdf_processor_service = providers.Factory(lambda: MockService("pdf_processor"))
 
     text_extractor_service = providers.Factory(lambda: MockService("text_extractor"))
+
+    # Conference member extraction agent (Issue #903)
+    # LangGraph + BAMLの二層構造を持つエージェント
+    conference_member_extraction_agent = providers.Factory(
+        lambda: _create_conference_member_extraction_agent()
+    )
 
 
 class UseCaseContainer(containers.DeclarativeContainer):
