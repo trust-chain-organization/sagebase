@@ -61,6 +61,9 @@ class ConferenceMemberExtractor:
         self._agent = agent or MemberExtractorFactory.create_agent()
         self.repo = RepositoryAdapter(ExtractedConferenceMemberRepositoryImpl)
         self._update_usecase = update_usecase
+        logger.info(
+            "★★★ ConferenceMemberExtractor: LangGraphエージェント経由で動作中 ★★★"
+        )
 
     async def fetch_html(self, url: str) -> str:
         """URLからHTMLを取得"""
@@ -180,6 +183,8 @@ class ConferenceMemberExtractor:
         """
         # HTMLをクリーニング
         cleaned_html = self.clean_html(html_content)
+
+        logger.info(f"★★★ LangGraphエージェント呼び出し: {conference_name} ★★★")
 
         # LangGraphエージェントでメンバーを抽出
         result = await self._agent.extract_members(
