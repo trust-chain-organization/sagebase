@@ -14,8 +14,6 @@ from src.domain.interfaces.member_extractor_service import IMemberExtractorServi
 
 
 if TYPE_CHECKING:
-    from langchain_core.language_models import BaseChatModel
-
     from src.infrastructure.external.langgraph_conference_member_extraction_agent import (
         ConferenceMemberExtractionAgent,
     )
@@ -48,31 +46,24 @@ class MemberExtractorFactory:
         return BAMLMemberExtractor()
 
     @staticmethod
-    def create_agent(
-        llm: "BaseChatModel | None" = None,
-    ) -> "ConferenceMemberExtractionAgent":
+    def create_agent() -> "ConferenceMemberExtractionAgent":
         """LangGraph会議体メンバー抽出エージェントを作成
 
         LangGraph（ワークフロー層）+ BAML（LLM通信層）の二層構造を持つ
-        ReActエージェントを作成します。
+        エージェントを作成します。
 
-        Args:
-            llm: LangChainのチャットモデル（省略時はデフォルトのGeminiモデルを使用）
+        処理フロー:
+        1. extract_members_from_html: HTMLからメンバーを抽出（BAML使用）
+        2. validate_extracted_members: 抽出結果を検証
+        3. deduplicate_members: 重複メンバーを除去
 
         Returns:
             ConferenceMemberExtractionAgent: LangGraphエージェント
         """
         logger.info("Creating LangGraph conference member extraction agent")
 
-        # 遅延インポートで循環参照を回避
-        from langchain_google_genai import ChatGoogleGenerativeAI
-
         from src.infrastructure.external.langgraph_conference_member_extraction_agent import (
             ConferenceMemberExtractionAgent,
         )
 
-        if llm is None:
-            # デフォルトのLLMを使用
-            llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp")
-
-        return ConferenceMemberExtractionAgent(llm=llm)
+        return ConferenceMemberExtractionAgent()
