@@ -18,9 +18,6 @@ from src.interfaces.web.streamlit.middleware.security_headers import (
 
 # Import new Clean Architecture views
 from src.interfaces.web.streamlit.views.conferences_view import render_conferences_page
-from src.interfaces.web.streamlit.views.conversations_speakers_view import (
-    render_conversations_speakers_page,
-)
 from src.interfaces.web.streamlit.views.conversations_view import (
     render_conversations_page,
 )
@@ -120,15 +117,9 @@ def main():
         ),
         st.Page(
             render_conversations_page,
-            title="発言レコード一覧",
-            icon="💬",
-            url_path="conversations",
-        ),
-        st.Page(
-            render_conversations_speakers_page,
             title="発言・発言者管理",
             icon="🎤",
-            url_path="conversations_speakers",
+            url_path="conversations",
         ),
         st.Page(
             render_llm_history_page, title="LLM履歴", icon="🤖", url_path="llm_history"
@@ -192,8 +183,7 @@ def render_home_page():
     - **👥 政治家レビュー**: スクレイピングで抽出した政治家データの確認
     - **👥 議員団管理**: 議員団・会派の情報を管理
     - **📋 議案管理**: 議案の情報を自動収集・管理
-    - **💬 発言レコード一覧**: 会議での発言記録を閲覧
-    - **🎤 発言・発言者管理**: 発言者と発言の詳細管理
+    - **🎤 発言・発言者管理**: 発言記録と発言者の管理・マッチング
     - **🤖 LLM履歴**: LLM処理の履歴を確認
 
     ### 基本的なワークフロー
