@@ -65,9 +65,14 @@ theme = 'PaperMod'
   weight = 30
 
 [[menu.main]]
+  name = '定款'
+  url = '/corporate/teikan/'
+  weight = 40
+
+[[menu.main]]
   name = 'お問い合わせ'
   url = '/contact/'
-  weight = 40
+  weight = 50
 
 # 出力設定
 [outputs]
