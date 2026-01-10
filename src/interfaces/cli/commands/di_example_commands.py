@@ -11,7 +11,7 @@ from typing import Any
 
 import click
 
-from src.infrastructure.di.container import ApplicationContainer, init_container
+from src.infrastructure.di.container import init_container
 
 
 @click.command()
@@ -62,71 +62,6 @@ def process_minutes_with_di(meeting_id: int, environment: str) -> None:
 
         # Run the async function
         asyncio.run(run_process())
-
-    except Exception as e:
-        click.echo(f"Error: {e}", err=True)
-        sys.exit(1)
-
-
-@click.command()
-@click.option(
-    "--party-id",
-    type=int,
-    help="Specific party ID to scrape",
-)
-@click.option(
-    "--all-parties",
-    is_flag=True,
-    help="Scrape all parties",
-)
-@click.option(
-    "--dry-run",
-    is_flag=True,
-    help="Perform a dry run without saving to database",
-)
-def scrape_politicians_with_di(
-    party_id: int | None, all_parties: bool, dry_run: bool
-) -> None:
-    """Scrape politicians using DI container.
-
-    This example shows how to use dependency injection for external service operations.
-    """
-    if not party_id and not all_parties:
-        click.echo("Error: Specify either --party-id or --all-parties", err=True)
-        sys.exit(1)
-
-    try:
-        # Initialize container
-        container = ApplicationContainer.create_for_environment()
-
-        # Get the use case
-        scrape_politicians_usecase = container.use_cases.scrape_politicians_usecase()
-
-        # Execute the use case
-        async def run_scrape():
-            from src.application.dtos.politician_dto import ScrapePoliticiansInputDTO
-
-            if all_parties:
-                # Get all parties from repository
-                party_repo = container.repositories.political_party_repository()
-                parties = await party_repo.find_all()
-                party_ids = [party.id for party in parties if party.members_list_url]
-            else:
-                party_ids = [party_id] if party_id else []
-
-            for pid in party_ids:
-                input_dto = ScrapePoliticiansInputDTO(
-                    party_id=pid,
-                    dry_run=dry_run,
-                )
-
-                result = await scrape_politicians_usecase.execute(input_dto)
-
-                # Result is a list of PoliticianDTO
-                politician_count = len(result)
-                click.echo(f"✅ Party {pid}: {politician_count} politicians processed")
-
-        asyncio.run(run_scrape())
 
     except Exception as e:
         click.echo(f"Error: {e}", err=True)
@@ -279,7 +214,6 @@ def get_di_example_commands() -> list[Any]:
     """
     return [
         process_minutes_with_di,
-        scrape_politicians_with_di,
         show_container_info,
         health_check_with_di,
     ]
