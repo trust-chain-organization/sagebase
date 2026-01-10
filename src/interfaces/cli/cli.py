@@ -22,7 +22,6 @@ from src.interfaces.cli.commands.parliamentary_group_commands import (
 from src.interfaces.cli.commands.parliamentary_group_member_commands import (
     get_parliamentary_group_member_commands,
 )
-from src.interfaces.cli.commands.politician_commands import get_politician_commands
 from src.interfaces.cli.commands.prompt_commands import get_prompt_commands
 from src.interfaces.cli.commands.proposal_commands import get_proposal_commands
 from src.interfaces.cli.commands.seed_commands import get_seed_commands
@@ -94,7 +93,6 @@ def register_legacy_commands(cli_group: click.Group) -> None:
     """
     # Commands still using the old structure
     command_getters: list[Callable[[], list[click.Command]]] = [
-        get_politician_commands,
         get_conference_member_commands,
         get_parliamentary_group_commands,
         get_parliamentary_group_member_commands,

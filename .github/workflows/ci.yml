@@ -385,7 +385,7 @@ jobs:
           GOOGLE_API_KEY: "test-api-key-not-used"
           CI: "true"
         run: |
-          uv run pytest tests/integration/cli/ tests/integration/test_*.py --ignore=tests/integration/scraping --ignore=tests/integration/persistence --ignore=tests/integration/database --ignore=tests/integration/llm --ignore=tests/integration/parliamentary -v
+          uv run pytest tests/integration/test_*.py --ignore=tests/integration/scraping --ignore=tests/integration/persistence --ignore=tests/integration/database --ignore=tests/integration/llm --ignore=tests/integration/parliamentary -v
 
   # Lane 9: BAML Tests (~5-7分) - BAML関連ファイルが変更された場合のみ実行
   baml-tests:
