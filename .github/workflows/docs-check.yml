@@ -54,6 +54,9 @@ jobs:
             # docs/guides
             "^docs/guides/.*\.md$"
 
+            # docs/corporate（法人情報）
+            "^docs/corporate/.*\.md$"
+
             # その他の許可されたディレクトリ
             "^terraform/.*\.md$"
             "^docker/.*\.md$"
