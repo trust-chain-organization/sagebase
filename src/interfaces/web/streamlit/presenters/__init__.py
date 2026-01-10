@@ -8,7 +8,6 @@ from .meeting_presenter import MeetingPresenter
 from .parliamentary_group_presenter import ParliamentaryGroupPresenter
 from .political_party_presenter import PoliticalPartyPresenter
 from .politician_presenter import PoliticianPresenter
-from .process_presenter import ProcessPresenter
 
 
 __all__ = [
@@ -20,5 +19,4 @@ __all__ = [
     "ParliamentaryGroupPresenter",
     "PoliticalPartyPresenter",
     "PoliticianPresenter",
-    "ProcessPresenter",
 ]

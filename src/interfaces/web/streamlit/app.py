@@ -42,7 +42,6 @@ from src.interfaces.web.streamlit.views.political_parties_view import (
     render_political_parties_page,
 )
 from src.interfaces.web.streamlit.views.politicians_view import render_politicians_page
-from src.interfaces.web.streamlit.views.processes_view import render_processes_page
 from src.interfaces.web.streamlit.views.proposals_view import render_proposals_page
 from src.interfaces.web.streamlit.views.user_statistics_view import (
     render_user_statistics_page,
@@ -132,9 +131,6 @@ def main():
             url_path="conversations_speakers",
         ),
         st.Page(
-            render_processes_page, title="処理実行", icon="⚙️", url_path="processes"
-        ),
-        st.Page(
             render_llm_history_page, title="LLM履歴", icon="🤖", url_path="llm_history"
         ),
         st.Page(
@@ -198,7 +194,6 @@ def render_home_page():
     - **📋 議案管理**: 議案の情報を自動収集・管理
     - **💬 発言レコード一覧**: 会議での発言記録を閲覧
     - **🎤 発言・発言者管理**: 発言者と発言の詳細管理
-    - **⚙️ 処理実行**: 各種データ処理の実行
     - **🤖 LLM履歴**: LLM処理の履歴を確認
 
     ### 基本的なワークフロー
@@ -210,8 +205,7 @@ def render_home_page():
 
     #### 2. データ収集
     1. **会議管理**で会議録のPDFをアップロードまたはURLを登録
-    2. **処理実行**で会議録を処理（PDFから発言を抽出）
-    3. **政党管理**から政治家情報をスクレイピング
+    2. **政党管理**から政治家情報をスクレイピング
 
     #### 3. データ確認・分析
     1. **発言レコード一覧**で抽出された発言を確認
