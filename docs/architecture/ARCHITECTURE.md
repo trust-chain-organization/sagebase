@@ -24,8 +24,8 @@ graph TB
 
     subgraph application["⚙️ Application Layer"]
         direction LR
-        UC["Use Cases (21)<br/>ProcessMinutesUseCase<br/>MatchSpeakersUseCase<br/>ScrapePoliticiansUseCase"]
-        DTO["DTOs (16)<br/>Data Transfer Objects"]
+        UC["Use Cases (15)<br/>ProcessMinutesUseCase<br/>MatchSpeakersUseCase"]
+        DTO["DTOs (13)<br/>Data Transfer Objects"]
     end
 
     subgraph domain["🎯 Domain Layer (Core)"]
@@ -111,7 +111,6 @@ graph TB
 
 - **ProcessMinutesUseCase**: 議事録処理
 - **MatchSpeakersUseCase**: 発言者と政治家のマッチング
-- **ScrapePoliticiansUseCase**: 政治家情報のスクレイピング
 - **ManageConferenceMembersUseCase**: 会議体メンバー管理
 
 ### 3. インフラストラクチャ層 (Infrastructure Layer)

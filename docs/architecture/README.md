@@ -71,7 +71,6 @@ Polibaseは、保守性とテスト容易性を向上させるため、Clean Arc
 │  │               Use Cases                          │  │
 │  │  - ProcessMinutesUseCase                         │  │
 │  │  - MatchSpeakersUseCase                          │  │
-│  │  - ScrapePoliticiansUseCase                      │  │
 │  │  - ManageConferenceMembersUseCase                │  │
 │  └──────────────────────────────────────────────────┘  │
 │  ┌──────────────────────────────────────────────────┐  │

@@ -43,7 +43,6 @@ sagebase/
 - `usecases/`: ユースケース実装
   - `process_minutes_usecase.py`: 議事録処理
   - `match_speakers_usecase.py`: 話者マッチング
-  - `scrape_politicians_usecase.py`: 政治家情報収集
   - `manage_conference_members_usecase.py`: 議員管理
   - `manage_parliamentary_groups_usecase.py`: 議員団管理
 - `dtos/`: データ転送オブジェクト

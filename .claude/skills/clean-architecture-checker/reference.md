@@ -89,11 +89,10 @@ External service abstractions:
 
 **Contains**:
 
-#### Use Cases (21 files)
+#### Use Cases (15 files)
 Application-specific business rules:
 - `ProcessMinutesUseCase`: Orchestrates minutes processing workflow
 - `MatchSpeakersUseCase`: Speaker-politician matching coordination
-- `ScrapePoliticiansUseCase`: Party member scraping workflow
 - `ManageConferenceMembersUseCase`: Conference member management
 - `ExtractConferenceMembersUseCase`: Conference member extraction
 - `MatchConferenceMembersUseCase`: Conference member matching

@@ -221,27 +221,9 @@ JSON形式で、以下のような構造で返してください:
             if not html_content:
                 return {"members": []}
 
-            # Get dependencies for extraction logging
-            from src.infrastructure.di.container import (
-                get_container,
-                init_container,
-            )
-
-            try:
-                container = get_container()
-            except RuntimeError:
-                container = init_container()
-
-            politician_repository = container.repositories.politician_repository()
-            update_politician_usecase = (
-                container.use_cases.update_politician_from_extraction_usecase()
-            )
-
-            # Use PartyMemberExtractor (new async interface)
+            # Use PartyMemberExtractor (BAML interface)
             extractor = PartyMemberExtractorFactory.create(
                 llm_service=self.llm_service,
-                politician_repository=politician_repository,
-                update_politician_usecase=update_politician_usecase,
             )
             result = await extractor.extract_from_html(
                 html_content, source_url, party_name

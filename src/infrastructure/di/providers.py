@@ -11,9 +11,6 @@ from sqlalchemy.orm import sessionmaker
 from src.application.usecases.analyze_party_page_links_usecase import (
     AnalyzePartyPageLinksUseCase,
 )
-from src.application.usecases.convert_extracted_politician_usecase import (
-    ConvertExtractedPoliticianUseCase,
-)
 from src.application.usecases.execute_minutes_processing_usecase import (
     ExecuteMinutesProcessingUseCase,
 )
@@ -28,21 +25,11 @@ from src.application.usecases.manage_conference_members_usecase import (
 )
 from src.application.usecases.match_speakers_usecase import MatchSpeakersUseCase
 from src.application.usecases.process_minutes_usecase import ProcessMinutesUseCase
-from src.application.usecases.review_and_convert_politician_usecase import (
-    ReviewAndConvertPoliticianUseCase,
-)
-from src.application.usecases.review_extracted_politician_usecase import (
-    ReviewExtractedPoliticianUseCase,
-)
-from src.application.usecases.scrape_politicians_usecase import ScrapePoliticiansUseCase
 from src.application.usecases.update_extracted_conference_member_from_extraction_usecase import (  # noqa: E501
     UpdateExtractedConferenceMemberFromExtractionUseCase,
 )
 from src.application.usecases.update_extracted_parliamentary_group_member_from_extraction_usecase import (  # noqa: E501
     UpdateExtractedParliamentaryGroupMemberFromExtractionUseCase,
-)
-from src.application.usecases.update_politician_from_extraction_usecase import (
-    UpdatePoliticianFromExtractionUseCase,
 )
 from src.application.usecases.update_speaker_from_extraction_usecase import (
     UpdateSpeakerFromExtractionUseCase,
@@ -585,20 +572,11 @@ class UseCaseContainer(containers.DeclarativeContainer):
         session_adapter=database.async_session,
     )
 
-    # Update Politician from Extraction UseCase (Issue #885)
-    update_politician_usecase = providers.Factory(
-        UpdatePoliticianFromExtractionUseCase,
-        politician_repo=repositories.politician_repository,
-        extraction_log_repo=repositories.extraction_log_repository,
-        session_adapter=database.async_session,
-    )
-
     # BAML Politician Matching Service (Issue #885)
     baml_politician_matching_service = providers.Factory(
         BAMLPoliticianMatchingService,
         llm_service=services.async_llm_service,
         politician_repository=repositories.politician_repository,
-        update_politician_usecase=update_politician_usecase,
     )
 
     match_speakers_usecase = providers.Factory(
@@ -613,7 +591,6 @@ class UseCaseContainer(containers.DeclarativeContainer):
     )
 
     # Define analyze_party_page_links_usecase, link_analyzer_service, and party_scraping_agent
-    # before scrape_politicians_usecase to resolve dependencies
     analyze_party_page_links_usecase = providers.Factory(
         AnalyzePartyPageLinksUseCase,
         html_extractor=services.html_link_extractor_service,
@@ -634,13 +611,6 @@ class UseCaseContainer(containers.DeclarativeContainer):
         link_analyzer=link_analyzer_service,
     )
 
-    scrape_politicians_usecase = providers.Factory(
-        ScrapePoliticiansUseCase,
-        political_party_repository=repositories.political_party_repository,
-        extracted_politician_repository=repositories.extracted_politician_repository,
-        party_scraping_agent=party_scraping_agent,
-    )
-
     manage_conference_members_usecase = providers.Factory(
         ManageConferenceMembersUseCase,
         conference_repository=repositories.conference_repository,
@@ -649,26 +619,6 @@ class UseCaseContainer(containers.DeclarativeContainer):
         politician_affiliation_repository=repositories.politician_affiliation_repository,
         web_scraper_service=services.web_scraper_service,
         llm_service=services.llm_service,
-    )
-
-    review_extracted_politician_usecase = providers.Factory(
-        ReviewExtractedPoliticianUseCase,
-        extracted_politician_repository=repositories.extracted_politician_repository,
-        party_repository=repositories.political_party_repository,
-    )
-
-    convert_extracted_politician_usecase = providers.Factory(
-        ConvertExtractedPoliticianUseCase,
-        extracted_politician_repository=repositories.extracted_politician_repository,
-        politician_repository=repositories.politician_repository,
-        speaker_repository=repositories.speaker_repository,
-    )
-
-    review_and_convert_politician_usecase = providers.Factory(
-        ReviewAndConvertPoliticianUseCase,
-        review_use_case=review_extracted_politician_usecase,
-        convert_use_case=convert_extracted_politician_usecase,
-        extracted_politician_repository=repositories.extracted_politician_repository,
     )
 
     speaker_extraction_usecase = providers.Factory(

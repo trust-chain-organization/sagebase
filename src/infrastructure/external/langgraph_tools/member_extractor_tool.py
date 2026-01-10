@@ -84,27 +84,9 @@ def create_member_extractor_tools(
             "山田太郎"
         """
         try:
-            # Get dependencies for extraction logging
-            from src.infrastructure.di.container import (
-                get_container,
-                init_container,
-            )
-
-            try:
-                container = get_container()
-            except RuntimeError:
-                container = init_container()
-
-            politician_repository = container.repositories.politician_repository()
-            update_politician_usecase = (
-                container.use_cases.update_politician_from_extraction_usecase()
-            )
-
             # Create extractor instance
             extractor = PartyMemberExtractorFactory.create(
                 llm_service=llm_service,
-                politician_repository=politician_repository,
-                update_politician_usecase=update_politician_usecase,
             )
 
             # Create WebPageContent from inputs

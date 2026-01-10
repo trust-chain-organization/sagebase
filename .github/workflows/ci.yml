@@ -474,7 +474,6 @@ jobs:
       matrix:
         test:
           - statement
-          - politician
           - speaker
           - conference_member
           - parliamentary_group_member

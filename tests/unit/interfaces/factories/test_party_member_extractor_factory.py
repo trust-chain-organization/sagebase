@@ -36,29 +36,15 @@ class TestPartyMemberExtractorFactory:
         # Assert
         assert isinstance(extractor, IPartyMemberExtractorService)
 
-    def test_create_with_dependencies(self) -> None:
-        """依存関係を注入してBAML実装を作成できること"""
+    def test_create_with_llm_service(self) -> None:
+        """llm_serviceパラメータを渡してもBAML実装を作成できること（後方互換性）"""
         # Arrange
-        mock_politician_repo = MagicMock()
-        mock_update_usecase = MagicMock()
+        mock_llm_service = MagicMock()
 
         # Act
         extractor = PartyMemberExtractorFactory.create(
-            politician_repository=mock_politician_repo,
-            update_politician_usecase=mock_update_usecase,
+            llm_service=mock_llm_service,
         )
 
         # Assert
         assert isinstance(extractor, BAMLPartyMemberExtractor)
-        assert extractor._politician_repository is mock_politician_repo
-        assert extractor._update_politician_usecase is mock_update_usecase
-
-    def test_create_without_dependencies_maintains_backward_compatibility(self) -> None:
-        """依存関係なしで作成しても後方互換性があること"""
-        # Act
-        extractor = PartyMemberExtractorFactory.create()
-
-        # Assert
-        assert isinstance(extractor, BAMLPartyMemberExtractor)
-        assert extractor._politician_repository is None
-        assert extractor._update_politician_usecase is None

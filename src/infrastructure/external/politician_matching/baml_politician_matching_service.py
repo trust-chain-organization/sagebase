@@ -7,7 +7,6 @@ Clean Architecture準拠:
     - Infrastructure層に配置
     - Domain層のインターフェース（IPoliticianMatchingService）を実装
     - Domain層のValue Object（PoliticianMatch）を戻り値として使用
-    - Application層のDTO/UseCaseに依存（Infrastructure層なので許可）
 """
 
 import logging
@@ -19,12 +18,6 @@ from baml_py.errors import BamlValidationError
 
 from baml_client.async_client import b
 
-from src.application.dtos.extraction_result.politician_extraction_result import (
-    PoliticianExtractionResult,
-)
-from src.application.usecases.update_politician_from_extraction_usecase import (
-    UpdatePoliticianFromExtractionUseCase,
-)
 from src.domain.exceptions import ExternalServiceException
 from src.domain.repositories.politician_repository import PoliticianRepository
 from src.domain.services.interfaces.llm_service import ILLMService
@@ -43,14 +36,12 @@ class BAMLPoliticianMatchingService:
     特徴:
         - ルールベースマッチング（高速パス）とBAMLマッチングのハイブリッド
         - トークン効率とパース精度の向上
-        - 抽出ログの自動記録
     """
 
     def __init__(
         self,
         llm_service: ILLMService,  # 互換性のため保持（BAML使用時は不要）
         politician_repository: PoliticianRepository,
-        update_politician_usecase: UpdatePoliticianFromExtractionUseCase,
     ):
         """
         Initialize BAML politician matching service
@@ -58,11 +49,9 @@ class BAMLPoliticianMatchingService:
         Args:
             llm_service: 互換性のためのパラメータ（BAML使用時は不要）
             politician_repository: Politician repository instance (domain interface)
-            update_politician_usecase: 政治家更新UseCase（抽出ログ記録用）
         """
         self.llm_service = llm_service
         self.politician_repository = politician_repository
-        self._update_politician_usecase = update_politician_usecase
         logger.info("BAMLPoliticianMatchingService 初期化完了")
 
     # 役職のみの発言者名パターン（個人を特定できないためマッチ対象外）
@@ -136,8 +125,6 @@ class BAMLPoliticianMatchingService:
         )
         if rule_based_match.matched and rule_based_match.confidence >= 0.9:
             logger.info(f"ルールベースマッチング成功: '{speaker_name}'")
-            # ルールベースマッチングでも抽出ログを記録
-            await self._log_matching_result(rule_based_match)
             return rule_based_match
 
         # BAMLによる高度なマッチング
@@ -182,9 +169,6 @@ class BAMLPoliticianMatchingService:
                 f"BAMLマッチング結果: '{speaker_name}' - "
                 f"matched={match_result.matched}, confidence={match_result.confidence}"
             )
-
-            # マッチングが成功した場合、抽出ログを記録
-            await self._log_matching_result(match_result)
 
             return match_result
 
@@ -332,29 +316,3 @@ class BAMLPoliticianMatchingService:
                 info += f", 選挙区: {p['electoral_district']}"
             formatted.append(info)
         return "\n".join(formatted)
-
-    async def _log_matching_result(self, match_result: PoliticianMatch) -> None:
-        """マッチング結果を抽出ログに記録する。
-
-        Args:
-            match_result: マッチング結果
-        """
-        if match_result.matched and match_result.politician_id:
-            extraction_result = PoliticianExtractionResult(
-                match_confidence=match_result.confidence,
-                match_reason=match_result.reason,
-            )
-
-            try:
-                await self._update_politician_usecase.execute(
-                    entity_id=match_result.politician_id,
-                    extraction_result=extraction_result,
-                    pipeline_version="politician-matching-v1",
-                )
-                logger.debug(
-                    "政治家マッチングをログに記録: "
-                    f"politician_id={match_result.politician_id}"
-                )
-            except Exception as log_error:
-                # ログ記録の失敗はマッチング結果に影響しない
-                logger.error(f"政治家マッチングのログ記録に失敗: {log_error}")

@@ -783,10 +783,9 @@ graph TB
      - `ILLMService`, `IStorageService`, `IWebScraperService` など
 
 2. **アプリケーション層** (`src/application/`) - ✅ 完全実装
-   - **ユースケース** (21ファイル): アプリケーション固有のビジネスルール
+   - **ユースケース** (15ファイル): アプリケーション固有のビジネスルール
      - `ProcessMinutesUseCase`: 議事録処理ワークフロー
      - `MatchSpeakersUseCase`: 発言者マッチング
-     - `ScrapePoliticiansUseCase`: 政治家情報収集
      - その他管理系ユースケース
    - **DTO** (16ファイル): レイヤー間のデータ転送オブジェクト
      - ドメインエンティティの漏洩を防ぐ

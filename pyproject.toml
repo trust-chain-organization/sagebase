@@ -131,7 +131,6 @@ forced-separate = ["src"]
 
 [tool.ruff.lint.per-file-ignores]
 # Ignore E501 (line too long) for debug print statements
-"src/application/usecases/scrape_politicians_usecase.py" = ["E501"]
 "src/domain/services/link_analysis_domain_service.py" = ["E501"]
 "src/infrastructure/di/providers.py" = ["E501"]
 "src/infrastructure/external/langgraph_nodes/decision_node.py" = ["E501"]

@@ -162,26 +162,7 @@ class PlaywrightScraperService(IWebScraperService):
                 # Extract party members using LLM
                 logger.info("🤖 LLMで政治家情報を抽出中...")
 
-                # Get dependencies for extraction logging
-                from src.infrastructure.di.container import (
-                    get_container,
-                    init_container,
-                )
-
-                try:
-                    container = get_container()
-                except RuntimeError:
-                    container = init_container()
-
-                politician_repository = container.repositories.politician_repository()
-                update_politician_usecase = (
-                    container.use_cases.update_politician_from_extraction_usecase()
-                )
-
-                extractor = PartyMemberExtractorFactory.create(
-                    politician_repository=politician_repository,
-                    update_politician_usecase=update_politician_usecase,
-                )
+                extractor = PartyMemberExtractorFactory.create()
                 members_list = await extractor.extract_from_pages(pages, party_name)
 
                 # Convert to expected format

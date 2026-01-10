@@ -127,7 +127,6 @@ class TestDIExampleCommands:
 
             # Mock use cases
             mock_container.use_cases.process_minutes_usecase = Mock()
-            mock_container.use_cases.scrape_politicians_usecase = Mock()
 
             mock_init.return_value = mock_container
 

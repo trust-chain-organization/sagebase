@@ -64,27 +64,9 @@ class PartyMemberExtractionServiceImpl(IPartyMemberExtractionService):
         logger.debug(f"Extracting members from {source_url}")
 
         try:
-            # Get dependencies for extraction logging
-            from src.infrastructure.di.container import (
-                get_container,
-                init_container,
-            )
-
-            try:
-                container = get_container()
-            except RuntimeError:
-                container = init_container()
-
-            politician_repository = container.repositories.politician_repository()
-            update_politician_usecase = (
-                container.use_cases.update_politician_from_extraction_usecase()
-            )
-
-            # Create extractor instance (BAML or Pydantic)
+            # Create extractor instance (BAML)
             extractor = PartyMemberExtractorFactory.create(
                 llm_service=self._llm_service,
-                politician_repository=politician_repository,
-                update_politician_usecase=update_politician_usecase,
             )
 
             # Use new Clean Architecture extractor's extract_from_html method
