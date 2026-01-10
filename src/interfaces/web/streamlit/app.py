@@ -21,9 +21,6 @@ from src.interfaces.web.streamlit.views.conferences_view import render_conferenc
 from src.interfaces.web.streamlit.views.conversations_view import (
     render_conversations_page,
 )
-from src.interfaces.web.streamlit.views.extracted_politicians_view import (
-    render_extracted_politicians_page,
-)
 from src.interfaces.web.streamlit.views.extraction_logs_view import (
     render_extraction_logs_page,
 )
@@ -101,12 +98,6 @@ def main():
             url_path="politicians",
         ),
         st.Page(
-            render_extracted_politicians_page,
-            title="政治家レビュー",
-            icon="👥",
-            url_path="extracted_politicians",
-        ),
-        st.Page(
             render_parliamentary_groups_page,
             title="議員団管理",
             icon="👥",
@@ -180,7 +171,6 @@ def render_home_page():
     - **🏢 会議体管理**: 議会や委員会などの会議体を管理
     - **🌐 開催主体管理**: 国、都道府県、市町村などの開催主体を管理
     - **👤 政治家管理**: 政治家の情報を管理
-    - **👥 政治家レビュー**: スクレイピングで抽出した政治家データの確認
     - **👥 議員団管理**: 議員団・会派の情報を管理
     - **📋 議案管理**: 議案の情報を自動収集・管理
     - **🎤 発言・発言者管理**: 発言記録と発言者の管理・マッチング
@@ -195,7 +185,6 @@ def render_home_page():
 
     #### 2. データ収集
     1. **会議管理**で会議録のPDFをアップロードまたはURLを登録
-    2. **政党管理**から政治家情報をスクレイピング
 
     #### 3. データ確認・分析
     1. **発言レコード一覧**で抽出された発言を確認
