@@ -18,9 +18,6 @@ from src.domain.entities.parliamentary_group import ParliamentaryGroup
 from src.domain.entities.political_party import PoliticalParty
 from src.domain.entities.politician import Politician
 from src.domain.entities.politician_affiliation import PoliticianAffiliation
-from src.domain.entities.politician_party_extracted_politician import (
-    PoliticianPartyExtractedPolitician,
-)
 from src.domain.entities.speaker import Speaker
 
 
@@ -104,23 +101,6 @@ def create_politician(**kwargs: Any) -> Politician:
     }
     defaults.update(kwargs)
     return Politician(**defaults)
-
-
-def create_extracted_politician(**kwargs: Any) -> PoliticianPartyExtractedPolitician:
-    """Create a test extracted politician."""
-    defaults = {
-        "id": 1,
-        "name": "山田太郎",
-        "party_id": 1,
-        "district": "東京1区",
-        "profile_url": "https://example.com/profile",
-        "status": "pending",
-        "extracted_at": datetime.now(),
-        "reviewed_at": None,
-        "reviewer_id": None,
-    }
-    defaults.update(kwargs)
-    return PoliticianPartyExtractedPolitician(**defaults)
 
 
 def create_political_party(**kwargs: Any) -> PoliticalParty:

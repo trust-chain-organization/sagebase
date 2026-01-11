@@ -32,9 +32,6 @@ from src.application.dtos.minutes_dto import (
 from src.application.dtos.politician_dto import (
     CreatePoliticianDTO,
     PoliticianDTO,
-    PoliticianPartyExtractedPoliticianDTO,
-    PoliticianPartyExtractedPoliticianOutputDTO,
-    ScrapePoliticiansInputDTO,
     UpdatePoliticianDTO,
 )
 from src.application.dtos.speaker_dto import (
@@ -64,9 +61,6 @@ __all__ = [
     # Politician DTOs
     "CreatePoliticianDTO",
     "PoliticianDTO",
-    "PoliticianPartyExtractedPoliticianDTO",
-    "PoliticianPartyExtractedPoliticianOutputDTO",
-    "ScrapePoliticiansInputDTO",
     "UpdatePoliticianDTO",
     # Speaker DTOs
     "CreateSpeakerDTO",

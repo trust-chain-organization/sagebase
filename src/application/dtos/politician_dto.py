@@ -40,37 +40,3 @@ class PoliticianDTO:
     district: str | None
     profile_page_url: str | None
     party_position: str | None = None
-
-
-@dataclass
-class PoliticianPartyExtractedPoliticianDTO:
-    """DTO for politician data extracted from party websites."""
-
-    name: str
-    party_id: int
-    furigana: str | None = None
-    district: str | None = None
-    profile_page_url: str | None = None
-    source_url: str | None = None
-
-
-@dataclass
-class ScrapePoliticiansInputDTO:
-    """DTO for scraping politicians request."""
-
-    party_id: int | None = None
-    all_parties: bool = False
-    dry_run: bool = False
-
-
-@dataclass
-class PoliticianPartyExtractedPoliticianOutputDTO:
-    """DTO for politician extracted from party websites output."""
-
-    id: int
-    name: str
-    party_id: int | None
-    party_name: str | None
-    district: str | None
-    profile_url: str | None
-    status: str

@@ -202,21 +202,6 @@ class BamlAsyncClient:
                 "html": html,"text_content": text_content,
             })
             return typing.cast(typing.List["types.ParliamentaryGroupMember"], __result__.cast_to(types, types, stream_types, False, __runtime__))
-    async def ExtractPartyMembers(self, content: str,party_name: str,base_url: str,
-        baml_options: BamlCallOptions = {},
-    ) -> typing.List["types.ExtractedPartyMember"]:
-        # Check if on_tick is provided
-        if 'on_tick' in baml_options:
-            # Use streaming internally when on_tick is provided
-            __stream__ = self.stream.ExtractPartyMembers(content=content,party_name=party_name,base_url=base_url,
-                baml_options=baml_options)
-            return await __stream__.get_final_response()
-        else:
-            # Original non-streaming code
-            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="ExtractPartyMembers", args={
-                "content": content,"party_name": party_name,"base_url": base_url,
-            })
-            return typing.cast(typing.List["types.ExtractedPartyMember"], __result__.cast_to(types, types, stream_types, False, __runtime__))
     async def ExtractResume(self, resume: str,
         baml_options: BamlCallOptions = {},
     ) -> types.Resume:
@@ -397,18 +382,6 @@ class BamlStreamClient:
           lambda x: typing.cast(typing.List["types.ParliamentaryGroupMember"], x.cast_to(types, types, stream_types, False, __runtime__)),
           __ctx__,
         )
-    def ExtractPartyMembers(self, content: str,party_name: str,base_url: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.BamlStream[typing.List["stream_types.ExtractedPartyMember"], typing.List["types.ExtractedPartyMember"]]:
-        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="ExtractPartyMembers", args={
-            "content": content,"party_name": party_name,"base_url": base_url,
-        })
-        return baml_py.BamlStream[typing.List["stream_types.ExtractedPartyMember"], typing.List["types.ExtractedPartyMember"]](
-          __result__,
-          lambda x: typing.cast(typing.List["stream_types.ExtractedPartyMember"], x.cast_to(types, types, stream_types, True, __runtime__)),
-          lambda x: typing.cast(typing.List["types.ExtractedPartyMember"], x.cast_to(types, types, stream_types, False, __runtime__)),
-          __ctx__,
-        )
     def ExtractResume(self, resume: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.Resume, types.Resume]:
@@ -533,13 +506,6 @@ class BamlHttpRequestClient:
             "html": html,"text_content": text_content,
         }, mode="request")
         return __result__
-    async def ExtractPartyMembers(self, content: str,party_name: str,base_url: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ExtractPartyMembers", args={
-            "content": content,"party_name": party_name,"base_url": base_url,
-        }, mode="request")
-        return __result__
     async def ExtractResume(self, resume: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -637,13 +603,6 @@ class BamlHttpStreamRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ExtractParliamentaryGroupMembers", args={
             "html": html,"text_content": text_content,
-        }, mode="stream")
-        return __result__
-    async def ExtractPartyMembers(self, content: str,party_name: str,base_url: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ExtractPartyMembers", args={
-            "content": content,"party_name": party_name,"base_url": base_url,
         }, mode="stream")
         return __result__
     async def ExtractResume(self, resume: str,

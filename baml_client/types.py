@@ -41,7 +41,7 @@ def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
 # #########################################################################
 
 # #########################################################################
-# Generated classes (16)
+# Generated classes (15)
 # #########################################################################
 
 class AttendeesMapping(BaseModel):
@@ -67,14 +67,6 @@ class ExtractedMember(BaseModel):
     role: typing.Optional[str] = None
     party_name: typing.Optional[str] = None
     additional_info: typing.Optional[str] = None
-
-class ExtractedPartyMember(BaseModel):
-    name: str
-    position: typing.Optional[str] = None
-    electoral_district: typing.Optional[str] = None
-    prefecture: typing.Optional[str] = None
-    profile_url: typing.Optional[str] = None
-    party_position: typing.Optional[str] = None
 
 class LinkClassification(BaseModel):
     url: str

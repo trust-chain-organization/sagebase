@@ -23,7 +23,7 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (16)
+# Generated classes (15)
 # #########################################################################
 
 class AttendeesMapping(BaseModel):
@@ -49,14 +49,6 @@ class ExtractedMember(BaseModel):
     role: typing.Optional[str] = None
     party_name: typing.Optional[str] = None
     additional_info: typing.Optional[str] = None
-
-class ExtractedPartyMember(BaseModel):
-    name: typing.Optional[str] = None
-    position: typing.Optional[str] = None
-    electoral_district: typing.Optional[str] = None
-    prefecture: typing.Optional[str] = None
-    profile_url: typing.Optional[str] = None
-    party_position: typing.Optional[str] = None
 
 class LinkClassification(BaseModel):
     url: typing.Optional[str] = None

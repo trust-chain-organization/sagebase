@@ -28,9 +28,6 @@ type_map = {
     "types.ExtractedMember": types.ExtractedMember,
     "stream_types.ExtractedMember": stream_types.ExtractedMember,
 
-    "types.ExtractedPartyMember": types.ExtractedPartyMember,
-    "stream_types.ExtractedPartyMember": stream_types.ExtractedPartyMember,
-
     "types.LinkClassification": types.LinkClassification,
     "stream_types.LinkClassification": stream_types.LinkClassification,
 

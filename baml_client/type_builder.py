@@ -20,7 +20,7 @@ from .globals import DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIM
 class TypeBuilder(type_builder.TypeBuilder):
     def __init__(self):
         super().__init__(classes=set(
-          ["AttendeesMapping","ConfidenceJudgement","ContributingFactor","ExtractedMember","ExtractedPartyMember","LinkClassification","MinutesBoundary","PageClassification","ParliamentaryGroupMember","PoliticianMatch","RedividedSectionInfo","Resume","SectionInfo","SectionString","SpeakerAndSpeechContent","SpeakerMatch",]
+          ["AttendeesMapping","ConfidenceJudgement","ContributingFactor","ExtractedMember","LinkClassification","MinutesBoundary","PageClassification","ParliamentaryGroupMember","PoliticianMatch","RedividedSectionInfo","Resume","SectionInfo","SectionString","SpeakerAndSpeechContent","SpeakerMatch",]
         ), enums=set(
           []
         ), runtime=DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME)
@@ -31,7 +31,7 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
     # #########################################################################
-    # Generated classes 16
+    # Generated classes 15
     # #########################################################################
 
     @property
@@ -49,10 +49,6 @@ class TypeBuilder(type_builder.TypeBuilder):
     @property
     def ExtractedMember(self) -> "ExtractedMemberViewer":
         return ExtractedMemberViewer(self)
-
-    @property
-    def ExtractedPartyMember(self) -> "ExtractedPartyMemberViewer":
-        return ExtractedPartyMemberViewer(self)
 
     @property
     def LinkClassification(self) -> "LinkClassificationViewer":
@@ -106,7 +102,7 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
 # #########################################################################
-# Generated classes 16
+# Generated classes 15
 # #########################################################################
 
 class AttendeesMappingAst:
@@ -309,65 +305,6 @@ class ExtractedMemberProperties:
     @property
     def additional_info(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("additional_info"))
-
-
-
-
-class ExtractedPartyMemberAst:
-    def __init__(self, tb: type_builder.TypeBuilder):
-        _tb = tb._tb # type: ignore (we know how to use this private attribute)
-        self._bldr = _tb.class_("ExtractedPartyMember")
-        self._properties: typing.Set[str] = set([  "name",  "position",  "electoral_district",  "prefecture",  "profile_url",  "party_position",  ])
-        self._props = ExtractedPartyMemberProperties(self._bldr, self._properties)
-
-    def type(self) -> baml_py.FieldType:
-        return self._bldr.field()
-
-    @property
-    def props(self) -> "ExtractedPartyMemberProperties":
-        return self._props
-
-
-class ExtractedPartyMemberViewer(ExtractedPartyMemberAst):
-    def __init__(self, tb: type_builder.TypeBuilder):
-        super().__init__(tb)
-
-
-    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
-        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
-
-
-
-class ExtractedPartyMemberProperties:
-    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
-        self.__bldr = bldr
-        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
-
-
-
-    @property
-    def name(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("name"))
-
-    @property
-    def position(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("position"))
-
-    @property
-    def electoral_district(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("electoral_district"))
-
-    @property
-    def prefecture(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("prefecture"))
-
-    @property
-    def profile_url(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("profile_url"))
-
-    @property
-    def party_position(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("party_position"))
 
 
 

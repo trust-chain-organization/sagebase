@@ -12,10 +12,7 @@ from src.application.dtos.minutes_dto import (
     MinutesProcessingResultDTO,
     ProcessMinutesDTO,
 )
-from src.application.dtos.politician_dto import (
-    PoliticianDTO,
-    PoliticianPartyExtractedPoliticianDTO,
-)
+from src.application.dtos.politician_dto import PoliticianDTO
 from src.application.dtos.speaker_dto import SpeakerDTO, SpeakerMatchingDTO
 
 
@@ -100,22 +97,6 @@ def create_politician_dto(**kwargs: Any) -> PoliticianDTO:
     }
     defaults.update(kwargs)
     return PoliticianDTO(**defaults)
-
-
-def create_extracted_politician_dto(
-    **kwargs: Any,
-) -> PoliticianPartyExtractedPoliticianDTO:
-    """Create a test PoliticianPartyExtractedPoliticianDTO."""
-    defaults = {
-        "name": "山田太郎",
-        "party_id": 1,
-        "furigana": None,
-        "district": None,
-        "profile_page_url": None,
-        "source_url": "https://example.com/members",
-    }
-    defaults.update(kwargs)
-    return PoliticianPartyExtractedPoliticianDTO(**defaults)
 
 
 def create_conference_dto(**kwargs: Any) -> ConferenceDTO:
