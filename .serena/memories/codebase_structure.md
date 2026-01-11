@@ -78,8 +78,7 @@ sagebase/
   - `nodes.py`: Processing nodes
   - `state.py`: State definitions
 
-### 政治家・議員情報抽出
-- `src/party_member_extractor/`: 政党メンバー抽出
+### 議員情報抽出
 - `src/conference_member_extractor/`: 議会メンバー抽出
 - `src/parliamentary_group_member_extractor/`: 議員団メンバー抽出
 

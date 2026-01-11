@@ -411,7 +411,7 @@ jobs:
           echo "$CHANGED_FILES"
 
           # BAML関連パスが含まれているかチェック
-          if echo "$CHANGED_FILES" | grep -qE "^(baml_src/|src/infrastructure/external/party_member_extractor/|src/infrastructure/external/parliamentary_group_extractor/|src/infrastructure/external/minutes_divide/|src/interfaces/factories/|tests/party_member_extractor/|tests/parliamentary_group_extractor/|tests/unit/interfaces/factories/)"; then
+          if echo "$CHANGED_FILES" | grep -qE "^(baml_src/|src/infrastructure/external/parliamentary_group_extractor/|src/infrastructure/external/minutes_divide/|src/interfaces/factories/|tests/parliamentary_group_extractor/|tests/unit/interfaces/factories/)"; then
             echo "has_changes=true" >> $GITHUB_OUTPUT
             echo "BAML-related changes detected"
           else

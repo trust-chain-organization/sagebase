@@ -13,7 +13,6 @@ data/evaluation/
 ├── datasets/                    # タスク別データセット
 │   ├── minutes_division/        # 議事録分割タスク
 │   ├── speaker_matching/        # 発言者マッチングタスク
-│   ├── party_member_extraction/ # 政党メンバー抽出タスク
 │   └── conference_member_matching/ # 議会メンバーマッチングタスク
 └── results/                     # 評価結果（gitignored）
     └── .gitkeep
@@ -43,18 +42,7 @@ PDFや文字列形式の議事録を個別の発言に分割するタスク。
 - `confidence`: マッチング信頼度（0-1）
 - `match_reason`: マッチング理由の説明
 
-### 3. party_member_extraction（政党メンバー抽出）
-政党のウェブサイトから議員情報を抽出するタスク。
-
-**入力**:
-- `html_content`: 政党メンバーページのHTML
-- `party_name`: 政党名
-- `url`: ソースURL
-
-**出力**:
-- `politicians`: 名前、政党、役職、選挙区等を含む政治家情報の配列
-
-### 4. conference_member_matching（議会メンバーマッチング）
+### 3. conference_member_matching（議会メンバーマッチング）
 議会メンバーリストと政治家データベースのバッチ名寄せ処理を評価するタスク。
 
 **入力**:

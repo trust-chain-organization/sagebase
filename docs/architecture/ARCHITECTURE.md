@@ -90,7 +90,6 @@ graph TB
 - **Meeting**: 会議の具体的な開催インスタンス
 - **Speaker**: 議事録から抽出された発言者（議事録における政治家の表現を記録）
 - **Politician**: 政治家マスタデータ（議事録由来または政党サイト由来）
-- **ExtractedPolitician**: 政党サイトから抽出された政治家の中間データ（レビュー後にPoliticianに変換）
 - **Conversation**: 発言内容
 - **PoliticalParty**: 政党
 - **ParliamentaryGroup**: 議員団（会派）
