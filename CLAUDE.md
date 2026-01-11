@@ -309,18 +309,13 @@ Sagebaseでは、以下の機能にBAML (Boundary ML)を使用しています。
 - **実装**: `src/infrastructure/external/parliamentary_group_member_extractor/baml_extractor.py`
 - **備考**: Pydantic実装は削除済み、BAML実装のみ使用
 
-#### 4. 政党メンバー抽出（Party Member Extraction） **BAML専用**
-- **BAML定義**: `baml_src/party_member_extractor.baml`
-- **実装**: `src/party_member_extractor/baml_llm_extractor.py`
-- **備考**: Pydantic実装は削除済み、BAML実装のみ使用
-
-#### 5. 話者マッチング（Speaker Matching） **BAML専用**
+#### 4. 話者マッチング（Speaker Matching） **BAML専用**
 - **BAML定義**: `baml_src/speaker_matching.baml`
 - **実装**: `src/domain/services/baml_speaker_matching_service.py`
 - **備考**: Pydantic実装は削除済み、BAML実装のみ使用
 - **ハイブリッドアプローチ**: ルールベースマッチング（高速パス）+ BAMLマッチング
 
-#### 6. 政治家マッチング（Politician Matching） **BAML専用**
+#### 5. 政治家マッチング（Politician Matching） **BAML専用**
 - **BAML定義**: `baml_src/politician_matching.baml`
 - **実装**: `src/domain/services/baml_politician_matching_service.py`
 - **備考**: Pydantic実装は削除済み、BAML実装のみ使用
