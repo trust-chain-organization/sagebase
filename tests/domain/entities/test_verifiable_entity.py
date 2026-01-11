@@ -4,24 +4,12 @@ from src.domain.entities.conversation import Conversation
 from src.domain.entities.parliamentary_group_membership import (
     ParliamentaryGroupMembership,
 )
-from src.domain.entities.politician import Politician
 from src.domain.entities.politician_affiliation import PoliticianAffiliation
 from src.domain.entities.speaker import Speaker
 
 
 class TestVerifiableEntityProtocol:
     """Test VerifiableEntity protocol compliance."""
-
-    def test_politician_implements_verifiable_entity(self) -> None:
-        """Test that Politician implements VerifiableEntity protocol."""
-        politician = Politician(name="山田太郎")
-
-        # プロトコルの属性を持っているか確認
-        assert hasattr(politician, "is_manually_verified")
-        assert hasattr(politician, "latest_extraction_log_id")
-        assert hasattr(politician, "mark_as_manually_verified")
-        assert hasattr(politician, "update_from_extraction_log")
-        assert hasattr(politician, "can_be_updated_by_ai")
 
     def test_speaker_implements_verifiable_entity(self) -> None:
         """Test that Speaker implements VerifiableEntity protocol."""
@@ -78,7 +66,6 @@ class TestVerifiableEntityMethods:
     def test_default_is_manually_verified_is_false(self) -> None:
         """Test that default is_manually_verified is False."""
         entities = [
-            Politician(name="Test"),
             Speaker(name="Test"),
             Conversation(comment="Test", sequence_number=1),
         ]
@@ -89,7 +76,6 @@ class TestVerifiableEntityMethods:
     def test_default_latest_extraction_log_id_is_none(self) -> None:
         """Test that default latest_extraction_log_id is None."""
         entities = [
-            Politician(name="Test"),
             Speaker(name="Test"),
             Conversation(comment="Test", sequence_number=1),
         ]
@@ -99,12 +85,12 @@ class TestVerifiableEntityMethods:
 
     def test_mark_as_manually_verified(self) -> None:
         """Test mark_as_manually_verified sets flag to True."""
-        politician = Politician(name="Test")
-        assert politician.is_manually_verified is False
+        speaker = Speaker(name="Test")
+        assert speaker.is_manually_verified is False
 
-        politician.mark_as_manually_verified()
+        speaker.mark_as_manually_verified()
 
-        assert politician.is_manually_verified is True
+        assert speaker.is_manually_verified is True
 
     def test_update_from_extraction_log(self) -> None:
         """Test update_from_extraction_log sets log ID."""
@@ -132,17 +118,6 @@ class TestVerifiableEntityMethods:
 
 class TestVerifiableEntityInitialization:
     """Test VerifiableEntity fields during initialization."""
-
-    def test_politician_can_be_initialized_with_verification_fields(self) -> None:
-        """Test Politician can be initialized with verification fields."""
-        politician = Politician(
-            name="Test",
-            is_manually_verified=True,
-            latest_extraction_log_id=100,
-        )
-
-        assert politician.is_manually_verified is True
-        assert politician.latest_extraction_log_id == 100
 
     def test_speaker_can_be_initialized_with_verification_fields(self) -> None:
         """Test Speaker can be initialized with verification fields."""
@@ -208,25 +183,25 @@ class TestVerifiableEntityWorkflow:
     def test_ai_extraction_to_manual_verification_workflow(self) -> None:
         """Test workflow from AI extraction to manual verification."""
         # Step 1: AI extracts data and creates entity
-        politician = Politician(name="AI抽出された政治家")
-        politician.update_from_extraction_log(1)
+        speaker = Speaker(name="AI抽出された発言者")
+        speaker.update_from_extraction_log(1)
 
-        assert politician.is_manually_verified is False
-        assert politician.latest_extraction_log_id == 1
-        assert politician.can_be_updated_by_ai() is True
+        assert speaker.is_manually_verified is False
+        assert speaker.latest_extraction_log_id == 1
+        assert speaker.can_be_updated_by_ai() is True
 
         # Step 2: Human verifies the data
-        politician.mark_as_manually_verified()
+        speaker.mark_as_manually_verified()
 
-        assert politician.is_manually_verified is True
-        assert politician.can_be_updated_by_ai() is False
+        assert speaker.is_manually_verified is True
+        assert speaker.can_be_updated_by_ai() is False
 
         # Step 3: AI tries to update again with new extraction
-        politician.update_from_extraction_log(2)
+        speaker.update_from_extraction_log(2)
 
         # The extraction log is updated, but AI should check can_be_updated_by_ai
-        assert politician.latest_extraction_log_id == 2
-        assert politician.can_be_updated_by_ai() is False
+        assert speaker.latest_extraction_log_id == 2
+        assert speaker.can_be_updated_by_ai() is False
 
     def test_multiple_ai_extractions_before_verification(self) -> None:
         """Test multiple AI extractions before human verification."""
