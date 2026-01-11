@@ -198,18 +198,3 @@ Table ParliamentaryGroupMemberships {
   updated_at timestamp [default: `now()`]
   note: '議員団所属履歴'
 }
-
-Table ExtractedPoliticians {
-  id int [pk, increment]
-  name varchar(255) [not null] // 政治家名
-  party_id int [ref: > PoliticalParties.id] // 所属政党ID
-  district varchar(255) // 選挙区
-  profile_url varchar(500) // プロフィールURL
-  status varchar(50) [default: 'pending'] // ステータス（pending, reviewed, approved, rejected, converted）
-  extracted_at timestamp [not null, default: `now()`] // 抽出日時
-  reviewed_at timestamp // レビュー日時
-  reviewer_id int // レビュー者ID
-  created_at timestamp [not null, default: `now()`]
-  updated_at timestamp [not null, default: `now()`]
-  note: '政党サイトから抽出された政治家の中間データ。レビュー後に承認されるとPoliticiansテーブルに変換される'
-}

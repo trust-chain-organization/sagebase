@@ -67,24 +67,3 @@ class PoliticianRepository(BaseRepository[Politician]):
             electoral_district, and party_name
         """
         pass
-
-    @abstractmethod
-    async def get_party_statistics(self) -> list[dict[str, Any]]:
-        """Get politician statistics for all parties.
-
-        Returns:
-            List of party statistics with extracted and politician counts
-        """
-        pass
-
-    @abstractmethod
-    async def get_party_statistics_by_id(self, party_id: int) -> dict[str, Any] | None:
-        """Get politician statistics for a specific party.
-
-        Args:
-            party_id: Political party ID
-
-        Returns:
-            Party statistics or None if not found
-        """
-        pass
