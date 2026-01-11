@@ -10,7 +10,7 @@ Polibaseの各種データ処理ワークフロー、パイプライン、シス
 
 ## いつアクティベートするか
 このスキルは以下の場合に自動的にアクティベートされます：
-- `src/minutes_divide_processor/`, `src/web_scraper/`, `src/party_member_extractor/` ディレクトリでの作業時
+- `src/minutes_divide_processor/`, `src/web_scraper/` ディレクトリでの作業時
 - ユーザーが「処理フロー」「パイプライン」「ワークフロー」「データ処理」と言った時
 - 処理の順序や依存関係に関する質問時
 - 議事録処理、スクレイピング、話者マッチングの実装・修正時
@@ -235,15 +235,6 @@ politician_affiliations
 - URLルーティング付きStreamlitベースWebインターフェース
 - 会議、政党、会議、その他の管理
 
-### Party Member Extractor
-**場所:** `src/party_member_extractor/`
-
-**機能:**
-- LLMベースで政党メンバーリストページから政治家情報を抽出
-- Gemini APIでHTMLから構造化データを抽出
-- 複数ページのメンバーリストのページネーション対応
-- 重複レコード作成を防ぐ重複チェック実装
-
 ### Conference Member Extractor
 **場所:** `src/conference_member_extractor/`
 
@@ -261,4 +252,3 @@ politician_affiliations
 視覚的なフロー図：
 - [Minutes Processing Flow](../../../docs/diagrams/data-flow-minutes-processing.mmd)
 - [Speaker Matching Flow](../../../docs/diagrams/data-flow-speaker-matching.mmd)
-- [Politician Scraping Flow](../../../docs/diagrams/data-flow-politician-scraping.mmd)

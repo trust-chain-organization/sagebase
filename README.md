@@ -14,7 +14,6 @@ https://dbdocs.io/sagebase/Sagebase
 
 - **Speaker**: 議事録から抽出された発言者。議事録における政治家の表現（例：「山田太郎君」「山田議員」など）を記録
 - **Politician**: 政治家マスタデータ。議事録由来（speaker_id有）と政党サイト由来（speaker_id無）の両方を管理
-- **ExtractedPolitician**: 政党サイトから抽出された政治家の中間データ。レビュー後に承認されるとPoliticianテーブルに変換される
 - **PoliticalParty**: 政党マスタデータ
 - **Conversation**: 議事録の発言内容
 
@@ -465,7 +464,7 @@ docker compose -f docker/docker-compose.yml exec sagebase uv run python scripts/
 主要な環境変数（`.env`ファイルで設定）:
 
 ### 必須設定
-- `GOOGLE_API_KEY`: Google Gemini APIキー（議事録処理・政治家抽出に必要）
+- `GOOGLE_API_KEY`: Google Gemini APIキー（議事録処理に必要）
 - `DATABASE_URL`: PostgreSQL接続URL（デフォルト: `postgresql://sagebase_user:sagebase_password@localhost:5432/sagebase_db`）
 
 ### タイムアウト設定（秒単位）
@@ -503,7 +502,6 @@ sagebase/
 │   │   └── database_utils.py    # データベース共通処理
 │   ├── minutes_divide_processor/ # 議事録分割処理
 │   │   └── minutes_divider.py   # 分割ロジック
-│   ├── politician_extract_processor/ # 政治家抽出処理
 │   ├── web_scraper/             # 議事録Web取得
 │   │   ├── base_scraper.py      # スクレーパー基底クラス
 │   │   ├── kaigiroku_net_scraper.py # kaigiroku.net対応スクレーパー
@@ -858,12 +856,12 @@ graph TB
 2. **GCS保存**: 取得したデータをGoogle Cloud Storageに自動アップロード
 3. **URI記録**: GCS URIをmeetingsテーブルに保存
 4. **GCSから処理**: `process_minutes.py --meeting-id` でGCSから直接データを取得して処理
-5. **後続処理**: 政治家抽出、発言者マッチングなどの処理を実行
+5. **後続処理**: 発言者マッチングなどの処理を実行
 
 ### LLM処理履歴管理システム
 #### 処理履歴の記録（llm_processing_historyテーブル）
 - **統一的な履歴管理**: すべてのLLM処理を1つのテーブルで管理
-- **処理タイプ**: MINUTES_DIVISION（議事録分割）、SPEECH_EXTRACTION（発言抽出）、SPEAKER_MATCHING（発言者マッチング）、POLITICIAN_EXTRACTION（政治家抽出）など
+- **処理タイプ**: MINUTES_DIVISION（議事録分割）、SPEECH_EXTRACTION（発言抽出）、SPEAKER_MATCHING（発言者マッチング）など
 - **詳細な記録内容**:
   - 使用したLLMモデル名とバージョン
   - 入力・出力トークン数とコスト

@@ -131,51 +131,6 @@ docker compose -f docker/docker-compose.yml [-f docker/docker-compose.override.y
 - GCS認証: `gcloud auth application-default login`
 - URI形式は必ず `gs://` （HTTPSではない）
 
-### Party Member Extractor の詳細
-
-#### 処理フロー
-```python
-1. political_parties.members_list_url を取得
-2. URLにアクセスしてHTML取得
-3. LLM（Gemini API）で構造化データ抽出
-   - 名前
-   - 役職
-   - 選挙区
-   - その他プロフィール情報
-4. 重複チェック（名前 + 政党）
-5. politiciansテーブルに挿入
-```
-
-#### 実行コマンド
-```bash
-# 全政党
-docker compose -f docker/docker-compose.yml [-f docker/docker-compose.override.yml] exec sagebase uv run sagebase scrape-politicians --all-parties
-
-# 特定政党
-docker compose -f docker/docker-compose.yml [-f docker/docker-compose.override.yml] exec sagebase uv run sagebase scrape-politicians --party-id 1
-```
-
-#### 重複防止
-```python
-# 既存チェック
-existing = session.query(Politician).filter(
-    Politician.name == extracted_name,
-    Politician.party_id == party_id
-).first()
-
-if existing:
-    # 更新またはスキップ
-    update_politician(existing, new_data)
-else:
-    # 新規作成
-    create_politician(new_data)
-```
-
-#### 注意点
-- `members_list_url` がNULLの政党はスキップされる
-- 事前にStreamlit UIで `members_list_url` を設定
-- ページネーション対応（複数ページの場合）
-
 ### Conference Member Extractor の詳細
 
 #### ステージング戦略
@@ -407,7 +362,6 @@ session.commit()
 - [ARCHITECTURE.md](../../../docs/ARCHITECTURE.md): システム全体のアーキテクチャ
 - [Minutes Processing Flow](../../../docs/diagrams/data-flow-minutes-processing.mmd): 議事録処理フロー図
 - [Speaker Matching Flow](../../../docs/diagrams/data-flow-speaker-matching.mmd): 話者マッチングフロー図
-- [Politician Scraping Flow](../../../docs/diagrams/data-flow-politician-scraping.mmd): 政治家スクレイピングフロー図
 
 ### コマンドリファレンス
 - [sagebase-commands](../../sagebase-commands/): すべてのコマンドの詳細
