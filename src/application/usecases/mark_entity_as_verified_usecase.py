@@ -10,7 +10,6 @@ from enum import Enum
 from src.common.logging import get_logger
 from src.domain.repositories import (
     ConversationRepository,
-    PoliticianRepository,
 )
 from src.domain.repositories.extracted_conference_member_repository import (
     ExtractedConferenceMemberRepository,
@@ -26,7 +25,6 @@ logger = get_logger(__name__)
 class EntityType(Enum):
     """手動検証可能なエンティティタイプ。"""
 
-    POLITICIAN = "politician"
     CONVERSATION = "conversation"
     CONFERENCE_MEMBER = "conference_member"
     PARLIAMENTARY_GROUP_MEMBER = "parliamentary_group_member"
@@ -58,7 +56,6 @@ class MarkEntityAsVerifiedUseCase:
 
     def __init__(
         self,
-        politician_repository: PoliticianRepository | None = None,
         conversation_repository: ConversationRepository | None = None,
         conference_member_repository: (
             ExtractedConferenceMemberRepository | None
@@ -70,12 +67,10 @@ class MarkEntityAsVerifiedUseCase:
         """初期化。
 
         Args:
-            politician_repository: 政治家リポジトリ
             conversation_repository: 発言リポジトリ
             conference_member_repository: 会議体メンバーリポジトリ
             parliamentary_group_member_repository: 議員団メンバーリポジトリ
         """
-        self._politician_repo = politician_repository
         self._conversation_repo = conversation_repository
         self._conference_member_repo = conference_member_repository
         self._parliamentary_group_member_repo = parliamentary_group_member_repository
@@ -92,11 +87,7 @@ class MarkEntityAsVerifiedUseCase:
             出力DTO
         """
         try:
-            if input_dto.entity_type == EntityType.POLITICIAN:
-                return await self._update_politician(
-                    input_dto.entity_id, input_dto.is_verified
-                )
-            elif input_dto.entity_type == EntityType.CONVERSATION:
+            if input_dto.entity_type == EntityType.CONVERSATION:
                 return await self._update_conversation(
                     input_dto.entity_id, input_dto.is_verified
                 )
@@ -116,31 +107,6 @@ class MarkEntityAsVerifiedUseCase:
         except Exception as e:
             logger.error(f"Failed to update verification status: {e}")
             return MarkEntityAsVerifiedOutputDto(success=False, error_message=str(e))
-
-    async def _update_politician(
-        self, entity_id: int, is_verified: bool
-    ) -> MarkEntityAsVerifiedOutputDto:
-        """政治家の手動検証フラグを更新する。"""
-        if not self._politician_repo:
-            return MarkEntityAsVerifiedOutputDto(
-                success=False,
-                error_message="Politician repository not configured",
-            )
-
-        entity = await self._politician_repo.get_by_id(entity_id)
-        if not entity:
-            return MarkEntityAsVerifiedOutputDto(
-                success=False,
-                error_message="政治家が見つかりません。",
-            )
-
-        if is_verified:
-            entity.mark_as_manually_verified()
-        else:
-            entity.is_manually_verified = False
-
-        await self._politician_repo.update(entity)
-        return MarkEntityAsVerifiedOutputDto(success=True)
 
     async def _update_conversation(
         self, entity_id: int, is_verified: bool

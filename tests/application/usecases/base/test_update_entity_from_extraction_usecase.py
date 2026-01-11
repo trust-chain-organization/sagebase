@@ -9,11 +9,11 @@ from src.application.usecases.base.update_entity_from_extraction_usecase import 
     UpdateEntityFromExtractionUseCase,
 )
 from src.domain.entities.extraction_log import EntityType, ExtractionLog
-from src.domain.entities.politician import Politician
+from src.domain.entities.speaker import Speaker
 
 
 @dataclass
-class TestExtractionResult:
+class TestableExtractionResult:
     """テスト用の抽出結果DTO。"""
 
     name: str
@@ -23,8 +23,8 @@ class TestExtractionResult:
         return {"name": self.name, "value": self.value}
 
 
-class TestUpdateEntityUseCase(
-    UpdateEntityFromExtractionUseCase[Politician, TestExtractionResult]
+class TestableUpdateEntityUseCase(
+    UpdateEntityFromExtractionUseCase[Speaker, TestableExtractionResult]
 ):
     """テスト用の具体的なUseCase実装。"""
 
@@ -33,19 +33,19 @@ class TestUpdateEntityUseCase(
         self._entity_repo = entity_repo
 
     def _get_entity_type(self) -> EntityType:
-        return EntityType.POLITICIAN
+        return EntityType.SPEAKER
 
-    async def _get_entity(self, entity_id: int) -> Politician | None:
+    async def _get_entity(self, entity_id: int) -> Speaker | None:
         return await self._entity_repo.get_by_id(entity_id)
 
-    async def _save_entity(self, entity: Politician) -> None:
+    async def _save_entity(self, entity: Speaker) -> None:
         await self._entity_repo.update(entity)
 
-    def _to_extracted_data(self, result: TestExtractionResult) -> dict:
+    def _to_extracted_data(self, result: TestableExtractionResult) -> dict:
         return result.to_dict()
 
     async def _apply_extraction(
-        self, entity: Politician, result: TestExtractionResult, log_id: int
+        self, entity: Speaker, result: TestableExtractionResult, log_id: int
     ) -> None:
         entity.name = result.name
         entity.update_from_extraction_log(log_id)
@@ -77,7 +77,7 @@ class TestUpdateEntityFromExtractionUseCase:
         self, mock_entity_repo, mock_extraction_log_repo, mock_session_adapter
     ):
         """Create UpdateEntityUseCase instance."""
-        return TestUpdateEntityUseCase(
+        return TestableUpdateEntityUseCase(
             entity_repo=mock_entity_repo,
             extraction_log_repo=mock_extraction_log_repo,
             session_adapter=mock_session_adapter,
@@ -93,16 +93,16 @@ class TestUpdateEntityFromExtractionUseCase:
     ):
         """手動検証されていないエンティティは更新が成功する。"""
         # Setup
-        entity = Politician(
+        entity = Speaker(
             id=1,
             name="旧名前",
             is_manually_verified=False,
             latest_extraction_log_id=None,
         )
-        extraction_result = TestExtractionResult(name="新名前", value="test_value")
+        extraction_result = TestableExtractionResult(name="新名前", value="test_value")
         extraction_log = ExtractionLog(
             id=100,
-            entity_type=EntityType.POLITICIAN,
+            entity_type=EntityType.SPEAKER,
             entity_id=1,
             pipeline_version="v1.0",
             extracted_data={"name": "新名前", "value": "test_value"},
@@ -144,16 +144,16 @@ class TestUpdateEntityFromExtractionUseCase:
     ):
         """手動検証済みエンティティは更新がスキップされる。"""
         # Setup
-        entity = Politician(
+        entity = Speaker(
             id=1,
             name="旧名前",
             is_manually_verified=True,
             latest_extraction_log_id=50,
         )
-        extraction_result = TestExtractionResult(name="新名前", value="test_value")
+        extraction_result = TestableExtractionResult(name="新名前", value="test_value")
         extraction_log = ExtractionLog(
             id=100,
-            entity_type=EntityType.POLITICIAN,
+            entity_type=EntityType.SPEAKER,
             entity_id=1,
             pipeline_version="v1.0",
             extracted_data={"name": "新名前", "value": "test_value"},
@@ -195,10 +195,10 @@ class TestUpdateEntityFromExtractionUseCase:
     ):
         """エンティティが存在しない場合、entity_not_foundが返される。"""
         # Setup
-        extraction_result = TestExtractionResult(name="新名前", value="test_value")
+        extraction_result = TestableExtractionResult(name="新名前", value="test_value")
         extraction_log = ExtractionLog(
             id=100,
-            entity_type=EntityType.POLITICIAN,
+            entity_type=EntityType.SPEAKER,
             entity_id=999,
             pipeline_version="v1.0",
             extracted_data={"name": "新名前", "value": "test_value"},
@@ -238,16 +238,16 @@ class TestUpdateEntityFromExtractionUseCase:
     ):
         """更新の成否に関わらず、抽出ログは必ず保存される。"""
         # Setup: 手動検証済みのエンティティ（更新されない）
-        entity = Politician(
+        entity = Speaker(
             id=1,
             name="旧名前",
             is_manually_verified=True,
             latest_extraction_log_id=None,
         )
-        extraction_result = TestExtractionResult(name="新名前", value="test_value")
+        extraction_result = TestableExtractionResult(name="新名前", value="test_value")
         extraction_log = ExtractionLog(
             id=100,
-            entity_type=EntityType.POLITICIAN,
+            entity_type=EntityType.SPEAKER,
             entity_id=1,
             pipeline_version="v1.0",
             extracted_data={"name": "新名前", "value": "test_value"},
@@ -269,7 +269,7 @@ class TestUpdateEntityFromExtractionUseCase:
         # 抽出ログの内容を確認
         call_args = mock_extraction_log_repo.create.call_args
         saved_log = call_args[0][0]
-        assert saved_log.entity_type == EntityType.POLITICIAN
+        assert saved_log.entity_type == EntityType.SPEAKER
         assert saved_log.entity_id == 1
         assert saved_log.pipeline_version == "v1.0"
         assert saved_log.extracted_data == {"name": "新名前", "value": "test_value"}
@@ -284,16 +284,16 @@ class TestUpdateEntityFromExtractionUseCase:
     ):
         """エラー発生時にロールバックされる。"""
         # Setup
-        entity = Politician(
+        entity = Speaker(
             id=1,
             name="旧名前",
             is_manually_verified=False,
             latest_extraction_log_id=None,
         )
-        extraction_result = TestExtractionResult(name="新名前", value="test_value")
+        extraction_result = TestableExtractionResult(name="新名前", value="test_value")
         extraction_log = ExtractionLog(
             id=100,
-            entity_type=EntityType.POLITICIAN,
+            entity_type=EntityType.SPEAKER,
             entity_id=1,
             pipeline_version="v1.0",
             extracted_data={"name": "新名前", "value": "test_value"},

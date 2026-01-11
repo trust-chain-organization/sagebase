@@ -12,11 +12,6 @@ from src.application.usecases.manage_politicians_usecase import (
     PoliticianListInputDto,
     UpdatePoliticianInputDto,
 )
-from src.application.usecases.mark_entity_as_verified_usecase import (
-    EntityType,
-    MarkEntityAsVerifiedInputDto,
-    MarkEntityAsVerifiedUseCase,
-)
 from src.common.logging import get_logger
 from src.domain.entities import PoliticalParty, Politician
 from src.infrastructure.di.container import Container
@@ -27,7 +22,6 @@ from src.infrastructure.persistence.politician_repository_impl import (
     PoliticianRepositoryImpl,
 )
 from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
-from src.interfaces.web.streamlit.components import get_verification_badge_text
 from src.interfaces.web.streamlit.presenters.base import BasePresenter
 from src.interfaces.web.streamlit.utils.session_manager import SessionManager
 
@@ -44,9 +38,6 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
         # Type: ignore - RepositoryAdapter duck-types as repository protocol
         self.use_case = ManagePoliticiansUseCase(
             self.politician_repo  # type: ignore[arg-type]
-        )
-        self.verify_use_case = MarkEntityAsVerifiedUseCase(
-            politician_repository=self.politician_repo  # type: ignore[arg-type]
         )
         self.session = SessionManager()
         self.logger = get_logger(__name__)
@@ -238,58 +229,10 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
                     if politician.political_party_id
                     else "無所属",
                     "選挙区": politician.district or "",
-                    "検証状態": get_verification_badge_text(
-                        politician.is_manually_verified
-                    ),
                     "プロフィールURL": politician.profile_page_url or "",
                 }
             )
         return pd.DataFrame(df_data)
-
-    def update_verification_status(
-        self, politician_id: int, is_verified: bool
-    ) -> tuple[bool, str | None]:
-        """Update the verification status of a politician."""
-        return self._run_async(
-            self._update_verification_status_async(politician_id, is_verified)
-        )
-
-    async def _update_verification_status_async(
-        self, politician_id: int, is_verified: bool
-    ) -> tuple[bool, str | None]:
-        """Update the verification status of a politician (async implementation)."""
-        try:
-            result = await self.verify_use_case.execute(
-                MarkEntityAsVerifiedInputDto(
-                    entity_type=EntityType.POLITICIAN,
-                    entity_id=politician_id,
-                    is_verified=is_verified,
-                )
-            )
-            if result.success:
-                return True, None
-            else:
-                return False, result.error_message
-        except Exception as e:
-            error_msg = f"Failed to update verification status: {e}"
-            self.logger.error(error_msg)
-            return False, error_msg
-
-    def load_politicians_with_verification_filter(
-        self,
-        party_id: int | None = None,
-        search_name: str | None = None,
-        verification_filter: bool | None = None,
-    ) -> list[Politician]:
-        """Load politicians with filters including verification status."""
-        politicians = self.load_politicians_with_filters(party_id, search_name)
-
-        if verification_filter is not None:
-            politicians = [
-                p for p in politicians if p.is_manually_verified == verification_filter
-            ]
-
-        return politicians
 
     def handle_action(self, action: str, **kwargs: Any) -> Any:
         """Handle user actions."""

@@ -352,10 +352,6 @@ class PoliticianRepositoryImpl(BaseRepositoryImpl[Politician], PoliticianReposit
                 "profile_url": getattr(row, "profile_url", None),
                 "party_position": getattr(row, "party_position", None),
                 "furigana": getattr(row, "furigana", None),
-                "is_manually_verified": getattr(row, "is_manually_verified", False),
-                "latest_extraction_log_id": getattr(
-                    row, "latest_extraction_log_id", None
-                ),
             }
 
         return Politician(
@@ -368,8 +364,6 @@ class PoliticianRepositoryImpl(BaseRepositoryImpl[Politician], PoliticianReposit
             profile_page_url=data.get(
                 "profile_url"
             ),  # Map profile_url to profile_page_url
-            is_manually_verified=bool(data.get("is_manually_verified", False)),
-            latest_extraction_log_id=data.get("latest_extraction_log_id"),
             id=data.get("id"),
         )
 
@@ -387,8 +381,6 @@ class PoliticianRepositoryImpl(BaseRepositoryImpl[Politician], PoliticianReposit
             profile_url=entity.profile_page_url,  # Map profile_page_url to profile_url
             party_position=None,  # Not in entity
             furigana=entity.furigana,
-            is_manually_verified=entity.is_manually_verified,
-            latest_extraction_log_id=entity.latest_extraction_log_id,
             id=entity.id,
         )
 
@@ -399,8 +391,6 @@ class PoliticianRepositoryImpl(BaseRepositoryImpl[Politician], PoliticianReposit
         model.electoral_district = entity.district
         model.profile_url = entity.profile_page_url
         model.furigana = entity.furigana
-        model.is_manually_verified = entity.is_manually_verified
-        model.latest_extraction_log_id = entity.latest_extraction_log_id
 
     async def get_all_for_matching(self) -> list[dict[str, Any]]:
         """Get all politicians for matching purposes."""
