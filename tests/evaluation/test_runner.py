@@ -160,9 +160,9 @@ class TestEvaluationRunner:
 
         metrics = await runner.run_evaluation(run_all=True)
 
-        # Should attempt to run all 4 task types
-        assert mock_load.call_count == 4
-        assert len(metrics) == 4
+        # Should attempt to run all 3 task types
+        assert mock_load.call_count == 3
+        assert len(metrics) == 3
 
     @pytest.mark.asyncio
     async def test_run_evaluation_no_task_specified(self, runner):
@@ -238,11 +238,6 @@ class TestEvaluationRunner:
             "ID Match Rate",
             "Confidence",
             "Accuracy",
-        ]
-        assert runner._get_metric_columns("party_member_extraction") == [
-            "Extraction Rate",
-            "Name Accuracy",
-            "Count",
         ]
         assert runner._get_metric_columns("conference_member_matching") == [
             "Precision",

@@ -31,20 +31,6 @@ class IWebScraperService(Protocol):
         """
         ...
 
-    async def scrape_party_members(
-        self, url: str, party_id: int
-    ) -> list[dict[str, Any]]:
-        """Scrape party member information from website.
-
-        Args:
-            url: URL of the party members page
-            party_id: ID of the political party
-
-        Returns:
-            List of scraped member information
-        """
-        ...
-
     async def scrape_conference_members(self, url: str) -> list[dict[str, Any]]:
         """Scrape conference member information from website.
 

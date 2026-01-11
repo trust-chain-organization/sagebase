@@ -131,8 +131,7 @@ The ChainFactory provides pre-configured chains:
 2. **Speech Divider Chain**: `create_speech_divider_chain(output_schema)`
 3. **Politician Extractor Chain**: `create_politician_extractor_chain(output_schema)`
 4. **Speaker Matching Chain**: `create_speaker_matching_chain(output_schema)`
-5. **Party Member Extractor Chain**: `create_party_member_extractor_chain(output_schema)`
-6. **Generic Chain**: `create_generic_chain(prompt_template, output_schema)`
+5. **Generic Chain**: `create_generic_chain(prompt_template, output_schema)`
 
 ## Testing
 

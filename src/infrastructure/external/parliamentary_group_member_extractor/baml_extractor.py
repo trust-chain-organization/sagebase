@@ -19,7 +19,7 @@ from src.domain.dtos.parliamentary_group_member_dto import (
 from src.domain.interfaces.parliamentary_group_member_extractor_service import (
     IParliamentaryGroupMemberExtractorService,
 )
-from src.party_member_extractor.html_fetcher import PartyMemberPageFetcher
+from src.infrastructure.external.html_page_fetcher import HtmlPageFetcher
 
 
 logger = logging.getLogger(__name__)
@@ -230,7 +230,7 @@ class BAMLParliamentaryGroupMemberExtractor(IParliamentaryGroupMemberExtractorSe
             HTMLコンテンツ、エラー時はNone
         """
         try:
-            async with PartyMemberPageFetcher() as fetcher:
+            async with HtmlPageFetcher() as fetcher:
                 pages = await fetcher.fetch_all_pages(url, max_pages=1)
                 if pages:
                     return pages[0].html_content

@@ -10,9 +10,6 @@ from typing import Any
 from .metrics import EvaluationMetrics, MetricsCalculator
 
 from src.infrastructure.external.llm_service import GeminiLLMService
-from src.interfaces.factories.party_member_extractor_factory import (
-    PartyMemberExtractorFactory,
-)
 
 
 logger = logging.getLogger(__name__)
@@ -84,9 +81,6 @@ class EvaluationRunner:
                 "speaker_matching": {
                     "results": test_case.get("expected_output", {}).get("results", [])
                 },
-                "party_member_extraction": {
-                    "members": test_case.get("expected_output", {}).get("members", [])
-                },
                 "conference_member_matching": {
                     "matched_members": test_case.get("expected_output", {}).get(
                         "matched_members", []
@@ -99,8 +93,6 @@ class EvaluationRunner:
         try:
             if task_type == "speaker_matching":
                 return self._execute_speaker_matching(test_case)
-            elif task_type == "party_member_extraction":
-                return await self._execute_party_member_extraction(test_case)
             elif task_type == "conference_member_matching":
                 return self._execute_conference_member_matching(test_case)
             else:
@@ -190,64 +182,6 @@ JSON形式で、以下のような構造で返してください:
         except Exception as e:
             logger.error(f"Error in speaker matching: {e}")
             return {"results": []}
-
-    async def _execute_party_member_extraction(
-        self, test_case: dict[str, Any]
-    ) -> dict[str, Any]:
-        """Execute party member extraction using PartyMemberExtractor
-
-        Args:
-            test_case: Test case data with HTML content
-
-        Returns:
-            Dict with extracted members
-        """
-        try:
-            input_data = test_case.get("input", {})
-            html_content = input_data.get("html_content", "")
-            html_file = input_data.get("html_file", "")
-            party_name = input_data.get("party_name", "")
-            source_url = input_data.get("source_url", "http://example.com")
-
-            # Load HTML content from file if html_file is provided
-            if html_file and not html_content:
-                try:
-                    with open(html_file, encoding="utf-8") as f:
-                        html_content = f.read()
-                except FileNotFoundError:
-                    logger.error(f"HTML file not found: {html_file}")
-                    return {"members": []}
-
-            if not html_content:
-                return {"members": []}
-
-            # Use PartyMemberExtractor (BAML interface)
-            extractor = PartyMemberExtractorFactory.create(
-                llm_service=self.llm_service,
-            )
-            result = await extractor.extract_from_html(
-                html_content, source_url, party_name
-            )
-
-            # Format the result from DTO
-            formatted_members = []
-            if result.extracted_members:
-                for member in result.extracted_members:
-                    formatted_member = {"name": member.name, "party": party_name}
-                    if member.position:
-                        formatted_member["position"] = member.position
-                    if member.electoral_district:
-                        formatted_member["district"] = member.electoral_district
-                    if member.profile_url:
-                        formatted_member["website"] = member.profile_url
-
-                    formatted_members.append(formatted_member)
-
-            return {"members": formatted_members}
-
-        except Exception as e:
-            logger.error(f"Error in party member extraction: {e}")
-            return {"members": []}
 
     def _execute_conference_member_matching(
         self, test_case: dict[str, Any]
@@ -375,7 +309,6 @@ JSON形式で以下のような構造で返してください:
             task_types = [
                 "minutes_division",
                 "speaker_matching",
-                "party_member_extraction",
                 "conference_member_matching",
             ]
         elif task_type:
@@ -499,7 +432,6 @@ JSON形式で以下のような構造で返してください:
         columns_map = {
             "minutes_division": ["Speaker Match", "Content Similarity", "Count"],
             "speaker_matching": ["ID Match Rate", "Confidence", "Accuracy"],
-            "party_member_extraction": ["Extraction Rate", "Name Accuracy", "Count"],
             "conference_member_matching": ["Precision", "Recall", "F1 Score"],
         }
         return columns_map.get(task_type, ["Metric 1", "Metric 2", "Metric 3"])
