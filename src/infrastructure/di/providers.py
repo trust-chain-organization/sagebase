@@ -8,9 +8,6 @@ from dependency_injector import containers, providers
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.application.usecases.analyze_party_page_links_usecase import (
-    AnalyzePartyPageLinksUseCase,
-)
 from src.application.usecases.execute_minutes_processing_usecase import (
     ExecuteMinutesProcessingUseCase,
 )
@@ -43,54 +40,17 @@ from src.application.usecases.view_data_coverage_usecase import (
     ViewMeetingCoverageUseCase,
     ViewSpeakerMatchingStatsUseCase,
 )
-from src.domain.services.interfaces.html_link_extractor_service import (
-    IHtmlLinkExtractorService,
-)
-from src.domain.services.interfaces.link_analyzer_service import ILinkAnalyzerService
-from src.domain.services.interfaces.llm_link_classifier_service import (
-    ILLMLinkClassifierService,
-)
 from src.domain.services.interfaces.llm_service import ILLMService
 from src.domain.services.interfaces.minutes_processing_service import (
     IMinutesProcessingService,
 )
-from src.domain.services.interfaces.page_classifier_service import (
-    IPageClassifierService,
-)
-from src.domain.services.interfaces.party_scraping_agent import IPartyScrapingAgent
 from src.domain.services.interfaces.storage_service import IStorageService
-from src.domain.services.link_analysis_domain_service import LinkAnalysisDomainService
-from src.domain.services.party_member_extraction_service import (
-    IPartyMemberExtractionService,
-)
 from src.domain.services.politician_domain_service import PoliticianDomainService
 from src.domain.services.speaker_domain_service import SpeakerDomainService
 from src.infrastructure.external.gcs_storage_service import GCSStorageService
-from src.infrastructure.external.html_link_extractor_service import (
-    BeautifulSoupLinkExtractor,
-)
-
-# fmt: off - Long import line required for clarity
-from src.infrastructure.external.langgraph_party_scraping_agent_with_classification import (  # noqa: E501
-    LangGraphPartyScrapingAgentWithClassification,
-)
-
-# fmt: on
-from src.infrastructure.external.link_analyzer_service_impl import (
-    LinkAnalyzerServiceImpl,
-)
-from src.infrastructure.external.llm_link_classifier_service import (
-    LLMLinkClassifierService,
-)
-from src.infrastructure.external.llm_page_classifier_service import (
-    LLMPageClassifierService,
-)
 from src.infrastructure.external.llm_service import GeminiLLMService
 from src.infrastructure.external.minutes_processing_service import (
     MinutesProcessAgentService,
-)
-from src.infrastructure.external.party_member_extraction_service_impl import (
-    PartyMemberExtractionServiceImpl,
 )
 from src.infrastructure.external.politician_matching import (
     BAMLPoliticianMatchingService,
@@ -114,9 +74,6 @@ from src.infrastructure.persistence.extracted_conference_member_repository_impl 
 )
 from src.infrastructure.persistence.extracted_parliamentary_group_member_repository_impl import (  # noqa: E501
     ExtractedParliamentaryGroupMemberRepositoryImpl,
-)
-from src.infrastructure.persistence.extracted_politician_repository_impl import (
-    ExtractedPoliticianRepositoryImpl,
 )
 from src.infrastructure.persistence.extracted_proposal_judge_repository_impl import (
     ExtractedProposalJudgeRepositoryImpl,
@@ -395,11 +352,6 @@ class RepositoryContainer(containers.DeclarativeContainer):
         session=database.async_session,
     )
 
-    extracted_politician_repository = providers.Factory(
-        ExtractedPoliticianRepositoryImpl,
-        session=database.async_session,
-    )
-
     extracted_proposal_judge_repository = providers.Factory(
         ExtractedProposalJudgeRepositoryImpl,
         session=database.async_session,
@@ -490,30 +442,6 @@ class ServiceContainer(containers.DeclarativeContainer):
     # Domain services
     politician_domain_service = providers.Factory(PoliticianDomainService)
     speaker_domain_service = providers.Factory(SpeakerDomainService)
-    link_analysis_domain_service = providers.Factory(LinkAnalysisDomainService)
-
-    # Infrastructure services for link analysis
-    html_link_extractor_service: providers.Provider[IHtmlLinkExtractorService] = (
-        providers.Factory(BeautifulSoupLinkExtractor)
-    )
-
-    llm_link_classifier_service: providers.Provider[ILLMLinkClassifierService] = (
-        providers.Factory(LLMLinkClassifierService)
-    )
-
-    # Page classifier service for hierarchical scraping (using BAML)
-    page_classifier_service: providers.Provider[IPageClassifierService] = (
-        providers.Factory(LLMPageClassifierService)
-    )
-
-    # Party member extraction service
-    party_member_extraction_service: providers.Provider[
-        IPartyMemberExtractionService
-    ] = providers.Factory(
-        PartyMemberExtractionServiceImpl,
-        llm_service=llm_service,
-        party_id=None,  # Will be set per-request
-    )
 
     # Mock services for testing (these may not have real implementations yet)
     minutes_domain_service = providers.Factory(lambda: MockDomainService("minutes"))
@@ -588,27 +516,6 @@ class UseCaseContainer(containers.DeclarativeContainer):
         llm_service=services.async_llm_service,  # Use async service directly
         update_speaker_usecase=update_speaker_usecase,
         baml_matching_service=baml_politician_matching_service,  # Issue #885
-    )
-
-    # Define analyze_party_page_links_usecase, link_analyzer_service, and party_scraping_agent
-    analyze_party_page_links_usecase = providers.Factory(
-        AnalyzePartyPageLinksUseCase,
-        html_extractor=services.html_link_extractor_service,
-        link_classifier=services.llm_link_classifier_service,
-        link_analysis_service=services.link_analysis_domain_service,
-    )
-
-    link_analyzer_service: providers.Provider[ILinkAnalyzerService] = providers.Factory(
-        LinkAnalyzerServiceImpl,
-        link_analysis_usecase=analyze_party_page_links_usecase,
-    )
-
-    party_scraping_agent: providers.Provider[IPartyScrapingAgent] = providers.Factory(
-        LangGraphPartyScrapingAgentWithClassification,
-        page_classifier=services.page_classifier_service,
-        scraper=services.web_scraper_service,
-        member_extractor=services.party_member_extraction_service,
-        link_analyzer=link_analyzer_service,
     )
 
     manage_conference_members_usecase = providers.Factory(

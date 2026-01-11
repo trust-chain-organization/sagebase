@@ -138,28 +138,6 @@ Return a JSON object with match results."""
         chain = prompt | llm  # type: ignore[misc]
         return chain  # type: ignore[return-value]
 
-    def create_party_member_extractor_chain(
-        self, output_schema: type[BaseModel]
-    ) -> RunnableSerializable[dict[str, Any], BaseModel]:
-        """
-        Create chain for extracting party member information
-
-        Args:
-            output_schema: Schema for party member data
-
-        Returns:
-            Configured chain
-        """
-        template = """Extract party member information from the following HTML:
-
-{html_content}
-
-Return a JSON array of party members with name, position, and other details."""
-        prompt = ChatPromptTemplate.from_template(template)
-        llm = self.llm_service.get_structured_llm(output_schema)
-        chain = prompt | llm  # type: ignore[misc]
-        return chain  # type: ignore[return-value]
-
     def create_generic_chain(
         self,
         prompt_template: str,
