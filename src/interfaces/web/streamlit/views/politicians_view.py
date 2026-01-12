@@ -8,6 +8,60 @@ from src.interfaces.web.streamlit.presenters.politician_presenter import (
 from src.seed_generator import SeedGenerator
 
 
+# 日本の都道府県リスト
+PREFECTURES: list[str] = [
+    "",  # 未選択用
+    "北海道",
+    "青森県",
+    "岩手県",
+    "宮城県",
+    "秋田県",
+    "山形県",
+    "福島県",
+    "茨城県",
+    "栃木県",
+    "群馬県",
+    "埼玉県",
+    "千葉県",
+    "東京都",
+    "神奈川県",
+    "新潟県",
+    "富山県",
+    "石川県",
+    "福井県",
+    "山梨県",
+    "長野県",
+    "岐阜県",
+    "静岡県",
+    "愛知県",
+    "三重県",
+    "滋賀県",
+    "京都府",
+    "大阪府",
+    "兵庫県",
+    "奈良県",
+    "和歌山県",
+    "鳥取県",
+    "島根県",
+    "岡山県",
+    "広島県",
+    "山口県",
+    "徳島県",
+    "香川県",
+    "愛媛県",
+    "高知県",
+    "福岡県",
+    "佐賀県",
+    "長崎県",
+    "熊本県",
+    "大分県",
+    "宮崎県",
+    "鹿児島県",
+    "沖縄県",
+    "比例代表",
+]
+
+
 def render_politicians_page() -> None:
     """Render the politicians management page."""
     st.header("政治家管理")
@@ -90,10 +144,75 @@ def render_politicians_list_tab(presenter: PoliticianPresenter) -> None:
     )
 
     if politicians:
-        # Display data in DataFrame
+        # Display data in DataFrame with editable prefecture column
         df = presenter.to_dataframe(politicians, parties)
         if df is not None:
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            # 都道府県列をドロップダウンで編集可能にする
+            column_config = {
+                "ID": st.column_config.NumberColumn("ID", disabled=True),
+                "名前": st.column_config.TextColumn("名前", disabled=True),
+                "都道府県": st.column_config.SelectboxColumn(
+                    "都道府県",
+                    options=PREFECTURES,
+                    required=False,
+                ),
+                "政党": st.column_config.TextColumn("政党", disabled=True),
+                "選挙区": st.column_config.TextColumn("選挙区", disabled=True),
+                "プロフィールURL": st.column_config.TextColumn(
+                    "プロフィールURL", disabled=True
+                ),
+            }
+
+            edited_df = st.data_editor(
+                df,
+                column_config=column_config,
+                use_container_width=True,
+                hide_index=True,
+                key="politicians_editor",
+            )
+
+            # 変更があった行を検出して保存
+            if not df.equals(edited_df):
+                # 変更された行を特定
+                changed_rows = df.compare(edited_df)
+                if not changed_rows.empty:
+                    st.info("変更を検出しました。保存ボタンで保存してください。")
+
+                    if st.button("変更を保存", type="primary", key="save_pref"):
+                        success_count = 0
+                        error_count = 0
+                        for idx in changed_rows.index.unique():
+                            politician_id = int(df.loc[idx, "ID"])
+                            new_prefecture = edited_df.loc[idx, "都道府県"]
+
+                            # 元の政治家データを取得
+                            original = next(
+                                (p for p in politicians if p.id == politician_id), None
+                            )
+                            if original:
+                                # 政党IDを取得
+                                party_id = original.political_party_id
+
+                                success, error = presenter.update(
+                                    id=politician_id,
+                                    name=original.name,
+                                    prefecture=new_prefecture or "",
+                                    party_id=party_id,
+                                    district=original.district or "",
+                                    profile_url=original.profile_page_url,
+                                )
+                                if success:
+                                    success_count += 1
+                                else:
+                                    error_count += 1
+                                    msg = f"ID {politician_id} の更新に失敗: {error}"
+                                    st.error(msg)
+
+                        if success_count > 0:
+                            st.success(f"✅ {success_count}件を更新しました")
+                            st.rerun()
+                        if error_count > 0:
+                            st.warning(f"⚠️ {error_count}件の更新に失敗しました")
 
         # Statistics
         st.markdown("### 統計情報")
@@ -237,60 +356,62 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
     # Get parties
     parties = presenter.get_all_parties()
 
-    # 都道府県リスト
-    prefectures = [
-        "北海道",
-        "青森県",
-        "岩手県",
-        "宮城県",
-        "秋田県",
-        "山形県",
-        "福島県",
-        "茨城県",
-        "栃木県",
-        "群馬県",
-        "埼玉県",
-        "千葉県",
-        "東京都",
-        "神奈川県",
-        "新潟県",
-        "富山県",
-        "石川県",
-        "福井県",
-        "山梨県",
-        "長野県",
-        "岐阜県",
-        "静岡県",
-        "愛知県",
-        "三重県",
-        "滋賀県",
-        "京都府",
-        "大阪府",
-        "兵庫県",
-        "奈良県",
-        "和歌山県",
-        "鳥取県",
-        "島根県",
-        "岡山県",
-        "広島県",
-        "山口県",
-        "徳島県",
-        "香川県",
-        "愛媛県",
-        "高知県",
-        "福岡県",
-        "佐賀県",
-        "長崎県",
-        "熊本県",
-        "大分県",
-        "宮崎県",
-        "鹿児島県",
-        "沖縄県",
-        "比例代表",
-    ]
+    # ファイル先頭のPREFECTURESを使用（空文字を除く）
+    prefectures = [p for p in PREFECTURES if p]
+
+    # フィルターオプション
+    st.markdown("#### フィルター")
+
+    # 政党フィルター
+    party_filter_options = ["すべて"] + [p.name for p in parties]
+    party_id_map = {p.name: p.id for p in parties}
+    selected_party_filter = st.selectbox(
+        "政党でフィルター",
+        party_filter_options,
+        key="edit_party_filter",
+    )
+
+    # チェックボックスフィルター
+    col1, col2 = st.columns(2)
+    with col1:
+        filter_no_prefecture = st.checkbox(
+            "都道府県が未設定の政治家のみ", key="filter_no_prefecture"
+        )
+    with col2:
+        filter_no_district = st.checkbox(
+            "選挙区が未設定の政治家のみ", key="filter_no_district"
+        )
+
+    # フィルター適用
+    filtered_politicians = politicians
+
+    # 政党フィルター
+    if selected_party_filter != "すべて":
+        selected_party_id = party_id_map.get(selected_party_filter)
+        filtered_politicians = [
+            p for p in filtered_politicians if p.political_party_id == selected_party_id
+        ]
+
+    if filter_no_prefecture:
+        filtered_politicians = [p for p in filtered_politicians if not p.prefecture]
+    if filter_no_district:
+        filtered_politicians = [p for p in filtered_politicians if not p.district]
+
+    # フィルター結果の表示
+    is_filtered = (
+        selected_party_filter != "すべて" or filter_no_prefecture or filter_no_district
+    )
+    if is_filtered:
+        filtered_count = len(filtered_politicians)
+        total_count = len(politicians)
+        st.info(f"フィルター適用中: {filtered_count}件 / 全{total_count}件")
+
+    if not filtered_politicians:
+        st.warning("条件に一致する政治家がいません")
+        return
 
     # Select politician to edit
-    politician_options = [f"{p.name} (ID: {p.id})" for p in politicians]
+    politician_options = [f"{p.name} (ID: {p.id})" for p in filtered_politicians]
     selected_politician_str = st.selectbox("編集する政治家を選択", politician_options)
 
     # Get selected politician
