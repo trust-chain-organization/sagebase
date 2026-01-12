@@ -18,6 +18,15 @@ class WorkType(str, Enum):
     PARLIAMENTARY_GROUP_MEMBERSHIP_CREATION = "parliamentary_group_membership_creation"
     """議員団メンバー作成作業"""
 
+    POLITICIAN_CREATE = "politician_create"
+    """政治家作成作業"""
+
+    POLITICIAN_UPDATE = "politician_update"
+    """政治家更新作業"""
+
+    POLITICIAN_DELETE = "politician_delete"
+    """政治家削除作業"""
+
 
 @dataclass
 class WorkHistoryDTO:
@@ -49,5 +58,8 @@ class WorkHistoryDTO:
         display_names = {
             WorkType.SPEAKER_POLITICIAN_MATCHING: "発言者-政治家紐付け",
             WorkType.PARLIAMENTARY_GROUP_MEMBERSHIP_CREATION: "議員団メンバー作成",
+            WorkType.POLITICIAN_CREATE: "政治家作成",
+            WorkType.POLITICIAN_UPDATE: "政治家更新",
+            WorkType.POLITICIAN_DELETE: "政治家削除",
         }
         return display_names.get(self.work_type, self.work_type.value)

@@ -17,6 +17,10 @@ from src.domain.entities.parliamentary_group_membership import (
     ParliamentaryGroupMembership,
 )
 from src.domain.entities.politician import Politician
+from src.domain.entities.politician_operation_log import (
+    PoliticianOperationLog,
+    PoliticianOperationType,
+)
 from src.domain.entities.speaker import Speaker
 from src.domain.entities.user import User
 
@@ -1010,3 +1014,225 @@ async def test_get_top_contributors_with_filter():
     assert result[0]["total_count"] == 20
     assert "SPEAKER_POLITICIAN_MATCHING" in result[0]["by_type"]
     assert "PARLIAMENTARY_GROUP_MEMBERSHIP_CREATION" not in result[0]["by_type"]
+
+
+@pytest.mark.asyncio
+async def test_get_work_history_with_politician_operations():
+    """政治家操作履歴を含む作業履歴取得テスト"""
+    # Arrange
+    user_id = uuid4()
+    user = User(user_id=user_id, email="test@example.com", name="Test User")
+
+    speaker_repo = MagicMock()
+    membership_repo = MagicMock()
+    user_repo = MagicMock()
+    politician_log_repo = MagicMock()
+
+    speaker_repo.find_by_matched_user = AsyncMock(return_value=[])
+    membership_repo.find_by_created_user = AsyncMock(return_value=[])
+
+    # 政治家操作ログのテストデータ
+    log = PoliticianOperationLog(
+        id=1,
+        politician_id=42,
+        politician_name="山田太郎",
+        operation_type=PoliticianOperationType.CREATE,
+        user_id=user_id,
+        operated_at=datetime.now(),
+    )
+    politician_log_repo.find_by_filters = AsyncMock(return_value=[log])
+
+    user_repo.get_by_id = AsyncMock(return_value=user)
+
+    usecase = GetWorkHistoryUseCase(
+        speaker_repository=speaker_repo,
+        parliamentary_group_membership_repository=membership_repo,
+        user_repository=user_repo,
+        politician_operation_log_repository=politician_log_repo,
+    )
+
+    # Act
+    histories = await usecase.execute()
+
+    # Assert
+    assert len(histories) >= 1
+    assert any(h.work_type == WorkType.POLITICIAN_CREATE for h in histories)
+
+
+@pytest.mark.asyncio
+async def test_get_work_history_with_all_politician_operation_types():
+    """全ての政治家操作タイプの履歴取得テスト"""
+    # Arrange
+    user_id = uuid4()
+    user = User(user_id=user_id, email="test@example.com", name="Test User")
+
+    speaker_repo = MagicMock()
+    membership_repo = MagicMock()
+    user_repo = MagicMock()
+    politician_log_repo = MagicMock()
+
+    speaker_repo.find_by_matched_user = AsyncMock(return_value=[])
+    membership_repo.find_by_created_user = AsyncMock(return_value=[])
+
+    # 全ての政治家操作タイプのテストデータ
+    logs = [
+        PoliticianOperationLog(
+            id=1,
+            politician_id=1,
+            politician_name="山田太郎",
+            operation_type=PoliticianOperationType.CREATE,
+            user_id=user_id,
+            operated_at=datetime.now(),
+        ),
+        PoliticianOperationLog(
+            id=2,
+            politician_id=2,
+            politician_name="鈴木花子",
+            operation_type=PoliticianOperationType.UPDATE,
+            user_id=user_id,
+            operated_at=datetime.now(),
+        ),
+        PoliticianOperationLog(
+            id=3,
+            politician_id=3,
+            politician_name="田中次郎",
+            operation_type=PoliticianOperationType.DELETE,
+            user_id=user_id,
+            operated_at=datetime.now(),
+        ),
+    ]
+    politician_log_repo.find_by_filters = AsyncMock(return_value=logs)
+
+    user_repo.get_by_id = AsyncMock(return_value=user)
+
+    usecase = GetWorkHistoryUseCase(
+        speaker_repository=speaker_repo,
+        parliamentary_group_membership_repository=membership_repo,
+        user_repository=user_repo,
+        politician_operation_log_repository=politician_log_repo,
+    )
+
+    # Act
+    histories = await usecase.execute()
+
+    # Assert
+    # 各操作タイプが履歴に含まれていることを確認
+    assert any(h.work_type == WorkType.POLITICIAN_CREATE for h in histories)
+    assert any(h.work_type == WorkType.POLITICIAN_UPDATE for h in histories)
+    assert any(h.work_type == WorkType.POLITICIAN_DELETE for h in histories)
+
+
+@pytest.mark.asyncio
+async def test_get_work_history_without_politician_log_repo():
+    """政治家操作ログリポジトリがない場合のテスト（後方互換性）"""
+    # Arrange
+    user_id = uuid4()
+    user = User(user_id=user_id, email="test@example.com", name="Test User")
+
+    speaker_repo = MagicMock()
+    membership_repo = MagicMock()
+    user_repo = MagicMock()
+
+    speaker_repo.find_by_matched_user = AsyncMock(return_value=[])
+    membership_repo.find_by_created_user = AsyncMock(return_value=[])
+    user_repo.get_by_id = AsyncMock(return_value=user)
+
+    usecase = GetWorkHistoryUseCase(
+        speaker_repository=speaker_repo,
+        parliamentary_group_membership_repository=membership_repo,
+        user_repository=user_repo,
+        politician_operation_log_repository=None,  # No log repository
+    )
+
+    # Act
+    histories = await usecase.execute()
+
+    # Assert - should work without politician log repository
+    assert len(histories) == 0
+
+
+@pytest.mark.asyncio
+async def test_get_work_history_politician_log_without_user_id_skipped():
+    """user_idがNoneの政治家操作ログはスキップされるテスト"""
+    # Arrange
+    user_id = uuid4()
+    user = User(user_id=user_id, email="test@example.com", name="Test User")
+
+    speaker_repo = MagicMock()
+    membership_repo = MagicMock()
+    user_repo = MagicMock()
+    politician_log_repo = MagicMock()
+
+    speaker_repo.find_by_matched_user = AsyncMock(return_value=[])
+    membership_repo.find_by_created_user = AsyncMock(return_value=[])
+
+    # user_idがNoneのログ
+    log_without_user = PoliticianOperationLog(
+        id=1,
+        politician_id=42,
+        politician_name="山田太郎",
+        operation_type=PoliticianOperationType.CREATE,
+        user_id=None,  # No user
+        operated_at=datetime.now(),
+    )
+    politician_log_repo.find_by_filters = AsyncMock(return_value=[log_without_user])
+
+    user_repo.get_by_id = AsyncMock(return_value=user)
+
+    usecase = GetWorkHistoryUseCase(
+        speaker_repository=speaker_repo,
+        parliamentary_group_membership_repository=membership_repo,
+        user_repository=user_repo,
+        politician_operation_log_repository=politician_log_repo,
+    )
+
+    # Act
+    histories = await usecase.execute()
+
+    # Assert - log without user_id should be skipped
+    assert len(histories) == 0
+
+
+@pytest.mark.asyncio
+async def test_get_work_history_filter_by_politician_create_type():
+    """政治家作成タイプでフィルタリングするテスト"""
+    # Arrange
+    user_id = uuid4()
+    user = User(user_id=user_id, email="test@example.com", name="Test User")
+
+    speaker_repo = MagicMock()
+    membership_repo = MagicMock()
+    user_repo = MagicMock()
+    politician_log_repo = MagicMock()
+
+    speaker_repo.find_by_matched_user = AsyncMock(return_value=[])
+    membership_repo.find_by_created_user = AsyncMock(return_value=[])
+
+    log = PoliticianOperationLog(
+        id=1,
+        politician_id=42,
+        politician_name="山田太郎",
+        operation_type=PoliticianOperationType.CREATE,
+        user_id=user_id,
+        operated_at=datetime.now(),
+    )
+    politician_log_repo.find_by_filters = AsyncMock(return_value=[log])
+
+    user_repo.get_by_id = AsyncMock(return_value=user)
+
+    usecase = GetWorkHistoryUseCase(
+        speaker_repository=speaker_repo,
+        parliamentary_group_membership_repository=membership_repo,
+        user_repository=user_repo,
+        politician_operation_log_repository=politician_log_repo,
+    )
+
+    # Act
+    histories = await usecase.execute(work_types=[WorkType.POLITICIAN_CREATE])
+
+    # Assert
+    politician_create_histories = [
+        h for h in histories if h.work_type == WorkType.POLITICIAN_CREATE
+    ]
+    assert len(politician_create_histories) >= 1
+    assert politician_create_histories[0].target_data == "山田太郎"

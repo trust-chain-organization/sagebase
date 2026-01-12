@@ -45,5 +45,6 @@
 \i /docker-entrypoint-initdb.d/02_migrations/040_add_extraction_log_fields_to_extracted_members.sql
 \i /docker-entrypoint-initdb.d/02_migrations/041_drop_extracted_politicians_table.sql
 \i /docker-entrypoint-initdb.d/02_migrations/042_remove_verification_fields_from_politicians.sql
+\i /docker-entrypoint-initdb.d/02_migrations/043_create_politician_operation_logs.sql
 
 \echo 'Migrations completed.'

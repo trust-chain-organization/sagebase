@@ -103,6 +103,9 @@ from src.infrastructure.persistence.political_party_repository_impl import (
 from src.infrastructure.persistence.politician_affiliation_repository_impl import (
     PoliticianAffiliationRepositoryImpl,
 )
+from src.infrastructure.persistence.politician_operation_log_repository_impl import (
+    PoliticianOperationLogRepositoryImpl,
+)
 from src.infrastructure.persistence.politician_repository_impl import (
     PoliticianRepositoryImpl,
 )
@@ -399,6 +402,11 @@ class RepositoryContainer(containers.DeclarativeContainer):
 
     user_repository = providers.Factory(
         UserRepositoryImpl,
+        session=database.async_session,
+    )
+
+    politician_operation_log_repository = providers.Factory(
+        PoliticianOperationLogRepositoryImpl,
         session=database.async_session,
     )
 

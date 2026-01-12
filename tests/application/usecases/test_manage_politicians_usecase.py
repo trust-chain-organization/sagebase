@@ -1,6 +1,7 @@
 """Tests for ManagePoliticiansUseCase."""
 
 from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import pytest
 
@@ -18,6 +19,7 @@ from src.application.usecases.manage_politicians_usecase import (
     UpdatePoliticianOutputDto,
 )
 from src.domain.entities.politician import Politician
+from src.domain.entities.politician_operation_log import PoliticianOperationType
 
 
 class TestManagePoliticiansUseCase:
@@ -459,3 +461,242 @@ class TestManagePoliticiansUseCase:
         # Assert
         assert result.success is False
         assert "Database error" in result.error_message
+
+
+class TestManagePoliticiansUseCaseWithLogging:
+    """Test cases for ManagePoliticiansUseCase with operation logging."""
+
+    @pytest.fixture
+    def mock_politician_repository(self):
+        """Create mock politician repository."""
+        return AsyncMock()
+
+    @pytest.fixture
+    def mock_operation_log_repository(self):
+        """Create mock operation log repository."""
+        return AsyncMock()
+
+    @pytest.fixture
+    def use_case_with_logging(
+        self, mock_politician_repository, mock_operation_log_repository
+    ):
+        """Create ManagePoliticiansUseCase with logging repository."""
+        return ManagePoliticiansUseCase(
+            politician_repository=mock_politician_repository,
+            operation_log_repository=mock_operation_log_repository,
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_politician_logs_operation(
+        self,
+        use_case_with_logging,
+        mock_politician_repository,
+        mock_operation_log_repository,
+    ):
+        """Test that creating a politician logs the operation."""
+        # Arrange
+        user_id = uuid4()
+        mock_politician_repository.get_by_name_and_party.return_value = None
+        created_politician = Politician(
+            id=1,
+            name="田中次郎",
+            prefecture="東京都",
+            political_party_id=1,
+            district="東京都第1区",
+        )
+        mock_politician_repository.create.return_value = created_politician
+
+        input_dto = CreatePoliticianInputDto(
+            name="田中次郎",
+            prefecture="東京都",
+            party_id=1,
+            district="東京都第1区",
+            user_id=user_id,
+        )
+
+        # Act
+        result = await use_case_with_logging.create_politician(input_dto)
+
+        # Assert
+        assert result.success is True
+        mock_operation_log_repository.create.assert_called_once()
+        log_call = mock_operation_log_repository.create.call_args[0][0]
+        assert log_call.politician_id == 1
+        assert log_call.politician_name == "田中次郎"
+        assert log_call.operation_type == PoliticianOperationType.CREATE
+        assert log_call.user_id == user_id
+
+    @pytest.mark.asyncio
+    async def test_update_politician_logs_operation(
+        self,
+        use_case_with_logging,
+        mock_politician_repository,
+        mock_operation_log_repository,
+    ):
+        """Test that updating a politician logs the operation."""
+        # Arrange
+        user_id = uuid4()
+        existing_politician = Politician(
+            id=1,
+            name="山田太郎",
+            prefecture="東京都",
+            political_party_id=1,
+            district="東京都第1区",
+        )
+        mock_politician_repository.get_by_id.return_value = existing_politician
+        mock_politician_repository.update.return_value = existing_politician
+
+        input_dto = UpdatePoliticianInputDto(
+            id=1,
+            name="山田太郎",
+            prefecture="神奈川県",
+            district="神奈川1区",
+            user_id=user_id,
+        )
+
+        # Act
+        result = await use_case_with_logging.update_politician(input_dto)
+
+        # Assert
+        assert result.success is True
+        mock_operation_log_repository.create.assert_called_once()
+        log_call = mock_operation_log_repository.create.call_args[0][0]
+        assert log_call.politician_id == 1
+        assert log_call.politician_name == "山田太郎"
+        assert log_call.operation_type == PoliticianOperationType.UPDATE
+        assert log_call.user_id == user_id
+
+    @pytest.mark.asyncio
+    async def test_delete_politician_logs_operation(
+        self,
+        use_case_with_logging,
+        mock_politician_repository,
+        mock_operation_log_repository,
+    ):
+        """Test that deleting a politician logs the operation."""
+        # Arrange
+        user_id = uuid4()
+        existing_politician = Politician(
+            id=1,
+            name="山田太郎",
+            prefecture="東京都",
+            political_party_id=1,
+            district="東京1区",
+        )
+        mock_politician_repository.get_by_id.return_value = existing_politician
+
+        input_dto = DeletePoliticianInputDto(id=1, user_id=user_id)
+
+        # Act
+        result = await use_case_with_logging.delete_politician(input_dto)
+
+        # Assert
+        assert result.success is True
+        mock_operation_log_repository.create.assert_called_once()
+        log_call = mock_operation_log_repository.create.call_args[0][0]
+        assert log_call.politician_id == 1
+        assert log_call.politician_name == "山田太郎"
+        assert log_call.operation_type == PoliticianOperationType.DELETE
+        assert log_call.user_id == user_id
+
+    @pytest.mark.asyncio
+    async def test_create_does_not_log_on_failure(
+        self,
+        use_case_with_logging,
+        mock_politician_repository,
+        mock_operation_log_repository,
+    ):
+        """Test that failed create operation does not log."""
+        # Arrange
+        existing_politician = Politician(
+            id=1,
+            name="田中次郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
+        mock_politician_repository.get_by_name_and_party.return_value = (
+            existing_politician
+        )
+
+        input_dto = CreatePoliticianInputDto(
+            name="田中次郎",
+            prefecture="東京都",
+            district="東京1区",
+            party_id=1,
+        )
+
+        # Act
+        result = await use_case_with_logging.create_politician(input_dto)
+
+        # Assert
+        assert result.success is False
+        mock_operation_log_repository.create.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_log_failure_does_not_affect_main_operation(
+        self,
+        use_case_with_logging,
+        mock_politician_repository,
+        mock_operation_log_repository,
+    ):
+        """Test that log failure does not affect the main operation."""
+        # Arrange
+        mock_politician_repository.get_by_name_and_party.return_value = None
+        created_politician = Politician(
+            id=1,
+            name="田中次郎",
+            prefecture="東京都",
+            political_party_id=1,
+            district="東京都第1区",
+        )
+        mock_politician_repository.create.return_value = created_politician
+        mock_operation_log_repository.create.side_effect = Exception("Log failed")
+
+        input_dto = CreatePoliticianInputDto(
+            name="田中次郎",
+            prefecture="東京都",
+            party_id=1,
+            district="東京都第1区",
+        )
+
+        # Act
+        result = await use_case_with_logging.create_politician(input_dto)
+
+        # Assert - main operation should still succeed
+        assert result.success is True
+        assert result.politician_id == 1
+
+    @pytest.mark.asyncio
+    async def test_usecase_without_log_repository_still_works(
+        self, mock_politician_repository
+    ):
+        """Test that UseCase works without operation log repository."""
+        # Arrange
+        use_case = ManagePoliticiansUseCase(
+            politician_repository=mock_politician_repository,
+            operation_log_repository=None,  # No log repository
+        )
+        mock_politician_repository.get_by_name_and_party.return_value = None
+        created_politician = Politician(
+            id=1,
+            name="田中次郎",
+            prefecture="東京都",
+            political_party_id=1,
+            district="東京都第1区",
+        )
+        mock_politician_repository.create.return_value = created_politician
+
+        input_dto = CreatePoliticianInputDto(
+            name="田中次郎",
+            prefecture="東京都",
+            party_id=1,
+            district="東京都第1区",
+        )
+
+        # Act
+        result = await use_case.create_politician(input_dto)
+
+        # Assert
+        assert result.success is True
+        assert result.politician_id == 1

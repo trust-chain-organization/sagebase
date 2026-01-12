@@ -1,9 +1,18 @@
 """Use case for managing politicians."""
 
 from dataclasses import dataclass
+from typing import Any
+from uuid import UUID
 
 from src.common.logging import get_logger
 from src.domain.entities import Politician
+from src.domain.entities.politician_operation_log import (
+    PoliticianOperationLog,
+    PoliticianOperationType,
+)
+from src.domain.repositories.politician_operation_log_repository import (
+    PoliticianOperationLogRepository,
+)
 from src.domain.repositories.politician_repository import PoliticianRepository
 
 
@@ -34,6 +43,7 @@ class CreatePoliticianInputDto:
     district: str
     party_id: int | None = None
     profile_url: str | None = None
+    user_id: UUID | None = None  # 操作ユーザーID（ログ記録用）
 
 
 @dataclass
@@ -55,6 +65,7 @@ class UpdatePoliticianInputDto:
     district: str
     party_id: int | None = None
     profile_url: str | None = None
+    user_id: UUID | None = None  # 操作ユーザーID（ログ記録用）
 
 
 @dataclass
@@ -70,6 +81,7 @@ class DeletePoliticianInputDto:
     """Input DTO for deleting a politician."""
 
     id: int
+    user_id: UUID | None = None  # 操作ユーザーID（ログ記録用）
 
 
 @dataclass
@@ -99,13 +111,56 @@ class MergePoliticiansOutputDto:
 class ManagePoliticiansUseCase:
     """Use case for managing politicians."""
 
-    def __init__(self, politician_repository: PoliticianRepository):
+    def __init__(
+        self,
+        politician_repository: PoliticianRepository,
+        operation_log_repository: PoliticianOperationLogRepository | None = None,
+    ):
         """Initialize the use case.
 
         Args:
             politician_repository: Repository instance (can be sync or async)
+            operation_log_repository: Optional repository for operation logs
         """
         self.politician_repository = politician_repository
+        self.operation_log_repository = operation_log_repository
+
+    async def _log_operation(
+        self,
+        politician_id: int,
+        politician_name: str,
+        operation_type: PoliticianOperationType,
+        user_id: UUID | None,
+        details: dict[str, Any],
+    ) -> None:
+        """操作ログを記録する.
+
+        Args:
+            politician_id: 政治家ID
+            politician_name: 政治家名
+            operation_type: 操作種別
+            user_id: 操作ユーザーID
+            details: 操作詳細
+        """
+        if not self.operation_log_repository:
+            return
+
+        try:
+            log = PoliticianOperationLog(
+                politician_id=politician_id,
+                politician_name=politician_name,
+                operation_type=operation_type,
+                user_id=user_id,
+                operation_details=details,
+            )
+            await self.operation_log_repository.create(log)
+            logger.info(
+                f"操作ログ記録: politician_id={politician_id}, "
+                f"operation_type={operation_type.value}, user_id={user_id}"
+            )
+        except Exception as e:
+            # ログ記録失敗は主要操作に影響させない
+            logger.warning(f"操作ログの記録に失敗: {e}")
 
     async def list_politicians(
         self, input_dto: PoliticianListInputDto
@@ -154,6 +209,22 @@ class ManagePoliticiansUseCase:
             )
 
             created = await self.politician_repository.create(politician)
+
+            # 操作ログを記録
+            if created.id:
+                await self._log_operation(
+                    politician_id=created.id,
+                    politician_name=input_dto.name,
+                    operation_type=PoliticianOperationType.CREATE,
+                    user_id=input_dto.user_id,
+                    details={
+                        "prefecture": input_dto.prefecture,
+                        "district": input_dto.district,
+                        "party_id": input_dto.party_id,
+                        "profile_url": input_dto.profile_url,
+                    },
+                )
+
             return CreatePoliticianOutputDto(success=True, politician_id=created.id)
         except Exception as e:
             logger.error(f"Failed to create politician: {e}")
@@ -179,6 +250,21 @@ class ManagePoliticiansUseCase:
             existing.profile_page_url = input_dto.profile_url
 
             await self.politician_repository.update(existing)
+
+            # 操作ログを記録
+            await self._log_operation(
+                politician_id=input_dto.id,
+                politician_name=input_dto.name,
+                operation_type=PoliticianOperationType.UPDATE,
+                user_id=input_dto.user_id,
+                details={
+                    "prefecture": input_dto.prefecture,
+                    "district": input_dto.district,
+                    "party_id": input_dto.party_id,
+                    "profile_url": input_dto.profile_url,
+                },
+            )
+
             return UpdatePoliticianOutputDto(success=True)
         except Exception as e:
             logger.error(f"Failed to update politician: {e}")
@@ -196,7 +282,20 @@ class ManagePoliticiansUseCase:
                     success=False, error_message="政治家が見つかりません。"
                 )
 
+            # 削除前に政治家名を保存
+            politician_name = existing.name
+
             await self.politician_repository.delete(input_dto.id)
+
+            # 操作ログを記録
+            await self._log_operation(
+                politician_id=input_dto.id,
+                politician_name=politician_name,
+                operation_type=PoliticianOperationType.DELETE,
+                user_id=input_dto.user_id,
+                details={},
+            )
+
             return DeletePoliticianOutputDto(success=True)
         except Exception as e:
             logger.error(f"Failed to delete politician: {e}")

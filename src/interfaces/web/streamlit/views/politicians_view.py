@@ -192,6 +192,7 @@ def render_politicians_list_tab(presenter: PoliticianPresenter) -> None:
                             if original:
                                 # 政党IDを取得
                                 party_id = original.political_party_id
+                                user_id = presenter.get_current_user_id()
 
                                 success, error = presenter.update(
                                     id=politician_id,
@@ -200,6 +201,7 @@ def render_politicians_list_tab(presenter: PoliticianPresenter) -> None:
                                     party_id=party_id,
                                     district=original.district or "",
                                     profile_url=original.profile_page_url,
+                                    user_id=user_id,
                                 )
                                 if success:
                                     success_count += 1
@@ -329,12 +331,14 @@ def render_new_politician_tab(presenter: PoliticianPresenter) -> None:
                     if selected_party != "無所属"
                     else None
                 )
+                user_id = presenter.get_current_user_id()
                 success, politician_id, error = presenter.create(
                     name,
                     prefecture,
                     party_id,
                     district,
                     profile_url if profile_url else None,
+                    user_id=user_id,
                 )
                 if success:
                     st.success(f"政治家「{name}」を登録しました（ID: {politician_id}）")
@@ -475,6 +479,7 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
                     party_id = (
                         party_map.get(new_party) if new_party != "無所属" else None
                     )
+                    user_id = presenter.get_current_user_id()
                     success, error = presenter.update(
                         selected_politician.id,  # type: ignore[arg-type]
                         new_name,
@@ -482,6 +487,7 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
                         party_id,
                         new_district,
                         new_profile_url if new_profile_url else None,
+                        user_id=user_id,
                     )
                     if success:
                         st.success("政治家を更新しました")
@@ -494,7 +500,11 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
         st.warning("⚠️ 政治家を削除すると、関連する発言記録も影響を受けます")
 
         if st.button("🗑️ この政治家を削除", type="secondary"):
-            success, error = presenter.delete(selected_politician.id)  # type: ignore[arg-type]
+            user_id = presenter.get_current_user_id()
+            success, error = presenter.delete(
+                selected_politician.id,  # type: ignore[arg-type]
+                user_id=user_id,
+            )
             if success:
                 st.success(f"政治家「{selected_politician.name}」を削除しました")
                 st.rerun()

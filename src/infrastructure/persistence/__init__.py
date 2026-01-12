@@ -9,6 +9,9 @@ from src.infrastructure.persistence.llm_processing_history_repository_impl impor
 from src.infrastructure.persistence.monitoring_repository_impl import (
     MonitoringRepositoryImpl,
 )
+from src.infrastructure.persistence.politician_operation_log_repository_impl import (
+    PoliticianOperationLogRepositoryImpl,
+)
 from src.infrastructure.persistence.prompt_version_repository_impl import (
     PromptVersionRepositoryImpl,
 )
@@ -22,6 +25,7 @@ __all__ = [
     "ISessionAdapter",
     "LLMProcessingHistoryRepositoryImpl",
     "MonitoringRepositoryImpl",
+    "PoliticianOperationLogRepositoryImpl",
     "PromptVersionRepositoryImpl",
     "RepositoryAdapter",
     "SpeakerRepositoryImpl",

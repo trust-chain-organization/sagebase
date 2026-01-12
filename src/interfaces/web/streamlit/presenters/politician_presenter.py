@@ -1,9 +1,13 @@
 """Presenter for politician management."""
 
+import asyncio
+
 from typing import Any
+from uuid import UUID
 
 import pandas as pd
 
+from src.application.usecases.authenticate_user_usecase import AuthenticateUserUseCase
 from src.application.usecases.manage_politicians_usecase import (
     CreatePoliticianInputDto,
     DeletePoliticianInputDto,
@@ -18,10 +22,14 @@ from src.infrastructure.di.container import Container
 from src.infrastructure.persistence.political_party_repository_impl import (
     PoliticalPartyRepositoryImpl,
 )
+from src.infrastructure.persistence.politician_operation_log_repository_impl import (
+    PoliticianOperationLogRepositoryImpl,
+)
 from src.infrastructure.persistence.politician_repository_impl import (
     PoliticianRepositoryImpl,
 )
 from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
+from src.interfaces.web.streamlit.auth import google_sign_in
 from src.interfaces.web.streamlit.presenters.base import BasePresenter
 from src.interfaces.web.streamlit.utils.session_manager import SessionManager
 
@@ -35,12 +43,34 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
         # Initialize repositories and use case
         self.politician_repo = RepositoryAdapter(PoliticianRepositoryImpl)
         self.party_repo = RepositoryAdapter(PoliticalPartyRepositoryImpl)
+        self.operation_log_repo = RepositoryAdapter(
+            PoliticianOperationLogRepositoryImpl
+        )
         # Type: ignore - RepositoryAdapter duck-types as repository protocol
         self.use_case = ManagePoliticiansUseCase(
-            self.politician_repo  # type: ignore[arg-type]
+            politician_repository=self.politician_repo,  # type: ignore[arg-type]
+            operation_log_repository=self.operation_log_repo,  # type: ignore[arg-type]
         )
         self.session = SessionManager()
         self.logger = get_logger(__name__)
+        self._container = container or Container()
+
+    def get_current_user_id(self) -> UUID | None:
+        """現在ログインしているユーザーのIDを取得する."""
+        user_info = google_sign_in.get_user_info()
+        if not user_info:
+            return None
+
+        try:
+            auth_usecase = AuthenticateUserUseCase(
+                user_repository=self._container.repositories.user_repository()
+            )
+            email = user_info.get("email", "")
+            name = user_info.get("name")
+            user = asyncio.run(auth_usecase.execute(email=email, name=name))
+            return user.user_id
+        except Exception:
+            return None
 
     def load_data(self) -> list[Politician]:
         """Load all politicians."""
@@ -95,10 +125,13 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
         party_id: int | None,
         district: str,
         profile_url: str | None = None,
+        user_id: UUID | None = None,
     ) -> tuple[bool, int | None, str | None]:
         """Create a new politician."""
         return self._run_async(
-            self._create_async(name, prefecture, party_id, district, profile_url)
+            self._create_async(
+                name, prefecture, party_id, district, profile_url, user_id
+            )
         )
 
     async def _create_async(
@@ -108,6 +141,7 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
         party_id: int | None,
         district: str,
         profile_url: str | None = None,
+        user_id: UUID | None = None,
     ) -> tuple[bool, int | None, str | None]:
         """Create a new politician (async implementation)."""
         try:
@@ -118,9 +152,10 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
                     district=district,
                     party_id=party_id,
                     profile_url=profile_url,
+                    user_id=user_id,
                 )
             )
-            if result.success:
+            if result.success and result.politician_id:
                 return True, result.politician_id, None
             else:
                 return False, None, result.error_message
@@ -137,10 +172,13 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
         party_id: int | None,
         district: str,
         profile_url: str | None = None,
+        user_id: UUID | None = None,
     ) -> tuple[bool, str | None]:
         """Update an existing politician."""
         return self._run_async(
-            self._update_async(id, name, prefecture, party_id, district, profile_url)
+            self._update_async(
+                id, name, prefecture, party_id, district, profile_url, user_id
+            )
         )
 
     async def _update_async(
@@ -151,6 +189,7 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
         party_id: int | None,
         district: str,
         profile_url: str | None = None,
+        user_id: UUID | None = None,
     ) -> tuple[bool, str | None]:
         """Update an existing politician (async implementation)."""
         try:
@@ -162,6 +201,7 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
                     district=district,
                     party_id=party_id,
                     profile_url=profile_url,
+                    user_id=user_id,
                 )
             )
             if result.success:
@@ -173,15 +213,17 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
             self.logger.error(error_msg)
             return False, error_msg
 
-    def delete(self, id: int) -> tuple[bool, str | None]:
+    def delete(self, id: int, user_id: UUID | None = None) -> tuple[bool, str | None]:
         """Delete a politician."""
-        return self._run_async(self._delete_async(id))
+        return self._run_async(self._delete_async(id, user_id))
 
-    async def _delete_async(self, id: int) -> tuple[bool, str | None]:
+    async def _delete_async(
+        self, id: int, user_id: UUID | None = None
+    ) -> tuple[bool, str | None]:
         """Delete a politician (async implementation)."""
         try:
             result = await self.use_case.delete_politician(
-                DeletePoliticianInputDto(id=id)
+                DeletePoliticianInputDto(id=id, user_id=user_id)
             )
             if result.success:
                 return True, None

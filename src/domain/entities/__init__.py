@@ -17,6 +17,10 @@ from src.domain.entities.parliamentary_group_membership import (
 )
 from src.domain.entities.political_party import PoliticalParty
 from src.domain.entities.politician import Politician
+from src.domain.entities.politician_operation_log import (
+    PoliticianOperationLog,
+    PoliticianOperationType,
+)
 from src.domain.entities.prompt_version import PromptVersion
 from src.domain.entities.speaker import Speaker
 from src.domain.entities.verifiable_entity import VerifiableEntity
@@ -34,6 +38,8 @@ __all__ = [
     "ParliamentaryGroupMembership",
     "PoliticalParty",
     "Politician",
+    "PoliticianOperationLog",
+    "PoliticianOperationType",
     "ProcessingStatus",
     "ProcessingType",
     "PromptVersion",

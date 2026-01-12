@@ -28,10 +28,21 @@ class WorkHistoryPresenter:
     def __init__(self):
         """コンストラクタ"""
         container = Container()
+        # 政治家操作ログリポジトリを取得（存在する場合）
+        politician_operation_log_repo = None
+        try:
+            politician_operation_log_repo = (
+                container.repositories.politician_operation_log_repository()
+            )
+        except Exception:
+            # リポジトリが利用できない場合は無視
+            pass
+
         self.work_history_usecase = GetWorkHistoryUseCase(
             speaker_repository=container.repositories.speaker_repository(),
             parliamentary_group_membership_repository=container.repositories.parliamentary_group_membership_repository(),
             user_repository=container.repositories.user_repository(),
+            politician_operation_log_repository=politician_operation_log_repo,
         )
         self.logger = logging.getLogger(__name__)
 
@@ -168,4 +179,7 @@ class WorkHistoryPresenter:
         return {
             WorkType.SPEAKER_POLITICIAN_MATCHING: "発言者-政治家紐付け",
             WorkType.PARLIAMENTARY_GROUP_MEMBERSHIP_CREATION: "議員団メンバー作成",
+            WorkType.POLITICIAN_CREATE: "政治家作成",
+            WorkType.POLITICIAN_UPDATE: "政治家更新",
+            WorkType.POLITICIAN_DELETE: "政治家削除",
         }

@@ -6,6 +6,7 @@ repository pattern to use ORM features instead of raw SQL.
 """
 
 from datetime import date, datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -17,6 +18,7 @@ from sqlalchemy import (
     String,
     Uuid,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -161,5 +163,40 @@ class ExtractedParliamentaryGroupMemberModel(Base):
             f"id={self.id}, "
             f"extracted_name={self.extracted_name}, "
             f"matching_status={self.matching_status}"
+            f")>"
+        )
+
+
+class PoliticianOperationLogModel(Base):
+    """SQLAlchemy model for politician_operation_logs table."""
+
+    __tablename__ = "politician_operation_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    politician_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    politician_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    operation_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("users.user_id", use_alter=True, name="fk_pol_log_user")
+    )
+    operation_details: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    operated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "operation_type IN ('create', 'update', 'delete')",
+            name="check_operation_type",
+        ),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<PoliticianOperationLogModel("
+            f"id={self.id}, "
+            f"politician_id={self.politician_id}, "
+            f"politician_name={self.politician_name}, "
+            f"operation_type={self.operation_type}"
             f")>"
         )
