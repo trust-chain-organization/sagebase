@@ -421,3 +421,70 @@ class PoliticianRepositoryImpl(BaseRepositoryImpl[Politician], PoliticianReposit
             }
             for row in rows
         ]
+
+    async def get_related_data_counts(self, politician_id: int) -> dict[str, int]:
+        """指定された政治家に紐づく関連データの件数を取得する."""
+        counts: dict[str, int] = {}
+
+        # 各テーブルの件数を取得
+        tables_with_politician_id = [
+            ("speakers", "politician_id"),
+            ("parliamentary_group_memberships", "politician_id"),
+            ("pledges", "politician_id"),
+            ("party_membership_history", "politician_id"),
+            ("proposal_judges", "politician_id"),
+            ("politician_affiliations", "politician_id"),
+        ]
+
+        tables_with_matched_politician_id = [
+            ("extracted_conference_members", "matched_politician_id"),
+            ("extracted_parliamentary_group_members", "matched_politician_id"),
+            ("extracted_proposal_judges", "matched_politician_id"),
+        ]
+
+        for table, column in (
+            tables_with_politician_id + tables_with_matched_politician_id
+        ):
+            query = text(
+                f"SELECT COUNT(*) FROM {table} WHERE {column} = :politician_id"
+            )
+            result = await self.session.execute(query, {"politician_id": politician_id})
+            count = result.scalar()
+            counts[table] = count if count is not None else 0
+
+        return counts
+
+    async def delete_related_data(self, politician_id: int) -> dict[str, int]:
+        """指定された政治家に紐づく関連データを削除・解除する."""
+        results: dict[str, int] = {}
+
+        # NULLableカラム: politician_idをNULLに設定
+        nullable_tables = [
+            ("speakers", "politician_id"),
+            ("extracted_conference_members", "matched_politician_id"),
+            ("extracted_parliamentary_group_members", "matched_politician_id"),
+            ("extracted_proposal_judges", "matched_politician_id"),
+        ]
+
+        for table, column in nullable_tables:
+            query = text(
+                f"UPDATE {table} SET {column} = NULL WHERE {column} = :politician_id"
+            )
+            result = await self.session.execute(query, {"politician_id": politician_id})
+            results[table] = result.rowcount  # type: ignore[attr-defined]
+
+        # NOT NULLカラム: レコードを削除
+        not_null_tables = [
+            "parliamentary_group_memberships",
+            "pledges",
+            "party_membership_history",
+            "proposal_judges",
+            "politician_affiliations",
+        ]
+
+        for table in not_null_tables:
+            query = text(f"DELETE FROM {table} WHERE politician_id = :politician_id")
+            result = await self.session.execute(query, {"politician_id": politician_id})
+            results[table] = result.rowcount  # type: ignore[attr-defined]
+
+        return results

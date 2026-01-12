@@ -67,3 +67,31 @@ class PoliticianRepository(BaseRepository[Politician]):
             electoral_district, and party_name
         """
         pass
+
+    @abstractmethod
+    async def get_related_data_counts(self, politician_id: int) -> dict[str, int]:
+        """指定された政治家に紐づく関連データの件数を取得する.
+
+        Args:
+            politician_id: 政治家ID
+
+        Returns:
+            テーブル名をキー、件数を値とする辞書
+            例: {"speakers": 2, "parliamentary_group_memberships": 1, ...}
+        """
+        pass
+
+    @abstractmethod
+    async def delete_related_data(self, politician_id: int) -> dict[str, int]:
+        """指定された政治家に紐づく関連データを削除・解除する.
+
+        - NULLableなカラムはNULLに設定
+        - NOT NULLなカラムを持つレコードは削除
+
+        Args:
+            politician_id: 政治家ID
+
+        Returns:
+            テーブル名をキー、処理件数を値とする辞書
+        """
+        pass

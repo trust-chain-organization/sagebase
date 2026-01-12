@@ -497,19 +497,102 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
 
     with col2:
         st.markdown("#### 削除")
-        st.warning("⚠️ 政治家を削除すると、関連する発言記録も影響を受けます")
+        st.warning("政治家を削除すると、関連する発言記録も影響を受けます")
+
+        # セッション状態の初期化（確認ダイアログ用）
+        confirm_key = f"confirm_delete_{selected_politician.id}"
+        if confirm_key not in st.session_state:
+            st.session_state[confirm_key] = False
 
         if st.button("🗑️ この政治家を削除", type="secondary"):
             user_id = presenter.get_current_user_id()
-            success, error = presenter.delete(
+            # まず紐づきを確認（force=Falseで呼び出し）
+            success, error, has_related, related_counts = presenter.delete(
                 selected_politician.id,  # type: ignore[arg-type]
                 user_id=user_id,
+                force=False,
             )
             if success:
                 st.success(f"政治家「{selected_politician.name}」を削除しました")
+                st.session_state[confirm_key] = False
+                st.rerun()
+            elif has_related:
+                # 関連データがある場合は確認ダイアログを表示
+                st.session_state[confirm_key] = True
+                st.session_state[f"related_counts_{selected_politician.id}"] = (
+                    related_counts
+                )
                 st.rerun()
             else:
                 st.error(f"削除に失敗しました: {error}")
+
+        # 確認ダイアログの表示
+        if st.session_state.get(confirm_key, False):
+            related_counts = st.session_state.get(
+                f"related_counts_{selected_politician.id}", {}
+            )
+            total_count = sum(related_counts.values()) if related_counts else 0
+
+            # テーブル名の日本語マッピング
+            table_names_jp = {
+                "speakers": "発言者",
+                "parliamentary_group_memberships": "議員団所属",
+                "pledges": "公約",
+                "party_membership_history": "政党所属履歴",
+                "proposal_judges": "議案賛否",
+                "politician_affiliations": "会議体所属",
+                "extracted_conference_members": "抽出済み会議体メンバー",
+                "extracted_parliamentary_group_members": "抽出済み議員団メンバー",
+                "extracted_proposal_judges": "抽出済み議案賛否",
+            }
+
+            st.error(
+                f"⚠️ この政治家には関連データが{total_count}件あります。\n"
+                "削除すると、これらの関連データが解除または削除されます。"
+            )
+
+            if related_counts:
+                details = []
+                for table, count in related_counts.items():
+                    if count > 0:
+                        jp_name = table_names_jp.get(table, table)
+                        details.append(f"{jp_name}: {count}件")
+                st.write("関連データの内訳: " + ", ".join(details))
+
+            col_confirm, col_cancel = st.columns(2)
+            with col_confirm:
+                if st.button(
+                    "⚠️ 関連データを解除・削除して削除",
+                    type="primary",
+                    key=f"force_delete_{selected_politician.id}",
+                ):
+                    user_id = presenter.get_current_user_id()
+                    success, error, _, _ = presenter.delete(
+                        selected_politician.id,  # type: ignore[arg-type]
+                        user_id=user_id,
+                        force=True,
+                    )
+                    if success:
+                        st.success(
+                            f"政治家「{selected_politician.name}」を削除しました"
+                        )
+                        st.session_state[confirm_key] = False
+                        # セッション状態のクリーンアップ
+                        st.session_state.pop(
+                            f"related_counts_{selected_politician.id}", None
+                        )
+                        st.rerun()
+                    else:
+                        st.error(f"削除に失敗しました: {error}")
+            with col_cancel:
+                if st.button(
+                    "キャンセル", key=f"cancel_delete_{selected_politician.id}"
+                ):
+                    st.session_state[confirm_key] = False
+                    st.session_state.pop(
+                        f"related_counts_{selected_politician.id}", None
+                    )
+                    st.rerun()
 
 
 def render_merge_tab(presenter: PoliticianPresenter) -> None:

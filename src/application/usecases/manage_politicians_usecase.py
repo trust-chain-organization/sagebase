@@ -82,6 +82,7 @@ class DeletePoliticianInputDto:
 
     id: int
     user_id: UUID | None = None  # 操作ユーザーID（ログ記録用）
+    force: bool = False  # 警告を無視して削除を実行（speakerとの紐づきを解除）
 
 
 @dataclass
@@ -90,6 +91,8 @@ class DeletePoliticianOutputDto:
 
     success: bool
     error_message: str | None = None
+    has_related_data: bool = False  # 関連データがあるかどうか
+    related_data_counts: dict[str, int] | None = None  # テーブル名と件数のマッピング
 
 
 @dataclass
@@ -273,7 +276,12 @@ class ManagePoliticiansUseCase:
     async def delete_politician(
         self, input_dto: DeletePoliticianInputDto
     ) -> DeletePoliticianOutputDto:
-        """Delete a politician."""
+        """Delete a politician.
+
+        関連データがある場合:
+        - force=Falseの場合: 警告情報を返し、削除は実行しない
+        - force=Trueの場合: 関連データを削除・解除してから削除を実行
+        """
         try:
             # Check if politician exists
             existing = await self.politician_repository.get_by_id(input_dto.id)
@@ -285,6 +293,38 @@ class ManagePoliticiansUseCase:
             # 削除前に政治家名を保存
             politician_name = existing.name
 
+            # 関連データの件数を確認
+            related_counts = await self.politician_repository.get_related_data_counts(
+                input_dto.id
+            )
+            total_related = sum(related_counts.values())
+
+            # 関連データがある場合の処理
+            if total_related > 0:
+                # force=Falseの場合は警告を返す
+                if not input_dto.force:
+                    # 件数があるテーブルのみをフィルタリング
+                    non_zero_counts = {k: v for k, v in related_counts.items() if v > 0}
+                    return DeletePoliticianOutputDto(
+                        success=False,
+                        error_message=(
+                            f"この政治家には関連データが{total_related}件あります。"
+                            "削除するには関連データの解除・削除が必要です。"
+                        ),
+                        has_related_data=True,
+                        related_data_counts=non_zero_counts,
+                    )
+
+                # force=Trueの場合は関連データを削除・解除
+                deleted_counts = await self.politician_repository.delete_related_data(
+                    input_dto.id
+                )
+                logger.info(
+                    f"Deleted/unlinked related data for politician {input_dto.id}: "
+                    f"{deleted_counts}"
+                )
+
+            # 政治家を削除
             await self.politician_repository.delete(input_dto.id)
 
             # 操作ログを記録
@@ -293,7 +333,9 @@ class ManagePoliticiansUseCase:
                 politician_name=politician_name,
                 operation_type=PoliticianOperationType.DELETE,
                 user_id=input_dto.user_id,
-                details={},
+                details={
+                    "deleted_related_data": related_counts if total_related > 0 else {},
+                },
             )
 
             return DeletePoliticianOutputDto(success=True)

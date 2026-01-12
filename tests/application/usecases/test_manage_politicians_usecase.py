@@ -296,6 +296,7 @@ class TestManagePoliticiansUseCase:
             political_party_id=1,
         )
         mock_politician_repository.get_by_id.return_value = existing_politician
+        mock_politician_repository.get_related_data_counts.return_value = {}
         mock_politician_repository.delete.return_value = None
 
         input_dto = DeletePoliticianInputDto(id=1)
@@ -340,6 +341,7 @@ class TestManagePoliticiansUseCase:
             political_party_id=1,
         )
         mock_politician_repository.get_by_id.return_value = existing_politician
+        mock_politician_repository.get_related_data_counts.return_value = {}
         mock_politician_repository.delete.side_effect = Exception("Delete failed")
 
         input_dto = DeletePoliticianInputDto(id=1)
@@ -350,6 +352,129 @@ class TestManagePoliticiansUseCase:
         # Assert
         assert result.success is False
         assert "Delete failed" in result.error_message
+
+    @pytest.mark.asyncio
+    async def test_delete_politician_with_related_data_without_force(
+        self, mock_politician_repository
+    ):
+        """Test deleting a politician with related data without force flag."""
+        # Arrange
+        use_case = ManagePoliticiansUseCase(
+            politician_repository=mock_politician_repository,
+        )
+
+        existing_politician = Politician(
+            id=1,
+            name="山田太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
+        mock_politician_repository.get_by_id.return_value = existing_politician
+
+        # 関連データがある
+        related_counts = {
+            "speakers": 2,
+            "parliamentary_group_memberships": 1,
+            "pledges": 0,
+            "party_membership_history": 0,
+            "proposal_judges": 0,
+            "politician_affiliations": 0,
+            "extracted_conference_members": 0,
+            "extracted_parliamentary_group_members": 0,
+            "extracted_proposal_judges": 0,
+        }
+        mock_politician_repository.get_related_data_counts.return_value = related_counts
+
+        input_dto = DeletePoliticianInputDto(id=1, force=False)
+
+        # Act
+        result = await use_case.delete_politician(input_dto)
+
+        # Assert
+        assert result.success is False
+        assert result.has_related_data is True
+        assert result.related_data_counts == {
+            "speakers": 2,
+            "parliamentary_group_memberships": 1,
+        }
+        assert "関連データが" in result.error_message
+        mock_politician_repository.delete.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_delete_politician_with_related_data_with_force(
+        self, mock_politician_repository
+    ):
+        """Test deleting a politician with related data with force flag."""
+        # Arrange
+        use_case = ManagePoliticiansUseCase(
+            politician_repository=mock_politician_repository,
+        )
+
+        existing_politician = Politician(
+            id=1,
+            name="山田太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
+        mock_politician_repository.get_by_id.return_value = existing_politician
+        mock_politician_repository.delete.return_value = None
+
+        # 関連データがある
+        related_counts = {
+            "speakers": 2,
+            "parliamentary_group_memberships": 1,
+        }
+        mock_politician_repository.get_related_data_counts.return_value = related_counts
+        mock_politician_repository.delete_related_data.return_value = {
+            "speakers": 2,
+            "parliamentary_group_memberships": 1,
+        }
+
+        input_dto = DeletePoliticianInputDto(id=1, force=True)
+
+        # Act
+        result = await use_case.delete_politician(input_dto)
+
+        # Assert
+        assert result.success is True
+        mock_politician_repository.delete_related_data.assert_called_once_with(1)
+        mock_politician_repository.delete.assert_called_once_with(1)
+
+    @pytest.mark.asyncio
+    async def test_delete_politician_without_related_data(
+        self, mock_politician_repository
+    ):
+        """Test deleting a politician without related data."""
+        # Arrange
+        use_case = ManagePoliticiansUseCase(
+            politician_repository=mock_politician_repository,
+        )
+
+        existing_politician = Politician(
+            id=1,
+            name="山田太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
+        mock_politician_repository.get_by_id.return_value = existing_politician
+        mock_politician_repository.delete.return_value = None
+
+        # 関連データなし
+        mock_politician_repository.get_related_data_counts.return_value = {}
+
+        input_dto = DeletePoliticianInputDto(id=1)
+
+        # Act
+        result = await use_case.delete_politician(input_dto)
+
+        # Assert
+        assert result.success is True
+        assert result.has_related_data is False
+        mock_politician_repository.delete_related_data.assert_not_called()
+        mock_politician_repository.delete.assert_called_once_with(1)
 
     @pytest.mark.asyncio
     async def test_merge_politicians_not_implemented(
@@ -584,6 +709,7 @@ class TestManagePoliticiansUseCaseWithLogging:
             district="東京1区",
         )
         mock_politician_repository.get_by_id.return_value = existing_politician
+        mock_politician_repository.get_related_data_counts.return_value = {}
 
         input_dto = DeletePoliticianInputDto(id=1, user_id=user_id)
 

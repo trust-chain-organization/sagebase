@@ -213,26 +213,39 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
             self.logger.error(error_msg)
             return False, error_msg
 
-    def delete(self, id: int, user_id: UUID | None = None) -> tuple[bool, str | None]:
-        """Delete a politician."""
-        return self._run_async(self._delete_async(id, user_id))
+    def delete(
+        self, id: int, user_id: UUID | None = None, force: bool = False
+    ) -> tuple[bool, str | None, bool, dict[str, int] | None]:
+        """Delete a politician.
+
+        Args:
+            id: 政治家ID
+            user_id: 操作ユーザーID
+            force: 警告を無視して削除を実行（関連データを解除・削除）
+
+        Returns:
+            (success, error_message, has_related_data, related_data_counts)
+        """
+        return self._run_async(self._delete_async(id, user_id, force))
 
     async def _delete_async(
-        self, id: int, user_id: UUID | None = None
-    ) -> tuple[bool, str | None]:
+        self, id: int, user_id: UUID | None = None, force: bool = False
+    ) -> tuple[bool, str | None, bool, dict[str, int] | None]:
         """Delete a politician (async implementation)."""
         try:
             result = await self.use_case.delete_politician(
-                DeletePoliticianInputDto(id=id, user_id=user_id)
+                DeletePoliticianInputDto(id=id, user_id=user_id, force=force)
             )
-            if result.success:
-                return True, None
-            else:
-                return False, result.error_message
+            return (
+                result.success,
+                result.error_message,
+                result.has_related_data,
+                result.related_data_counts,
+            )
         except Exception as e:
             error_msg = f"Failed to delete politician: {e}"
             self.logger.error(error_msg)
-            return False, error_msg
+            return False, error_msg, False, None
 
     def merge(self, source_id: int, target_id: int) -> tuple[bool, str | None]:
         """Merge two politicians."""
