@@ -48,6 +48,7 @@ class PoliticianDomainService:
         # Keep existing ID
         merged = Politician(
             name=existing.name,  # Keep original name format
+            prefecture=new_info.prefecture or existing.prefecture,
             political_party_id=new_info.political_party_id
             or existing.political_party_id,
             furigana=new_info.furigana or existing.furigana,

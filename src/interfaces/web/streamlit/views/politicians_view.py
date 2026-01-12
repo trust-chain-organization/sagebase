@@ -129,19 +129,70 @@ def render_new_politician_tab(presenter: PoliticianPresenter) -> None:
     # Get parties
     parties = presenter.get_all_parties()
 
+    # 都道府県リスト
+    prefectures = [
+        "北海道",
+        "青森県",
+        "岩手県",
+        "宮城県",
+        "秋田県",
+        "山形県",
+        "福島県",
+        "茨城県",
+        "栃木県",
+        "群馬県",
+        "埼玉県",
+        "千葉県",
+        "東京都",
+        "神奈川県",
+        "新潟県",
+        "富山県",
+        "石川県",
+        "福井県",
+        "山梨県",
+        "長野県",
+        "岐阜県",
+        "静岡県",
+        "愛知県",
+        "三重県",
+        "滋賀県",
+        "京都府",
+        "大阪府",
+        "兵庫県",
+        "奈良県",
+        "和歌山県",
+        "鳥取県",
+        "島根県",
+        "岡山県",
+        "広島県",
+        "山口県",
+        "徳島県",
+        "香川県",
+        "愛媛県",
+        "高知県",
+        "福岡県",
+        "佐賀県",
+        "長崎県",
+        "熊本県",
+        "大分県",
+        "宮崎県",
+        "鹿児島県",
+        "沖縄県",
+        "比例代表",
+    ]
+
     with st.form("new_politician_form"):
         name = st.text_input("名前", placeholder="山田太郎")
+
+        prefecture = st.selectbox("選挙区の都道府県 *", prefectures)
 
         party_options = ["無所属"] + [p.name for p in parties]
         party_map = {p.name: p.id for p in parties}
         selected_party = st.selectbox("政党", party_options)
 
-        district = st.text_input("選挙区（任意）", placeholder="東京1区")
+        district = st.text_input("選挙区 *", placeholder="東京1区")
         profile_url = st.text_input(
             "プロフィールURL（任意）", placeholder="https://example.com/profile"
-        )
-        image_url = st.text_input(
-            "画像URL（任意）", placeholder="https://example.com/image.jpg"
         )
 
         submitted = st.form_submit_button("登録")
@@ -149,6 +200,10 @@ def render_new_politician_tab(presenter: PoliticianPresenter) -> None:
         if submitted:
             if not name:
                 st.error("名前を入力してください")
+            elif not prefecture:
+                st.error("選挙区の都道府県を選択してください")
+            elif not district:
+                st.error("選挙区を入力してください")
             else:
                 party_id = (
                     party_map.get(selected_party)
@@ -157,10 +212,10 @@ def render_new_politician_tab(presenter: PoliticianPresenter) -> None:
                 )
                 success, politician_id, error = presenter.create(
                     name,
+                    prefecture,
                     party_id,
-                    district if district else None,
+                    district,
                     profile_url if profile_url else None,
-                    image_url if image_url else None,
                 )
                 if success:
                     st.success(f"政治家「{name}」を登録しました（ID: {politician_id}）")
@@ -182,6 +237,58 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
     # Get parties
     parties = presenter.get_all_parties()
 
+    # 都道府県リスト
+    prefectures = [
+        "北海道",
+        "青森県",
+        "岩手県",
+        "宮城県",
+        "秋田県",
+        "山形県",
+        "福島県",
+        "茨城県",
+        "栃木県",
+        "群馬県",
+        "埼玉県",
+        "千葉県",
+        "東京都",
+        "神奈川県",
+        "新潟県",
+        "富山県",
+        "石川県",
+        "福井県",
+        "山梨県",
+        "長野県",
+        "岐阜県",
+        "静岡県",
+        "愛知県",
+        "三重県",
+        "滋賀県",
+        "京都府",
+        "大阪府",
+        "兵庫県",
+        "奈良県",
+        "和歌山県",
+        "鳥取県",
+        "島根県",
+        "岡山県",
+        "広島県",
+        "山口県",
+        "徳島県",
+        "香川県",
+        "愛媛県",
+        "高知県",
+        "福岡県",
+        "佐賀県",
+        "長崎県",
+        "熊本県",
+        "大分県",
+        "宮崎県",
+        "鹿児島県",
+        "沖縄県",
+        "比例代表",
+    ]
+
     # Select politician to edit
     politician_options = [f"{p.name} (ID: {p.id})" for p in politicians]
     selected_politician_str = st.selectbox("編集する政治家を選択", politician_options)
@@ -197,6 +304,19 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
         st.markdown("#### 編集")
         with st.form("edit_politician_form"):
             new_name = st.text_input("名前", value=selected_politician.name)
+
+            # 都道府県の現在値を取得
+            current_prefecture = selected_politician.prefecture or prefectures[0]
+            prefecture_index = (
+                prefectures.index(current_prefecture)
+                if current_prefecture in prefectures
+                else 0
+            )
+            new_prefecture = st.selectbox(
+                "選挙区の都道府県 *",
+                prefectures,
+                index=prefecture_index,
+            )
 
             party_options = ["無所属"] + [p.name for p in parties]
             party_map = {p.name: p.id for p in parties}
@@ -215,7 +335,7 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
             )
 
             new_district = st.text_input(
-                "選挙区", value=selected_politician.district or ""
+                "選挙区 *", value=selected_politician.district or ""
             )
             new_profile_url = st.text_input(
                 "プロフィールURL", value=selected_politician.profile_page_url or ""
@@ -226,6 +346,10 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
             if submitted:
                 if not new_name:
                     st.error("名前を入力してください")
+                elif not new_prefecture:
+                    st.error("選挙区の都道府県を選択してください")
+                elif not new_district:
+                    st.error("選挙区を入力してください")
                 else:
                     party_id = (
                         party_map.get(new_party) if new_party != "無所属" else None
@@ -233,8 +357,9 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
                     success, error = presenter.update(
                         selected_politician.id,  # type: ignore[arg-type]
                         new_name,
+                        new_prefecture,
                         party_id,
-                        new_district if new_district else None,
+                        new_district,
                         new_profile_url if new_profile_url else None,
                     )
                     if success:

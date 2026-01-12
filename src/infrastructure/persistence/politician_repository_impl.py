@@ -145,8 +145,9 @@ class PoliticianRepositoryImpl(BaseRepositoryImpl[Politician], PoliticianReposit
                     # Create new politician
                     new_politician = Politician(
                         name=data.get("name", ""),
+                        prefecture=data.get("prefecture", ""),
+                        district=data.get("electoral_district", ""),
                         political_party_id=data.get("political_party_id"),
-                        district=data.get("electoral_district"),
                         profile_page_url=data.get("profile_url"),
                     )
                     created_politician = await self.create_entity(new_politician)
@@ -241,11 +242,11 @@ class PoliticianRepositoryImpl(BaseRepositoryImpl[Politician], PoliticianReposit
         """Create a new politician."""
         query = text("""
             INSERT INTO politicians (
-                name, political_party_id,
+                name, political_party_id, prefecture,
                 electoral_district, profile_url, furigana
             )
             VALUES (
-                :name, :political_party_id,
+                :name, :political_party_id, :prefecture,
                 :electoral_district, :profile_url, :furigana
             )
             RETURNING *
@@ -254,6 +255,7 @@ class PoliticianRepositoryImpl(BaseRepositoryImpl[Politician], PoliticianReposit
         params = {
             "name": entity.name,
             "political_party_id": entity.political_party_id,
+            "prefecture": entity.prefecture,
             # Map district to electoral_district
             "electoral_district": entity.district,
             # Map profile_page_url to profile_url
@@ -277,6 +279,7 @@ class PoliticianRepositoryImpl(BaseRepositoryImpl[Politician], PoliticianReposit
             UPDATE politicians
             SET name = :name,
                 political_party_id = :political_party_id,
+                prefecture = :prefecture,
                 electoral_district = :electoral_district,
                 profile_url = :profile_url,
                 furigana = :furigana
@@ -288,6 +291,7 @@ class PoliticianRepositoryImpl(BaseRepositoryImpl[Politician], PoliticianReposit
             "id": entity.id,
             "name": entity.name,
             "political_party_id": entity.political_party_id,
+            "prefecture": entity.prefecture,
             # Map district to electoral_district
             "electoral_district": entity.district,
             # Map profile_page_url to profile_url
@@ -356,14 +360,16 @@ class PoliticianRepositoryImpl(BaseRepositoryImpl[Politician], PoliticianReposit
 
         return Politician(
             name=str(data.get("name") or ""),
+            prefecture=str(data.get("prefecture") or ""),
+            district=str(
+                data.get("electoral_district") or ""
+            ),  # Map electoral_district to district
             political_party_id=data.get("political_party_id"),
             furigana=data.get("furigana"),
-            district=data.get(
-                "electoral_district"
-            ),  # Map electoral_district to district
             profile_page_url=data.get(
                 "profile_url"
             ),  # Map profile_url to profile_page_url
+            party_position=data.get("party_position"),
             id=data.get("id"),
         )
 
@@ -376,10 +382,10 @@ class PoliticianRepositoryImpl(BaseRepositoryImpl[Politician], PoliticianReposit
         return self.model_class(
             name=entity.name,
             political_party_id=entity.political_party_id,
-            prefecture=None,  # No direct mapping from entity.district
+            prefecture=entity.prefecture,
             electoral_district=entity.district,  # Map district to electoral_district
             profile_url=entity.profile_page_url,  # Map profile_page_url to profile_url
-            party_position=None,  # Not in entity
+            party_position=entity.party_position,
             furigana=entity.furigana,
             id=entity.id,
         )
@@ -388,6 +394,7 @@ class PoliticianRepositoryImpl(BaseRepositoryImpl[Politician], PoliticianReposit
         """Update model fields from entity."""
         model.name = entity.name
         model.political_party_id = entity.political_party_id
+        model.prefecture = entity.prefecture
         model.electoral_district = entity.district
         model.profile_url = entity.profile_page_url
         model.furigana = entity.furigana

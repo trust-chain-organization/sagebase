@@ -528,8 +528,10 @@ async def test_get_activity_trend_with_data(
 
     await async_session.execute(
         text("""
-            INSERT INTO politicians (id, name, political_party_id, created_at)
-            VALUES (1, 'Politician', 1, CURRENT_TIMESTAMP)
+            INSERT INTO politicians
+                (id, name, prefecture, electoral_district,
+                 political_party_id, created_at)
+            VALUES (1, 'Politician', '東京都', '東京1区', 1, CURRENT_TIMESTAMP)
         """)
     )
 

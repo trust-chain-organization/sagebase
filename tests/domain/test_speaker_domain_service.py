@@ -103,7 +103,12 @@ class TestSpeakerDomainService:
     def test_validate_speaker_politician_link(self, service):
         """Test speaker-politician link validation."""
         speaker = Speaker(name="山田太郎", political_party_name="自民党")
-        politician = Politician(name="山田太郎", political_party_id=1)
+        politician = Politician(
+            name="山田太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
 
         # Test valid link
         assert service.validate_speaker_politician_link(speaker, politician) is True

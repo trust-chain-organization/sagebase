@@ -29,7 +29,8 @@ services:
     stdin_open: true # 追加
     tty: true # 追加
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   sagebase-monitoring:
     build:
@@ -60,7 +61,8 @@ services:
     stdin_open: true
     tty: true
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     command:
       [
         "uv",
@@ -88,7 +90,8 @@ services:
     ports:
       - "8050:8050" # BI Dashboard用ポート
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     stdin_open: true
     tty: true
 

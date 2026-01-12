@@ -57,6 +57,7 @@ class TestPoliticianRepositoryImpl:
         return Politician(
             id=1,
             name="山田太郎",
+            prefecture="東京都",
             political_party_id=10,
             district="東京1区",
             profile_page_url="https://example.com/yamada",

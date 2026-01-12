@@ -133,10 +133,11 @@ def setup_test_data(session: Session):
     session.execute(
         text(
             """
-            INSERT INTO politicians (id, name, political_party_id, speaker_id)
+            INSERT INTO politicians
+                (id, name, prefecture, electoral_district, political_party_id)
             VALUES
-                (1, '山田太郎', 1, 1),
-                (2, '鈴木花子', 2, 2)
+                (1, '山田太郎', '東京都', '東京1区', 1),
+                (2, '鈴木花子', '大阪府', '大阪1区', 2)
             """
         )
     )

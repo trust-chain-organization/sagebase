@@ -570,6 +570,8 @@ class SpeakerRepositoryImpl(BaseRepositoryImpl[Speaker], SpeakerRepository):
                 politician = Politician(
                     id=row.politician_id_from_join,
                     name=row.politician_name,
+                    prefecture=getattr(row, "politician_prefecture", "") or "",
+                    district=getattr(row, "politician_district", "") or "",
                 )
 
             # Create DTO with speaker and politician

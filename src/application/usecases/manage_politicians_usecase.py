@@ -30,10 +30,10 @@ class CreatePoliticianInputDto:
     """Input DTO for creating a politician."""
 
     name: str
+    prefecture: str
+    district: str
     party_id: int | None = None
-    district: str | None = None
     profile_url: str | None = None
-    image_url: str | None = None
 
 
 @dataclass
@@ -51,8 +51,9 @@ class UpdatePoliticianInputDto:
 
     id: int
     name: str
+    prefecture: str
+    district: str
     party_id: int | None = None
-    district: str | None = None
     profile_url: str | None = None
 
 
@@ -146,6 +147,7 @@ class ManagePoliticiansUseCase:
             politician = Politician(
                 id=0,  # Will be assigned by database
                 name=input_dto.name,
+                prefecture=input_dto.prefecture,
                 political_party_id=input_dto.party_id,
                 district=input_dto.district,
                 profile_page_url=input_dto.profile_url,
@@ -171,6 +173,7 @@ class ManagePoliticiansUseCase:
 
             # Update fields
             existing.name = input_dto.name
+            existing.prefecture = input_dto.prefecture
             existing.political_party_id = input_dto.party_id
             existing.district = input_dto.district
             existing.profile_page_url = input_dto.profile_url

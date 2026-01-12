@@ -288,7 +288,13 @@ class TestMatchSpeakersUseCaseBAML:
         """ルールベースマッチングが成功した場合、BAMLは呼び出されない"""
         # Setup
         speaker = Speaker(id=7, name="ルール七郎", is_politician=True)
-        politician = Politician(id=70, name="ルール七郎", political_party_id=1)
+        politician = Politician(
+            id=70,
+            name="ルール七郎",
+            prefecture="東京都",
+            district="東京7区",
+            political_party_id=1,
+        )
 
         mock_speaker_repo.get_politicians.return_value = [speaker]
         mock_politician_repo.search_by_name.return_value = [politician]

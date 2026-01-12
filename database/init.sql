@@ -76,6 +76,7 @@ CREATE TABLE politicians (
     id SERIAL PRIMARY KEY, -- 政治家固有のID
     name VARCHAR NOT NULL, -- 政治家名
     political_party_id INTEGER REFERENCES political_parties(id), -- 現在の主要所属政党
+    prefecture VARCHAR(10) NOT NULL, -- 選挙区の都道府県
     furigana VARCHAR, -- 名前の読み（ひらがな）
     district VARCHAR, -- 選挙区
     profile_page_url VARCHAR, -- プロフィールページURL

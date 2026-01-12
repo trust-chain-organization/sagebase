@@ -108,8 +108,9 @@ def setup_test_data(db_session):
     # Insert test politician (speaker_id removed in migration 032)
     politician_result = db_session.execute(
         text("""
-        INSERT INTO politicians (name, political_party_id)
-        VALUES ('モニターテスト議員', :party_id)
+        INSERT INTO politicians
+            (name, prefecture, electoral_district, political_party_id)
+        VALUES ('モニターテスト議員', '東京都', '東京1区', :party_id)
         RETURNING id
         """),
         {"party_id": party_id},

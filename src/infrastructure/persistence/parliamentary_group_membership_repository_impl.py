@@ -352,6 +352,8 @@ class ParliamentaryGroupMembershipRepositoryImpl(
                 politician = Politician(
                     id=row.politician_id,
                     name=row.politician_name,
+                    prefecture=getattr(row, "politician_prefecture", "") or "",
+                    district=getattr(row, "politician_district", "") or "",
                 )
 
             # Create DTO with membership and related entities

@@ -41,8 +41,20 @@ class TestManagePoliticiansUseCase:
         """Test listing politicians successfully."""
         # Arrange
         politicians = [
-            Politician(id=1, name="山田太郎", political_party_id=1),
-            Politician(id=2, name="鈴木花子", political_party_id=2),
+            Politician(
+                id=1,
+                name="山田太郎",
+                prefecture="東京都",
+                district="東京1区",
+                political_party_id=1,
+            ),
+            Politician(
+                id=2,
+                name="鈴木花子",
+                prefecture="大阪府",
+                district="大阪1区",
+                political_party_id=2,
+            ),
         ]
         mock_politician_repository.get_all.return_value = politicians
 
@@ -63,7 +75,15 @@ class TestManagePoliticiansUseCase:
     ):
         """Test listing politicians filtered by party ID."""
         # Arrange
-        politicians = [Politician(id=1, name="山田太郎", political_party_id=1)]
+        politicians = [
+            Politician(
+                id=1,
+                name="山田太郎",
+                prefecture="東京都",
+                district="東京1区",
+                political_party_id=1,
+            )
+        ]
         mock_politician_repository.get_by_party.return_value = politicians
 
         input_dto = PoliticianListInputDto(party_id=1)
@@ -99,6 +119,7 @@ class TestManagePoliticiansUseCase:
         created_politician = Politician(
             id=1,
             name="田中次郎",
+            prefecture="東京都",
             political_party_id=1,
             district="東京都第1区",
         )
@@ -106,6 +127,7 @@ class TestManagePoliticiansUseCase:
 
         input_dto = CreatePoliticianInputDto(
             name="田中次郎",
+            prefecture="東京都",
             party_id=1,
             district="東京都第1区",
         )
@@ -125,13 +147,21 @@ class TestManagePoliticiansUseCase:
     ):
         """Test creating a politician with duplicate name and party."""
         # Arrange
-        existing_politician = Politician(id=1, name="田中次郎", political_party_id=1)
+        existing_politician = Politician(
+            id=1,
+            name="田中次郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
         mock_politician_repository.get_by_name_and_party.return_value = (
             existing_politician
         )
 
         input_dto = CreatePoliticianInputDto(
             name="田中次郎",
+            prefecture="東京都",
+            district="東京1区",
             party_id=1,
         )
 
@@ -154,6 +184,8 @@ class TestManagePoliticiansUseCase:
 
         input_dto = CreatePoliticianInputDto(
             name="田中次郎",
+            prefecture="東京都",
+            district="東京1区",
             party_id=1,
         )
 
@@ -173,6 +205,7 @@ class TestManagePoliticiansUseCase:
         existing_politician = Politician(
             id=1,
             name="山田太郎",
+            prefecture="東京都",
             political_party_id=1,
             district="東京都第1区",
         )
@@ -182,6 +215,7 @@ class TestManagePoliticiansUseCase:
         input_dto = UpdatePoliticianInputDto(
             id=1,
             name="山田太郎",
+            prefecture="東京都",
             district="東京都第2区",
         )
 
@@ -204,6 +238,7 @@ class TestManagePoliticiansUseCase:
         input_dto = UpdatePoliticianInputDto(
             id=999,
             name="不明な議員",
+            prefecture="東京都",
             district="東京都第2区",
         )
 
@@ -221,13 +256,20 @@ class TestManagePoliticiansUseCase:
     ):
         """Test updating a politician when repository raises an error."""
         # Arrange
-        existing_politician = Politician(id=1, name="山田太郎", political_party_id=1)
+        existing_politician = Politician(
+            id=1,
+            name="山田太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
         mock_politician_repository.get_by_id.return_value = existing_politician
         mock_politician_repository.update.side_effect = Exception("Update failed")
 
         input_dto = UpdatePoliticianInputDto(
             id=1,
             name="山田太郎",
+            prefecture="東京都",
             district="東京都第2区",
         )
 
@@ -244,7 +286,13 @@ class TestManagePoliticiansUseCase:
     ):
         """Test deleting a politician successfully."""
         # Arrange
-        existing_politician = Politician(id=1, name="山田太郎", political_party_id=1)
+        existing_politician = Politician(
+            id=1,
+            name="山田太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
         mock_politician_repository.get_by_id.return_value = existing_politician
         mock_politician_repository.delete.return_value = None
 
@@ -282,7 +330,13 @@ class TestManagePoliticiansUseCase:
     ):
         """Test deleting a politician when repository raises an error."""
         # Arrange
-        existing_politician = Politician(id=1, name="山田太郎", political_party_id=1)
+        existing_politician = Politician(
+            id=1,
+            name="山田太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
         mock_politician_repository.get_by_id.return_value = existing_politician
         mock_politician_repository.delete.side_effect = Exception("Delete failed")
 
@@ -304,11 +358,15 @@ class TestManagePoliticiansUseCase:
         source_politician = Politician(
             id=1,
             name="山田太郎A",
+            prefecture="東京都",
+            district="東京1区",
             political_party_id=1,
         )
         target_politician = Politician(
             id=2,
             name="山田太郎B",
+            prefecture="東京都",
+            district="東京2区",
             political_party_id=1,
         )
         mock_politician_repository.get_by_id.side_effect = [
@@ -355,7 +413,13 @@ class TestManagePoliticiansUseCase:
     ):
         """Test merging politicians when target does not exist."""
         # Arrange
-        source_politician = Politician(id=1, name="山田太郎A", political_party_id=1)
+        source_politician = Politician(
+            id=1,
+            name="山田太郎A",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
 
         async def side_effect_func(politician_id):
             if politician_id == 1:

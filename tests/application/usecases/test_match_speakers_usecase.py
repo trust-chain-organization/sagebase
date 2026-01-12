@@ -82,7 +82,13 @@ class TestMatchSpeakersUseCase:
         """Test matching when speaker already has a linked politician."""
         # Setup
         speaker = Speaker(id=1, name="山田太郎", is_politician=True, politician_id=10)
-        politician = Politician(id=10, name="山田太郎", political_party_id=1)
+        politician = Politician(
+            id=10,
+            name="山田太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
 
         mock_speaker_repo.get_politicians.return_value = [speaker]
         mock_politician_repo.get_by_id.return_value = politician
@@ -111,7 +117,13 @@ class TestMatchSpeakersUseCase:
         """Test rule-based matching."""
         # Setup
         speaker = Speaker(id=2, name="鈴木花子", is_politician=True)
-        politician = Politician(id=20, name="鈴木花子", political_party_id=1)
+        politician = Politician(
+            id=20,
+            name="鈴木花子",
+            prefecture="東京都",
+            district="東京2区",
+            political_party_id=1,
+        )
 
         mock_speaker_repo.get_politicians.return_value = [speaker]
         # No existing politician link
@@ -239,6 +251,8 @@ class TestMatchSpeakersUseCase:
         politician = Politician(
             id=50,
             name="高橋四郎",
+            prefecture="東京都",
+            district="東京5区",
             political_party_id=1,
         )
 
@@ -286,7 +300,13 @@ class TestMatchSpeakersUseCase:
         # Setup
         test_user_id = uuid4()
         speaker = Speaker(id=1, name="山田太郎", is_politician=True)
-        politician = Politician(id=10, name="山田太郎", political_party_id=1)
+        politician = Politician(
+            id=10,
+            name="山田太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
 
         mock_speaker_repo.get_politicians.return_value = [speaker]
         mock_politician_repo.search_by_name.return_value = [politician]
@@ -318,7 +338,13 @@ class TestMatchSpeakersUseCase:
         """Test that matching works when user_id is None."""
         # Setup
         speaker = Speaker(id=1, name="山田太郎", is_politician=True)
-        politician = Politician(id=10, name="山田太郎", political_party_id=1)
+        politician = Politician(
+            id=10,
+            name="山田太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
 
         mock_speaker_repo.get_politicians.return_value = [speaker]
         mock_politician_repo.search_by_name.return_value = [politician]
@@ -359,7 +385,13 @@ class TestMatchSpeakersUseCase:
             politician_id=10,
             matched_by_user_id=original_user_id,
         )
-        politician = Politician(id=10, name="山田太郎", political_party_id=1)
+        politician = Politician(
+            id=10,
+            name="山田太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
 
         mock_speaker_repo.get_politicians.return_value = [speaker]
         mock_politician_repo.get_by_id.return_value = politician
@@ -387,7 +419,13 @@ class TestMatchSpeakersUseCase:
         """抽出ログ記録のエラーがマッチング処理を中断しないことを確認"""
         # Setup
         speaker = Speaker(id=1, name="山田太郎", is_politician=True)
-        politician = Politician(id=10, name="山田太郎", political_party_id=1)
+        politician = Politician(
+            id=10,
+            name="山田太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
 
         mock_speaker_repo.get_politicians.return_value = [speaker]
         mock_politician_repo.search_by_name.return_value = [politician]

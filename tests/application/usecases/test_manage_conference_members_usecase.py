@@ -278,7 +278,13 @@ class TestManageConferenceMembersUseCase:
         )
         mock_extracted_repo.get_pending_members.return_value = [extracted_member]
 
-        politician = Politician(id=10, name="山田太郎", political_party_id=1)
+        politician = Politician(
+            id=10,
+            name="山田太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
         mock_politician_repo.search_by_name.return_value = [politician]
         mock_politician_repo.get_all.return_value = [politician]
         mock_politician_repo.get_by_id.return_value = politician
@@ -330,7 +336,13 @@ class TestManageConferenceMembersUseCase:
         ]
         mock_extracted_repo.get_pending_members.return_value = extracted_members
 
-        politician = Politician(id=10, name="山田太郎", political_party_id=1)
+        politician = Politician(
+            id=10,
+            name="山田太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
         mock_politician_repo.search_by_name.return_value = [politician]
         mock_politician_repo.get_by_id.return_value = politician
 
@@ -362,7 +374,13 @@ class TestManageConferenceMembersUseCase:
             id=1, name="山田太郎", party_affiliation="自由民主党", role="議員"
         )
 
-        politician = Politician(id=10, name="山田太郎", political_party_id=1)
+        politician = Politician(
+            id=10,
+            name="山田太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
+        )
         mock_politician_repo.search_by_name.return_value = [politician]
         mock_politician_repo.get_by_id.return_value = politician
 
@@ -393,6 +411,8 @@ class TestManageConferenceMembersUseCase:
         politician = Politician(
             id=10,
             name="山田太朗",  # Slightly different name
+            prefecture="東京都",
+            district="東京1区",
             # Speaker-Politician linkage is now on speaker side
             political_party_id=1,
         )
@@ -426,7 +446,13 @@ class TestManageConferenceMembersUseCase:
 
         mock_politician_repo.search_by_name.return_value = []
         mock_politician_repo.get_all.return_value = [
-            Politician(id=20, name="佐藤太郎", political_party_id=2)
+            Politician(
+                id=20,
+                name="佐藤太郎",
+                prefecture="東京都",
+                district="東京2区",
+                political_party_id=2,
+            )
         ]
 
         mock_llm.match_conference_member.return_value = {
@@ -474,8 +500,20 @@ class TestManageConferenceMembersUseCase:
 
         # Mock politician retrieval
         mock_politician_repo.get_by_id.side_effect = [
-            Politician(id=10, name="山田太郎", political_party_id=1),
-            Politician(id=20, name="佐藤花子", political_party_id=2),
+            Politician(
+                id=10,
+                name="山田太郎",
+                prefecture="東京都",
+                district="東京1区",
+                political_party_id=1,
+            ),
+            Politician(
+                id=20,
+                name="佐藤花子",
+                prefecture="東京都",
+                district="東京2区",
+                political_party_id=2,
+            ),
         ]
 
         # Mock affiliation creation
@@ -555,7 +593,11 @@ class TestManageConferenceMembersUseCase:
 
         # Mock politician retrieval (won't be called due to skip, but adding for safety)
         mock_politician_repo.get_by_id.return_value = Politician(
-            id=10, name="山田太郎", political_party_id=1
+            id=10,
+            name="山田太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=1,
         )
 
         # Execute
@@ -602,8 +644,20 @@ class TestManageConferenceMembersUseCase:
 
         # Mock politician retrieval
         mock_politician_repo.get_by_id.side_effect = [
-            Politician(id=10, name="山田太郎", political_party_id=1),
-            Politician(id=20, name="佐藤花子", political_party_id=2),
+            Politician(
+                id=10,
+                name="山田太郎",
+                prefecture="東京都",
+                district="東京1区",
+                political_party_id=1,
+            ),
+            Politician(
+                id=20,
+                name="佐藤花子",
+                prefecture="東京都",
+                district="東京2区",
+                political_party_id=2,
+            ),
         ]
 
         # Mock affiliation creation

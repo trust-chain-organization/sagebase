@@ -91,33 +91,33 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
     def create(
         self,
         name: str,
-        party_id: int | None = None,
-        district: str | None = None,
+        prefecture: str,
+        party_id: int | None,
+        district: str,
         profile_url: str | None = None,
-        image_url: str | None = None,
     ) -> tuple[bool, int | None, str | None]:
         """Create a new politician."""
         return self._run_async(
-            self._create_async(name, party_id, district, profile_url, image_url)
+            self._create_async(name, prefecture, party_id, district, profile_url)
         )
 
     async def _create_async(
         self,
         name: str,
-        party_id: int | None = None,
-        district: str | None = None,
+        prefecture: str,
+        party_id: int | None,
+        district: str,
         profile_url: str | None = None,
-        image_url: str | None = None,
     ) -> tuple[bool, int | None, str | None]:
         """Create a new politician (async implementation)."""
         try:
             result = await self.use_case.create_politician(
                 CreatePoliticianInputDto(
                     name=name,
-                    party_id=party_id,
+                    prefecture=prefecture,
                     district=district,
+                    party_id=party_id,
                     profile_url=profile_url,
-                    image_url=image_url,
                 )
             )
             if result.success:
@@ -133,21 +133,23 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
         self,
         id: int,
         name: str,
-        party_id: int | None = None,
-        district: str | None = None,
+        prefecture: str,
+        party_id: int | None,
+        district: str,
         profile_url: str | None = None,
     ) -> tuple[bool, str | None]:
         """Update an existing politician."""
         return self._run_async(
-            self._update_async(id, name, party_id, district, profile_url)
+            self._update_async(id, name, prefecture, party_id, district, profile_url)
         )
 
     async def _update_async(
         self,
         id: int,
         name: str,
-        party_id: int | None = None,
-        district: str | None = None,
+        prefecture: str,
+        party_id: int | None,
+        district: str,
         profile_url: str | None = None,
     ) -> tuple[bool, str | None]:
         """Update an existing politician (async implementation)."""
@@ -156,8 +158,9 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
                 UpdatePoliticianInputDto(
                     id=id,
                     name=name,
-                    party_id=party_id,
+                    prefecture=prefecture,
                     district=district,
+                    party_id=party_id,
                     profile_url=profile_url,
                 )
             )
@@ -225,6 +228,7 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
                 {
                     "ID": politician.id,
                     "名前": politician.name,
+                    "都道府県": politician.prefecture or "",
                     "政党": party_map.get(politician.political_party_id, "無所属")
                     if politician.political_party_id
                     else "無所属",
@@ -243,19 +247,19 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
         elif action == "create":
             return self.create(
                 kwargs.get("name", ""),
+                kwargs.get("prefecture", ""),
                 kwargs.get("party_id"),
-                kwargs.get("district"),
+                kwargs.get("district", ""),
                 kwargs.get("profile_url"),
-                kwargs.get("image_url"),
             )
         elif action == "update":
             return self.update(
                 kwargs.get("id", 0),
                 kwargs.get("name", ""),
+                kwargs.get("prefecture", ""),
                 kwargs.get("party_id"),
-                kwargs.get("district"),
+                kwargs.get("district", ""),
                 kwargs.get("profile_url"),
-                kwargs.get("image_url"),
             )
         elif action == "delete":
             return self.delete(kwargs.get("id", 0))

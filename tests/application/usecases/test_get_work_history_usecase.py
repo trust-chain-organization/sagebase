@@ -34,7 +34,9 @@ async def test_get_work_history_all_types():
     user_repo = MagicMock()
 
     # 発言者-政治家紐付け作業のテストデータ
-    politician = Politician(id=1, name="Test Politician")
+    politician = Politician(
+        id=1, name="Test Politician", prefecture="東京都", district="東京1区"
+    )
     speaker = Speaker(
         id=1,
         name="Test Speaker",
@@ -96,7 +98,9 @@ async def test_get_work_history_filter_by_user_id():
     user_repo = MagicMock()
 
     # user_id_1のデータ
-    politician1 = Politician(id=1, name="Politician 1")
+    politician1 = Politician(
+        id=1, name="Politician 1", prefecture="東京都", district="東京1区"
+    )
     speaker1 = Speaker(
         id=1,
         name="Speaker 1",
@@ -136,7 +140,9 @@ async def test_get_work_history_filter_by_work_type_speaker_matching():
     membership_repo = MagicMock()
     user_repo = MagicMock()
 
-    politician = Politician(id=1, name="Test Politician")
+    politician = Politician(
+        id=1, name="Test Politician", prefecture="東京都", district="東京1区"
+    )
     speaker = Speaker(
         id=1,
         name="Test Speaker",
@@ -179,7 +185,9 @@ async def test_get_work_history_filter_by_work_type_membership_creation():
     user_repo = MagicMock()
 
     group = ParliamentaryGroup(id=1, name="Test Group", conference_id=1)
-    politician = Politician(id=1, name="Test Politician")
+    politician = Politician(
+        id=1, name="Test Politician", prefecture="東京都", district="東京1区"
+    )
     membership = ParliamentaryGroupMembership(
         id=1,
         politician_id=1,
@@ -227,7 +235,9 @@ async def test_get_work_history_filter_by_date_range():
     user_repo = MagicMock()
 
     # Create speakers with different dates
-    politician1 = Politician(id=1, name="Politician 1")
+    politician1 = Politician(
+        id=1, name="Politician 1", prefecture="東京都", district="東京1区"
+    )
     speaker1 = Speaker(
         id=1,
         name="Speaker 1",
@@ -237,7 +247,9 @@ async def test_get_work_history_filter_by_date_range():
     )
     speaker1_dto = SpeakerWithPoliticianDTO(speaker=speaker1, politician=politician1)
 
-    politician2 = Politician(id=2, name="Politician 2")
+    politician2 = Politician(
+        id=2, name="Politician 2", prefecture="東京都", district="東京2区"
+    )
     speaker2 = Speaker(
         id=2,
         name="Speaker 2",
@@ -284,7 +296,9 @@ async def test_get_work_history_pagination():
     # Create 5 speakers with DTOs
     speaker_dtos = []
     for i in range(5):
-        politician = Politician(id=i, name=f"Politician {i}")
+        politician = Politician(
+            id=i, name=f"Politician {i}", prefecture="東京都", district=f"東京{i}区"
+        )
         speaker = Speaker(
             id=i,
             name=f"Speaker {i}",
@@ -358,7 +372,9 @@ async def test_get_work_history_speaker_without_updated_at():
     user_repo = MagicMock()
 
     # Speaker without updated_at
-    politician1 = Politician(id=1, name="Politician 1")
+    politician1 = Politician(
+        id=1, name="Politician 1", prefecture="東京都", district="東京1区"
+    )
     speaker1 = Speaker(
         id=1,
         name="Speaker 1",
@@ -369,7 +385,9 @@ async def test_get_work_history_speaker_without_updated_at():
     speaker1_dto = SpeakerWithPoliticianDTO(speaker=speaker1, politician=politician1)
 
     # Speaker with updated_at
-    politician2 = Politician(id=2, name="Politician 2")
+    politician2 = Politician(
+        id=2, name="Politician 2", prefecture="東京都", district="東京2区"
+    )
     speaker2 = Speaker(
         id=2,
         name="Speaker 2",
@@ -411,7 +429,9 @@ async def test_get_work_history_membership_without_created_at():
     user_repo = MagicMock()
 
     # Membership without created_at
-    politician1 = Politician(id=1, name="Politician 1")
+    politician1 = Politician(
+        id=1, name="Politician 1", prefecture="東京都", district="東京1区"
+    )
     parliamentary_group1 = ParliamentaryGroup(id=1, name="Group 1", conference_id=1)
     membership1 = ParliamentaryGroupMembership(
         id=1,
@@ -428,7 +448,9 @@ async def test_get_work_history_membership_without_created_at():
     )
 
     # Membership with created_at
-    politician2 = Politician(id=2, name="Politician 2")
+    politician2 = Politician(
+        id=2, name="Politician 2", prefecture="東京都", district="東京2区"
+    )
     parliamentary_group2 = ParliamentaryGroup(id=2, name="Group 2", conference_id=1)
     membership2 = ParliamentaryGroupMembership(
         id=2,
@@ -476,7 +498,9 @@ async def test_get_work_history_sorted_by_date_descending():
     user_repo = MagicMock()
 
     # Create data with different timestamps
-    politician1 = Politician(id=1, name="Politician 1")
+    politician1 = Politician(
+        id=1, name="Politician 1", prefecture="東京都", district="東京1区"
+    )
     speaker = Speaker(
         id=1,
         name="Speaker 1",
@@ -486,7 +510,9 @@ async def test_get_work_history_sorted_by_date_descending():
     )
     speaker_dto = SpeakerWithPoliticianDTO(speaker=speaker, politician=politician1)
 
-    politician2 = Politician(id=2, name="Politician 2")
+    politician2 = Politician(
+        id=2, name="Politician 2", prefecture="東京都", district="東京2区"
+    )
     parliamentary_group = ParliamentaryGroup(id=1, name="Group 1", conference_id=1)
     membership = ParliamentaryGroupMembership(
         id=1,

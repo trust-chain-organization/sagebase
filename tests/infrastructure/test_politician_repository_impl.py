@@ -45,6 +45,7 @@ def sample_politician():
     return Politician(
         id=1,
         name="テスト太郎",
+        prefecture="東京都",
         political_party_id=2,
         furigana="てすとたろう",
         district="東京1区",
@@ -126,7 +127,13 @@ class TestPoliticianRepositoryImplConversions:
 
     def test_row_to_entity_minimal_data(self, async_repository):
         """Test converting row to entity with minimal required data"""
-        minimal_row = {"id": 1, "name": "最小太郎", "political_party_id": 3}
+        minimal_row = {
+            "id": 1,
+            "name": "最小太郎",
+            "prefecture": "東京都",
+            "electoral_district": "東京1区",
+            "political_party_id": 3,
+        }
 
         mock_row = MagicMock()
         mock_row._mapping = minimal_row
@@ -137,8 +144,9 @@ class TestPoliticianRepositoryImplConversions:
 
         assert entity.id == 1
         assert entity.name == "最小太郎"
+        assert entity.prefecture == "東京都"
+        assert entity.district == "東京1区"
         assert entity.political_party_id == 3
-        assert entity.district is None
         assert entity.profile_page_url is None
 
     def test_row_to_entity_with_dict_input(self, async_repository):
@@ -194,18 +202,23 @@ class TestPoliticianRepositoryImplConversions:
         assert (
             model.profile_url == "https://example.com/politician/1"
         )  # profile_page_url → profile_url mapping
-        assert model.prefecture is None  # No direct mapping from entity
+        assert model.prefecture == "東京都"  # prefecture mapping
         assert model.party_position is None  # Not in entity
 
     def test_to_model_minimal_data(self, async_repository):
         """Test converting entity to model with minimal data"""
-        minimal_politician = Politician(name="最小太郎", political_party_id=3)
+        minimal_politician = Politician(
+            name="最小太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=3,
+        )
 
         model = async_repository._to_model(minimal_politician)
 
         assert model.name == "最小太郎"
         assert model.political_party_id == 3
-        assert model.electoral_district is None
+        assert model.electoral_district == "東京1区"
         assert model.profile_url is None
 
     def test_update_model_all_fields(self, async_repository, sample_politician):
@@ -227,7 +240,11 @@ class TestPoliticianRepositoryImplConversions:
         mock_model.furigana = "きゅうなまえ"
 
         partial_politician = Politician(
-            name="新名前", political_party_id=5, furigana="しんなまえ"
+            name="新名前",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=5,
+            furigana="しんなまえ",
         )
 
         async_repository._update_model(mock_model, partial_politician)
@@ -361,6 +378,8 @@ class TestPoliticianRepositoryImplCRUD:
         politician = Politician(
             id=50,
             name="更新太郎",
+            prefecture="東京都",
+            district="東京5区",
             political_party_id=3,
             furigana="こうしんたろう",
         )
@@ -396,6 +415,8 @@ class TestPoliticianRepositoryImplCRUD:
         politician = Politician(
             id=999,
             name="存在しない",
+            prefecture="東京都",
+            district="東京1区",
             political_party_id=1,
         )
 
@@ -615,7 +636,11 @@ class TestPoliticianRepositoryImplQueryMethods:
     async def test_upsert_creates_new_politician(self, async_repository):
         """Test upsert creates new politician when not exists"""
         new_politician = Politician(
-            name="新規太郎", political_party_id=4, furigana="しんきたろう"
+            name="新規太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=4,
+            furigana="しんきたろう",
         )
 
         with patch.object(
@@ -624,6 +649,8 @@ class TestPoliticianRepositoryImplQueryMethods:
             created_politician = Politician(
                 id=10,
                 name="新規太郎",
+                prefecture="東京都",
+                district="東京1区",
                 political_party_id=4,
                 furigana="しんきたろう",
             )
@@ -641,10 +668,16 @@ class TestPoliticianRepositoryImplQueryMethods:
     async def test_upsert_updates_existing_politician(self, async_repository):
         """Test upsert updates existing politician when found"""
         existing = Politician(
-            id=5, name="既存太郎", political_party_id=6, furigana="きそんたろう"
+            id=5,
+            name="既存太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=6,
+            furigana="きそんたろう",
         )
         update_data = Politician(
             name="既存太郎",
+            prefecture="東京都",
             political_party_id=6,
             furigana="きそんたろう",
             district="更新区",
@@ -656,6 +689,7 @@ class TestPoliticianRepositoryImplQueryMethods:
             updated = Politician(
                 id=5,
                 name="既存太郎",
+                prefecture="東京都",
                 political_party_id=6,
                 furigana="きそんたろう",
                 district="更新区",
@@ -742,12 +776,14 @@ class TestPoliticianRepositoryImplBulkOperations:
         created_politician1 = Politician(
             id=20,
             name="バルク太郎",
+            prefecture="神奈川県",
             political_party_id=7,
             district="神奈川1区",
         )
         created_politician2 = Politician(
             id=21,
             name="バルク次郎",
+            prefecture="神奈川県",
             political_party_id=7,
             district="神奈川2区",
         )
@@ -788,6 +824,7 @@ class TestPoliticianRepositoryImplBulkOperations:
         existing = Politician(
             id=30,
             name="既存太郎",
+            prefecture="東京都",
             political_party_id=8,
             district="旧区画",
             profile_page_url="https://example.com/old",
@@ -795,6 +832,7 @@ class TestPoliticianRepositoryImplBulkOperations:
         updated = Politician(
             id=30,
             name="既存太郎",
+            prefecture="東京都",
             political_party_id=8,
             district="新区画",
             profile_page_url="https://example.com/new",
@@ -831,7 +869,13 @@ class TestPoliticianRepositoryImplBulkOperations:
                 raise SQLIntegrityError("statement", "params", "orig")
             return None
 
-        created = Politician(id=40, name="成功太郎", political_party_id=9)
+        created = Politician(
+            id=40,
+            name="成功太郎",
+            prefecture="東京都",
+            district="東京1区",
+            political_party_id=9,
+        )
 
         with patch.object(
             async_repository, "get_by_name_and_party", side_effect=side_effect_get
