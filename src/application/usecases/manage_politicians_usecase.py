@@ -14,6 +14,7 @@ from src.domain.repositories.politician_operation_log_repository import (
     PoliticianOperationLogRepository,
 )
 from src.domain.repositories.politician_repository import PoliticianRepository
+from src.domain.repositories.speaker_repository import SpeakerRepository
 
 
 logger = get_logger(__name__)
@@ -82,6 +83,7 @@ class DeletePoliticianInputDto:
 
     id: int
     user_id: UUID | None = None  # 操作ユーザーID（ログ記録用）
+    force: bool = False  # 警告を無視して削除を実行（speakerとの紐づきを解除）
 
 
 @dataclass
@@ -90,6 +92,9 @@ class DeletePoliticianOutputDto:
 
     success: bool
     error_message: str | None = None
+    has_linked_speakers: bool = False  # speakerとの紐づきがあるかどうか
+    linked_speaker_count: int = 0  # 紐づいているspeakerの数
+    linked_speaker_names: list[str] | None = None  # 紐づいているspeakerの名前（表示用）
 
 
 @dataclass
@@ -115,15 +120,18 @@ class ManagePoliticiansUseCase:
         self,
         politician_repository: PoliticianRepository,
         operation_log_repository: PoliticianOperationLogRepository | None = None,
+        speaker_repository: SpeakerRepository | None = None,
     ):
         """Initialize the use case.
 
         Args:
             politician_repository: Repository instance (can be sync or async)
             operation_log_repository: Optional repository for operation logs
+            speaker_repository: Optional repository for speakers (used for delete)
         """
         self.politician_repository = politician_repository
         self.operation_log_repository = operation_log_repository
+        self.speaker_repository = speaker_repository
 
     async def _log_operation(
         self,
@@ -273,7 +281,12 @@ class ManagePoliticiansUseCase:
     async def delete_politician(
         self, input_dto: DeletePoliticianInputDto
     ) -> DeletePoliticianOutputDto:
-        """Delete a politician."""
+        """Delete a politician.
+
+        speakerとの紐づきがある場合:
+        - force=Falseの場合: 警告情報を返し、削除は実行しない
+        - force=Trueの場合: speakerの紐づきを解除してから削除を実行
+        """
         try:
             # Check if politician exists
             existing = await self.politician_repository.get_by_id(input_dto.id)
@@ -285,6 +298,39 @@ class ManagePoliticiansUseCase:
             # 削除前に政治家名を保存
             politician_name = existing.name
 
+            # speakerとの紐づきを確認
+            linked_speakers = []
+            if self.speaker_repository:
+                linked_speakers = await self.speaker_repository.get_by_politician_id(
+                    input_dto.id
+                )
+
+            # 紐づきがある場合の処理
+            if linked_speakers and self.speaker_repository:
+                linked_speaker_names = [s.name for s in linked_speakers]
+
+                # force=Falseの場合は警告を返す
+                if not input_dto.force:
+                    return DeletePoliticianOutputDto(
+                        success=False,
+                        error_message=(
+                            f"この政治家には{len(linked_speakers)}件の発言者が"
+                            "紐づいています。削除するには紐づきの解除が必要です。"
+                        ),
+                        has_linked_speakers=True,
+                        linked_speaker_count=len(linked_speakers),
+                        linked_speaker_names=linked_speaker_names,
+                    )
+
+                # force=Trueの場合は紐づきを解除
+                unlinked_count = await self.speaker_repository.unlink_from_politician(
+                    input_dto.id
+                )
+                logger.info(
+                    f"Unlinked {unlinked_count} speakers from politician {input_dto.id}"
+                )
+
+            # 政治家を削除
             await self.politician_repository.delete(input_dto.id)
 
             # 操作ログを記録
@@ -293,7 +339,12 @@ class ManagePoliticiansUseCase:
                 politician_name=politician_name,
                 operation_type=PoliticianOperationType.DELETE,
                 user_id=input_dto.user_id,
-                details={},
+                details={
+                    "unlinked_speaker_count": len(linked_speakers),
+                    "unlinked_speaker_names": (
+                        [s.name for s in linked_speakers] if linked_speakers else []
+                    ),
+                },
             )
 
             return DeletePoliticianOutputDto(success=True)

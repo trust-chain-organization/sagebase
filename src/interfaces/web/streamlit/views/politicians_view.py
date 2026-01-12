@@ -497,19 +497,80 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
 
     with col2:
         st.markdown("#### 削除")
-        st.warning("⚠️ 政治家を削除すると、関連する発言記録も影響を受けます")
+        st.warning("政治家を削除すると、関連する発言記録も影響を受けます")
+
+        # セッション状態の初期化（確認ダイアログ用）
+        confirm_key = f"confirm_delete_{selected_politician.id}"
+        if confirm_key not in st.session_state:
+            st.session_state[confirm_key] = False
 
         if st.button("🗑️ この政治家を削除", type="secondary"):
             user_id = presenter.get_current_user_id()
-            success, error = presenter.delete(
+            # まず紐づきを確認（force=Falseで呼び出し）
+            success, error, has_linked, count, names = presenter.delete(
                 selected_politician.id,  # type: ignore[arg-type]
                 user_id=user_id,
+                force=False,
             )
             if success:
                 st.success(f"政治家「{selected_politician.name}」を削除しました")
+                st.session_state[confirm_key] = False
+                st.rerun()
+            elif has_linked:
+                # speaker紐づきがある場合は確認ダイアログを表示
+                st.session_state[confirm_key] = True
+                st.session_state[f"linked_count_{selected_politician.id}"] = count
+                st.session_state[f"linked_names_{selected_politician.id}"] = names
                 st.rerun()
             else:
                 st.error(f"削除に失敗しました: {error}")
+
+        # 確認ダイアログの表示
+        if st.session_state.get(confirm_key, False):
+            count = st.session_state.get(f"linked_count_{selected_politician.id}", 0)
+            names = st.session_state.get(f"linked_names_{selected_politician.id}", [])
+            st.error(
+                f"⚠️ この政治家には{count}件の発言者が紐づいています。\n"
+                "削除すると、これらの発言者との紐づきが解除されます。"
+            )
+            if names:
+                display_names = names[:5]
+                if len(names) > 5:
+                    st.write(
+                        "紐づいている発言者: "
+                        + ", ".join(display_names)
+                        + f" 他{len(names) - 5}件"
+                    )
+                else:
+                    st.write("紐づいている発言者: " + ", ".join(display_names))
+
+            col_confirm, col_cancel = st.columns(2)
+            with col_confirm:
+                if st.button(
+                    "⚠️ 紐づきを解除して削除",
+                    type="primary",
+                    key=f"force_delete_{selected_politician.id}",
+                ):
+                    user_id = presenter.get_current_user_id()
+                    success, error, _, _, _ = presenter.delete(
+                        selected_politician.id,  # type: ignore[arg-type]
+                        user_id=user_id,
+                        force=True,
+                    )
+                    if success:
+                        st.success(
+                            f"政治家「{selected_politician.name}」を削除しました"
+                        )
+                        st.session_state[confirm_key] = False
+                        st.rerun()
+                    else:
+                        st.error(f"削除に失敗しました: {error}")
+            with col_cancel:
+                if st.button(
+                    "キャンセル", key=f"cancel_delete_{selected_politician.id}"
+                ):
+                    st.session_state[confirm_key] = False
+                    st.rerun()
 
 
 def render_merge_tab(presenter: PoliticianPresenter) -> None:

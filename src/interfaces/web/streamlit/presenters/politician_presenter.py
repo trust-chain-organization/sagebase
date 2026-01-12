@@ -29,6 +29,9 @@ from src.infrastructure.persistence.politician_repository_impl import (
     PoliticianRepositoryImpl,
 )
 from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
+from src.infrastructure.persistence.speaker_repository_impl import (
+    SpeakerRepositoryImpl,
+)
 from src.interfaces.web.streamlit.auth import google_sign_in
 from src.interfaces.web.streamlit.presenters.base import BasePresenter
 from src.interfaces.web.streamlit.utils.session_manager import SessionManager
@@ -46,10 +49,12 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
         self.operation_log_repo = RepositoryAdapter(
             PoliticianOperationLogRepositoryImpl
         )
+        self.speaker_repo = RepositoryAdapter(SpeakerRepositoryImpl)
         # Type: ignore - RepositoryAdapter duck-types as repository protocol
         self.use_case = ManagePoliticiansUseCase(
             politician_repository=self.politician_repo,  # type: ignore[arg-type]
             operation_log_repository=self.operation_log_repo,  # type: ignore[arg-type]
+            speaker_repository=self.speaker_repo,  # type: ignore[arg-type]
         )
         self.session = SessionManager()
         self.logger = get_logger(__name__)
@@ -213,26 +218,40 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
             self.logger.error(error_msg)
             return False, error_msg
 
-    def delete(self, id: int, user_id: UUID | None = None) -> tuple[bool, str | None]:
-        """Delete a politician."""
-        return self._run_async(self._delete_async(id, user_id))
+    def delete(
+        self, id: int, user_id: UUID | None = None, force: bool = False
+    ) -> tuple[bool, str | None, bool, int, list[str] | None]:
+        """Delete a politician.
+
+        Args:
+            id: 政治家ID
+            user_id: 操作ユーザーID
+            force: 警告を無視して削除を実行（speakerとの紐づきを解除）
+
+        Returns:
+            (success, error_message, has_linked_speakers, linked_count, speaker_names)
+        """
+        return self._run_async(self._delete_async(id, user_id, force))
 
     async def _delete_async(
-        self, id: int, user_id: UUID | None = None
-    ) -> tuple[bool, str | None]:
+        self, id: int, user_id: UUID | None = None, force: bool = False
+    ) -> tuple[bool, str | None, bool, int, list[str] | None]:
         """Delete a politician (async implementation)."""
         try:
             result = await self.use_case.delete_politician(
-                DeletePoliticianInputDto(id=id, user_id=user_id)
+                DeletePoliticianInputDto(id=id, user_id=user_id, force=force)
             )
-            if result.success:
-                return True, None
-            else:
-                return False, result.error_message
+            return (
+                result.success,
+                result.error_message,
+                result.has_linked_speakers,
+                result.linked_speaker_count,
+                result.linked_speaker_names,
+            )
         except Exception as e:
             error_msg = f"Failed to delete politician: {e}"
             self.logger.error(error_msg)
-            return False, error_msg
+            return False, error_msg, False, 0, None
 
     def merge(self, source_id: int, target_id: int) -> tuple[bool, str | None]:
         """Merge two politicians."""

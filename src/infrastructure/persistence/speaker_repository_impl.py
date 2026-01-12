@@ -699,3 +699,43 @@ class SpeakerRepositoryImpl(BaseRepositoryImpl[Speaker], SpeakerRepository):
             timeline.append({"date": str(row.date), "count": row.count})
 
         return timeline
+
+    async def get_by_politician_id(self, politician_id: int) -> list[Speaker]:
+        """指定された政治家IDに紐づく発言者を取得する.
+
+        Args:
+            politician_id: 政治家ID
+
+        Returns:
+            紐づいている発言者のリスト
+        """
+        query = text("""
+            SELECT * FROM speakers
+            WHERE politician_id = :politician_id
+            ORDER BY name
+        """)
+        result = await self.session.execute(query, {"politician_id": politician_id})
+        rows = result.fetchall()
+
+        return [self._row_to_entity(row) for row in rows]
+
+    async def unlink_from_politician(self, politician_id: int) -> int:
+        """指定された政治家IDとの紐づきを解除する.
+
+        発言者のpolitician_idをNULLに設定します。
+
+        Args:
+            politician_id: 政治家ID
+
+        Returns:
+            解除された発言者の数
+        """
+        query = text("""
+            UPDATE speakers
+            SET politician_id = NULL
+            WHERE politician_id = :politician_id
+        """)
+        result = await self.session.execute(query, {"politician_id": politician_id})
+        await self.session.commit()
+
+        return result.rowcount

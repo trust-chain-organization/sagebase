@@ -149,3 +149,29 @@ class SpeakerRepository(BaseRepository[Speaker]):
             時系列データのリスト（例: [{"date": "2024-01-01", "count": 5}, ...]）
         """
         pass
+
+    @abstractmethod
+    async def get_by_politician_id(self, politician_id: int) -> list[Speaker]:
+        """指定された政治家IDに紐づく発言者を取得する.
+
+        Args:
+            politician_id: 政治家ID
+
+        Returns:
+            紐づいている発言者のリスト
+        """
+        pass
+
+    @abstractmethod
+    async def unlink_from_politician(self, politician_id: int) -> int:
+        """指定された政治家IDとの紐づきを解除する.
+
+        発言者のpolitician_idをNULLに設定します。
+
+        Args:
+            politician_id: 政治家ID
+
+        Returns:
+            解除された発言者の数
+        """
+        pass
