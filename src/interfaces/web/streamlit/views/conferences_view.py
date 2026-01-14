@@ -19,6 +19,7 @@ from src.application.usecases.mark_entity_as_verified_usecase import (
 from src.application.usecases.update_extracted_conference_member_from_extraction_usecase import (  # noqa: E501
     UpdateExtractedConferenceMemberFromExtractionUseCase,
 )
+from src.domain.entities import Conference
 from src.domain.repositories import ConferenceRepository, GoverningBodyRepository
 from src.infrastructure.external.conference_member_extractor.extractor import (
     ConferenceMemberExtractor,
@@ -343,7 +344,8 @@ def render_edit_delete_form(
     st.header("会議体の編集・削除")
 
     # Load all conferences for selection
-    conferences = asyncio.run(conference_repo.get_all())
+    # Note: conference_repoはDependencyContainerでラップされており、同期的にリストを返す
+    conferences = cast(list[Conference], conference_repo.get_all())
 
     if not conferences:
         st.info("編集可能な会議体がありません。")
