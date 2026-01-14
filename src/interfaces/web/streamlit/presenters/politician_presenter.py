@@ -145,13 +145,21 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
     ) -> tuple[bool, int | None, str | None]:
         """Create a new politician (async implementation)."""
         try:
+            normalized_name = name.replace(" ", "").replace("\u3000", "")
+            normalized_district = district.replace(" ", "").replace("\u3000", "")
+            normalized_profile_url = (
+                profile_url.replace(" ", "").replace("\u3000", "")
+                if profile_url
+                else None
+            )
+
             result = await self.use_case.create_politician(
                 CreatePoliticianInputDto(
-                    name=name,
+                    name=normalized_name,
                     prefecture=prefecture,
-                    district=district,
+                    district=normalized_district,
                     party_id=party_id,
-                    profile_url=profile_url,
+                    profile_url=normalized_profile_url,
                     user_id=user_id,
                 )
             )
@@ -193,14 +201,22 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
     ) -> tuple[bool, str | None]:
         """Update an existing politician (async implementation)."""
         try:
+            normalized_name = name.replace(" ", "").replace("\u3000", "")
+            normalized_district = district.replace(" ", "").replace("\u3000", "")
+            normalized_profile_url = (
+                profile_url.replace(" ", "").replace("\u3000", "")
+                if profile_url
+                else None
+            )
+
             result = await self.use_case.update_politician(
                 UpdatePoliticianInputDto(
                     id=id,
-                    name=name,
+                    name=normalized_name,
                     prefecture=prefecture,
-                    district=district,
+                    district=normalized_district,
                     party_id=party_id,
-                    profile_url=profile_url,
+                    profile_url=normalized_profile_url,
                     user_id=user_id,
                 )
             )
@@ -267,6 +283,55 @@ class PoliticianPresenter(BasePresenter[list[Politician]]):
             error_msg = f"Failed to merge politicians: {e}"
             self.logger.error(error_msg)
             return False, error_msg
+
+    def remove_whitespace_from_all(self) -> tuple[bool, int, str | None]:
+        """Remove whitespace from all politician records."""
+        return self._run_async(self._remove_whitespace_from_all_async())
+
+    async def _remove_whitespace_from_all_async(self) -> tuple[bool, int, str | None]:
+        """Remove whitespace from all politician records (async implementation)."""
+        try:
+            result = await self.use_case.list_politicians(PoliticianListInputDto())
+            politicians = result.politicians
+            updated_count = 0
+
+            for politician in politicians:
+                if politician.id is None:
+                    continue
+
+                original_name = politician.name
+                original_district = politician.district or ""
+                original_url = politician.profile_page_url or ""
+
+                normalized_name = original_name.replace(" ", "").replace("\u3000", "")
+                normalized_district = original_district.replace(" ", "").replace(
+                    "\u3000", ""
+                )
+                normalized_url = original_url.replace(" ", "").replace("\u3000", "")
+
+                if (
+                    normalized_name != original_name
+                    or normalized_district != original_district
+                    or normalized_url != original_url
+                ):
+                    await self.use_case.update_politician(
+                        UpdatePoliticianInputDto(
+                            id=politician.id,
+                            name=normalized_name,
+                            prefecture=politician.prefecture or "",
+                            district=normalized_district,
+                            party_id=politician.political_party_id,
+                            profile_url=normalized_url if normalized_url else None,
+                            user_id=None,
+                        )
+                    )
+                    updated_count += 1
+
+            return True, updated_count, None
+        except Exception as e:
+            error_msg = f"Failed to remove whitespace: {e}"
+            self.logger.error(error_msg)
+            return False, 0, error_msg
 
     def to_dataframe(
         self, politicians: list[Politician], parties: list[PoliticalParty]

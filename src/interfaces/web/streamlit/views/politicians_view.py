@@ -247,6 +247,10 @@ def render_new_politician_tab(presenter: PoliticianPresenter) -> None:
     """Render the new politician registration tab."""
     st.subheader("新規政治家登録")
 
+    if "new_politician_success_message" in st.session_state:
+        st.success(st.session_state.new_politician_success_message)
+        del st.session_state.new_politician_success_message
+
     # Get parties
     parties = presenter.get_all_parties()
 
@@ -341,7 +345,9 @@ def render_new_politician_tab(presenter: PoliticianPresenter) -> None:
                     user_id=user_id,
                 )
                 if success:
-                    st.success(f"政治家「{name}」を登録しました（ID: {politician_id}）")
+                    st.session_state.new_politician_success_message = (
+                        f"政治家「{name}」を登録しました（ID: {politician_id}）"
+                    )
                     st.rerun()
                 else:
                     st.error(f"登録に失敗しました: {error}")
@@ -375,6 +381,14 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
         key="edit_party_filter",
     )
 
+    # 都道府県フィルター
+    prefecture_filter_options = ["すべて"] + prefectures
+    selected_prefecture_filter = st.selectbox(
+        "都道府県でフィルター",
+        prefecture_filter_options,
+        key="edit_prefecture_filter",
+    )
+
     # チェックボックスフィルター
     col1, col2 = st.columns(2)
     with col1:
@@ -396,6 +410,14 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
             p for p in filtered_politicians if p.political_party_id == selected_party_id
         ]
 
+    # 都道府県フィルター
+    if selected_prefecture_filter != "すべて":
+        filtered_politicians = [
+            p
+            for p in filtered_politicians
+            if p.prefecture == selected_prefecture_filter
+        ]
+
     if filter_no_prefecture:
         filtered_politicians = [p for p in filtered_politicians if not p.prefecture]
     if filter_no_district:
@@ -403,7 +425,10 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
 
     # フィルター結果の表示
     is_filtered = (
-        selected_party_filter != "すべて" or filter_no_prefecture or filter_no_district
+        selected_party_filter != "すべて"
+        or selected_prefecture_filter != "すべて"
+        or filter_no_prefecture
+        or filter_no_district
     )
     if is_filtered:
         filtered_count = len(filtered_politicians)
@@ -593,6 +618,30 @@ def render_edit_delete_tab(presenter: PoliticianPresenter) -> None:
                         f"related_counts_{selected_politician.id}", None
                     )
                     st.rerun()
+
+    # 一括処理セクション
+    st.divider()
+    st.markdown("#### 一括処理")
+
+    if "whitespace_removal_success" in st.session_state:
+        st.success(st.session_state.whitespace_removal_success)
+        del st.session_state.whitespace_removal_success
+
+    if st.button("🧹 全ての政治家レコードから空白を除去"):
+        with st.spinner("空白を除去中..."):
+            success, updated_count, error = presenter.remove_whitespace_from_all()
+            if success:
+                if updated_count > 0:
+                    st.session_state.whitespace_removal_success = (
+                        f"{updated_count}件の政治家レコードから空白を除去しました"
+                    )
+                else:
+                    st.session_state.whitespace_removal_success = (
+                        "空白を含む政治家レコードはありませんでした"
+                    )
+                st.rerun()
+            else:
+                st.error(f"空白除去に失敗しました: {error}")
 
 
 def render_merge_tab(presenter: PoliticianPresenter) -> None:
