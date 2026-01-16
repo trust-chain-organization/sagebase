@@ -11,7 +11,9 @@ class ConversationRepository(BaseRepository[Conversation]):
     """Repository interface for conversations."""
 
     @abstractmethod
-    async def get_by_minutes(self, minutes_id: int) -> list[Conversation]:
+    async def get_by_minutes(
+        self, minutes_id: int, limit: int | None = None
+    ) -> list[Conversation]:
         """Get all conversations for a minutes record."""
         pass
 

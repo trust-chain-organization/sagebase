@@ -154,15 +154,19 @@ class ConversationRepositoryImpl(
 
         self.speaker_matching_service = speaker_matching_service
 
-    async def get_by_minutes(self, minutes_id: int) -> list[Conversation]:
+    async def get_by_minutes(
+        self, minutes_id: int, limit: int | None = None
+    ) -> list[Conversation]:
         """Get all conversations for a minutes record."""
         if self.async_session is not None:
             query = text("""
                 SELECT * FROM conversations
                 WHERE minutes_id = :minutes_id
                 ORDER BY sequence_number
+                LIMIT :limit
             """)
-            result = await self.async_session.execute(query, {"minutes_id": minutes_id})
+            params = {"minutes_id": minutes_id, "limit": limit or 999999}
+            result = await self.async_session.execute(query, params)
             rows = result.fetchall()
             return [self._row_to_entity(row) for row in rows]
         elif self.sync_session is not None:
@@ -171,8 +175,10 @@ class ConversationRepositoryImpl(
                 SELECT * FROM conversations
                 WHERE minutes_id = :minutes_id
                 ORDER BY sequence_number
+                LIMIT :limit
             """)
-            result = await self.sync_session.execute(query, {"minutes_id": minutes_id})
+            params = {"minutes_id": minutes_id, "limit": limit or 999999}
+            result = await self.sync_session.execute(query, params)
             rows = result.fetchall()
             return [self._row_to_entity(row) for row in rows]
         else:

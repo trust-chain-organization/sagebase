@@ -584,8 +584,10 @@ class MeetingPresenter(CRUDPresenter[list[Meeting]]):
                     ExtractionLogRepositoryImpl,
                 )
 
-                conversation_repo = ConversationRepositoryImpl(session_adapter)
-                extraction_log_repo = ExtractionLogRepositoryImpl(session_adapter)
+                conversation_repo = ConversationRepositoryImpl(session=session_adapter)
+                extraction_log_repo = ExtractionLogRepositoryImpl(
+                    session=session_adapter
+                )
                 update_statement_usecase = UpdateStatementFromExtractionUseCase(
                     conversation_repo=conversation_repo,
                     extraction_log_repo=extraction_log_repo,
