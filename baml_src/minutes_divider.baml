@@ -216,6 +216,7 @@ function NormalizeSpeakerNames(
     client Gemini2Flash
     prompt #"
         以下の発言者名リストを正規化し、人名のみを抽出してください。
+        **重要: 入力リストの各要素に対して、必ず1つのNormalizedSpeakerオブジェクトを返してください。**
 
         発言者名リスト:
         {{ speakers }}
@@ -260,6 +261,16 @@ function NormalizeSpeakerNames(
         - 記号（○◆◇■□●）は無視してください
         - 全角括弧（）と半角括弧()の両方に対応してください
         - 空の発言者名はis_valid: falseとしてください
+
+        【出力形式の例】入力: ["議長(西村義直)", "市長", "田中太郎"]、マッピング: {"市長": "松井一郎"}
+        出力:
+        [
+          {"original_speaker": "議長(西村義直)", "normalized_name": "西村義直", "is_valid": true, "extraction_method": "pattern"},
+          {"original_speaker": "市長", "normalized_name": "松井一郎", "is_valid": true, "extraction_method": "mapping"},
+          {"original_speaker": "田中太郎", "normalized_name": "田中太郎", "is_valid": true, "extraction_method": "as_is"}
+        ]
+
+        {{ ctx.output_format }}
     "#
 }
 

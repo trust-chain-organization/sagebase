@@ -493,11 +493,14 @@ class MinutesProcessAgent:
     async def _normalize_speaker_names(
         self, state: MinutesProcessState
     ) -> dict[str, str]:
-        """発言者名をルールベースで正規化する（Issue #946）
+        """発言者名をLLMで正規化する（Issue #946）
 
         役職（人名）パターンから人名を抽出し、役職のみの場合はマッピングを参照して
         人名を取得します。無効な発言者はフィルタリングされます。
+        LLMが失敗した場合はルールベースにフォールバックします。
         """
+        from baml_client.async_client import b
+
         # 分割済み発言リストを取得
         memory_id = state.divided_speech_list_memory_id
         memory_data = self._get_from_memory("divided_speech_list", memory_id)
@@ -519,23 +522,60 @@ class MinutesProcessAgent:
             dict.fromkeys(speech.speaker for speech in divided_speech_list)
         )
 
-        print(
-            f"Normalizing {len(unique_speakers)} unique speaker names (rule-based)..."
-        )
+        print(f"Normalizing {len(unique_speakers)} unique speaker names...")
         print(f"Input speakers: {unique_speakers}")
         print(f"Role name mappings: {state.role_name_mappings}")
 
-        # ルールベースで正規化マッピングを構築
+        # 正規化マッピングを構築
         normalization_map: dict[str, tuple[str, bool, str]] = {}
-        for speaker in unique_speakers:
-            normalized_name, is_valid, method = self._normalize_speaker_name_rule_based(
-                speaker, state.role_name_mappings
+
+        # まずLLMで正規化を試みる
+        try:
+            print("Trying LLM-based normalization...")
+            normalized_results = await b.NormalizeSpeakerNames(
+                speakers=unique_speakers,
+                role_name_mappings=state.role_name_mappings,
             )
-            normalization_map[speaker] = (normalized_name, is_valid, method)
-            print(
-                f"  '{speaker}' → '{normalized_name}' "
-                f"(valid={is_valid}, method={method})"
-            )
+            print(f"LLM returned {len(normalized_results)} results")
+
+            if len(normalized_results) == len(unique_speakers):
+                # LLM成功: インデックスベースでマッピング
+                print("Using LLM results (index-based mapping)")
+                for speaker, normalized in zip(
+                    unique_speakers, normalized_results, strict=True
+                ):
+                    normalization_map[speaker] = (
+                        normalized.normalized_name,
+                        normalized.is_valid,
+                        normalized.extraction_method,
+                    )
+                    print(
+                        f"  [LLM] '{speaker}' → '{normalized.normalized_name}' "
+                        f"(valid={normalized.is_valid}, "
+                        f"method={normalized.extraction_method})"
+                    )
+            else:
+                # LLMの出力数が一致しない場合はルールベースにフォールバック
+                print(
+                    f"LLM result count mismatch "
+                    f"({len(normalized_results)} vs {len(unique_speakers)}), "
+                    f"falling back to rule-based"
+                )
+                raise ValueError("LLM result count mismatch")
+        except Exception as e:
+            # LLM失敗時はルールベースにフォールバック
+            print(f"LLM normalization failed: {e}, using rule-based fallback")
+            for speaker in unique_speakers:
+                normalized_name, is_valid, method = (
+                    self._normalize_speaker_name_rule_based(
+                        speaker, state.role_name_mappings
+                    )
+                )
+                normalization_map[speaker] = (normalized_name, is_valid, method)
+                print(
+                    f"  [Rule] '{speaker}' → '{normalized_name}' "
+                    f"(valid={is_valid}, method={method})"
+                )
 
         # 正規化結果を元の発言データに適用
         normalized_speech_list: list[SpeakerAndSpeechContent] = []
