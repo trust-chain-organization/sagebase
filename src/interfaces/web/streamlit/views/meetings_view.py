@@ -366,34 +366,38 @@ def render_new_meeting_tab(presenter: MeetingPresenter) -> None:
     """
     st.subheader("新規会議登録")
 
+    # Load governing bodies (outside form for dynamic updates)
+    governing_bodies = presenter.get_governing_bodies()
+
+    if not governing_bodies:
+        st.error("開催主体が登録されていません。")
+        return
+
+    # Governing body selection (outside form for dynamic updates)
+    selected_gb = st.selectbox(
+        "開催主体",
+        options=governing_bodies,
+        format_func=lambda x: x["display_name"],
+        key="new_meeting_gb",
+    )
+
+    # Conference selection based on governing body (outside form for dynamic updates)
+    conferences = []
+    if selected_gb:
+        conferences = presenter.get_conferences_by_governing_body(selected_gb["id"])
+
+    if not conferences:
+        st.error("選択した開催主体に会議体が登録されていません。")
+        return
+
+    selected_conf = st.selectbox(
+        "会議体",
+        options=conferences,
+        format_func=lambda x: x["name"],
+        key="new_meeting_conf",
+    )
+
     with st.form("new_meeting_form"):
-        # Load governing bodies
-        governing_bodies = presenter.get_governing_bodies()
-
-        if not governing_bodies:
-            st.error("開催主体が登録されていません。")
-            return
-
-        # Governing body selection
-        selected_gb = st.selectbox(
-            "開催主体",
-            options=governing_bodies,
-            format_func=lambda x: x["display_name"],
-        )
-
-        # Conference selection based on governing body
-        conferences = []
-        if selected_gb:
-            conferences = presenter.get_conferences_by_governing_body(selected_gb["id"])
-
-        if not conferences:
-            st.error("選択した開催主体に会議体が登録されていません。")
-            selected_conf = None
-        else:
-            selected_conf = st.selectbox(
-                "会議体", options=conferences, format_func=lambda x: x["name"]
-            )
-
         # Date input
         meeting_date = st.date_input("開催日", value=date.today())
 
