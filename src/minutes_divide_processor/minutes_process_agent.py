@@ -405,35 +405,61 @@ class MinutesProcessAgent:
             memory_id = self._put_to_memory("normalized_speech_list", memory)
             return {"normalized_speech_list_memory_id": memory_id}
 
-        # 発言者名のリストを抽出
-        speakers = [speech.speaker for speech in divided_speech_list]
+        # ユニークな発言者名のリストを抽出（LLM呼び出し回数を削減）
+        unique_speakers = list(
+            dict.fromkeys(speech.speaker for speech in divided_speech_list)
+        )
 
-        print(f"Normalizing {len(speakers)} speaker names with LLM...")
+        print(f"Normalizing {len(unique_speakers)} unique speaker names with LLM...")
 
         # BAMLでLLM呼び出し（発言者名の正規化）
         normalized_results = await b.NormalizeSpeakerNames(
-            speakers=speakers,
+            speakers=unique_speakers,
             role_name_mappings=state.role_name_mappings,
         )
+
+        # 正規化結果をマッピングとして構築
+        # LLMの出力数が入力数と一致しない場合に対応
+        normalization_map: dict[str, tuple[str, bool, str]] = {}
+        for normalized in normalized_results:
+            normalization_map[normalized.original_speaker] = (
+                normalized.normalized_name,
+                normalized.is_valid,
+                normalized.extraction_method,
+            )
 
         # 正規化結果を元の発言データに適用
         normalized_speech_list: list[SpeakerAndSpeechContent] = []
         skipped_count = 0
 
-        for speech, normalized in zip(
-            divided_speech_list, normalized_results, strict=True
-        ):
-            if not normalized.is_valid:
+        for speech in divided_speech_list:
+            speaker_name = speech.speaker
+
+            # マッピングに存在しない場合はそのまま使用
+            # （LLMが返さなかった場合のフォールバック）
+            if speaker_name not in normalization_map:
                 print(
-                    f"Skipping invalid speaker: {normalized.original_speaker} "
-                    f"(method: {normalized.extraction_method})"
+                    f"Warning: Speaker '{speaker_name}' not in LLM results, using as-is"
+                )
+                normalized_name = speaker_name
+                is_valid = bool(speaker_name and speaker_name.strip())
+                extraction_method = "fallback"
+            else:
+                normalized_name, is_valid, extraction_method = normalization_map[
+                    speaker_name
+                ]
+
+            if not is_valid:
+                print(
+                    f"Skipping invalid speaker: {speaker_name} "
+                    f"(method: {extraction_method})"
                 )
                 skipped_count += 1
                 continue
 
             # 発言者名を正規化された名前に置き換え
             normalized_speech = SpeakerAndSpeechContent(
-                speaker=normalized.normalized_name,
+                speaker=normalized_name,
                 speech_content=speech.speech_content,
                 chapter_number=speech.chapter_number,
                 sub_chapter_number=speech.sub_chapter_number,
@@ -442,11 +468,10 @@ class MinutesProcessAgent:
             normalized_speech_list.append(normalized_speech)
 
             # ログ出力（変換があった場合のみ）
-            if normalized.original_speaker != normalized.normalized_name:
+            if speaker_name != normalized_name:
                 print(
-                    f"Normalized: {normalized.original_speaker} "
-                    f"→ {normalized.normalized_name} "
-                    f"(method: {normalized.extraction_method})"
+                    f"Normalized: {speaker_name} → {normalized_name} "
+                    f"(method: {extraction_method})"
                 )
 
         print(
