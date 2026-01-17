@@ -43,3 +43,18 @@ class MinutesRepository(BaseRepository[Minutes]):
             bool: 更新成功の場合True
         """
         pass
+
+    @abstractmethod
+    async def get_all(
+        self, limit: int | None = None, offset: int | None = None
+    ) -> list[Minutes]:
+        """全議事録を取得する
+
+        Args:
+            limit: 取得件数の上限（Noneの場合は全件）
+            offset: スキップする件数（Noneの場合は0）
+
+        Returns:
+            list[Minutes]: 議事録リスト
+        """
+        pass

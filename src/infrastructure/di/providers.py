@@ -8,6 +8,9 @@ from dependency_injector import containers, providers
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from src.application.usecases.backfill_role_name_mappings_usecase import (
+    BackfillRoleNameMappingsUseCase,
+)
 from src.application.usecases.execute_minutes_processing_usecase import (
     ExecuteMinutesProcessingUseCase,
 )
@@ -625,4 +628,13 @@ class UseCaseContainer(containers.DeclarativeContainer):
         _create_politician_matching_agent,
         politician_repo=repositories.politician_repository,
         affiliation_repo=repositories.politician_affiliation_repository,
+    )
+
+    # Backfill role name mappings usecase (Issue #947)
+    backfill_role_name_mappings_usecase = providers.Factory(
+        BackfillRoleNameMappingsUseCase,
+        unit_of_work=unit_of_work,
+        storage_service=services.storage_service,
+        role_name_mapping_service=services.role_name_mapping_service,
+        minutes_divider_service=services.minutes_divider_service,
     )
