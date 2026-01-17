@@ -3,6 +3,8 @@ import uuid
 
 from typing import TYPE_CHECKING, Any
 
+import structlog
+
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 from langgraph.store.memory import InMemoryStore
@@ -18,6 +20,9 @@ from .models import (
 from src.domain.services.interfaces.llm_service import ILLMService
 from src.infrastructure.external.instrumented_llm_service import InstrumentedLLMService
 from src.infrastructure.external.minutes_divider.factory import MinutesDividerFactory
+
+
+logger = structlog.get_logger(__name__)
 
 
 # 循環インポートを避けるため、TYPE_CHECKINGで型ヒントのみに使用
@@ -261,7 +266,7 @@ class MinutesProcessAgent:
         # 議事録を分割する（発言部分のみ）
         section_info_list = await self.minutes_divider.section_divide_run(speech_part)
         section_list_length = len(section_info_list.section_info_list)
-        print("divide_minutes_to_keyword_done")
+        logger.debug("キーワード分割完了", section_count=section_list_length)
         return {
             # リストとして返す
             "section_info_list": section_info_list.section_info_list,
@@ -305,7 +310,7 @@ class MinutesProcessAgent:
         memory_id = self._put_to_memory(
             namespace="redivide_section_string_list", memory=memory
         )
-        print("check_length_done")
+        logger.debug("セクション長チェック完了")
         return {"redivide_section_string_list_memory_id": memory_id}
 
     async def _divide_speech(self, state: MinutesProcessState) -> dict[str, Any]:
@@ -327,14 +332,16 @@ class MinutesProcessAgent:
                 )
             )
         else:
-            print(
-                f"Warning: Index {state.index - 1} is out of range "
-                + "for section_string_list."
+            logger.warning(
+                "インデックスが範囲外",
+                index=state.index - 1,
+                section_count=len(section_string_list.section_string_list),
             )
             speaker_and_speech_content_list = None
-        print(
-            f"divide_speech_done on index_number: {state.index} "
-            + f"all_length: {state.section_list_length}"
+        logger.debug(
+            "発言分割処理中",
+            current_index=state.index,
+            total_sections=state.section_list_length,
         )
         # 現在のdivide_speech_listを取得
         memory_id = state.divided_speech_list_memory_id
@@ -353,10 +360,7 @@ class MinutesProcessAgent:
         # もしspeaker_and_speech_content_listがNoneの場合は、
         # 現在のリストを更新用リストとして返す
         if speaker_and_speech_content_list is None:
-            print(
-                "Warning: speaker_and_speech_content_list is None. "
-                + "Skipping this section."
-            )
+            logger.warning("発言リストがNullのためスキップ", index=state.index)
             updated_speaker_and_speech_content_list = divided_speech_list
             memory: dict[str, list[SpeakerAndSpeechContent]] = {
                 "divided_speech_list": updated_speaker_and_speech_content_list
@@ -377,7 +381,7 @@ class MinutesProcessAgent:
                 namespace="divided_speech_list", memory=memory
             )
         incremented_index = state.index + 1
-        print(f"incremented_speech_divide_index: {incremented_index}")
+        logger.debug("発言分割インデックス更新", next_index=incremented_index)
         return {"divided_speech_list_memory_id": memory_id, "index": incremented_index}
 
     def _normalize_speaker_name_rule_based(
@@ -448,6 +452,15 @@ class MinutesProcessAgent:
             "政務官",
         ]
 
+        # 役職のみかどうかを先にチェック
+        # （「副市長」が「副」+「市長」と誤解釈されるのを防ぐ）
+        is_role_only = cleaned in role_keywords
+        if is_role_only:
+            if role_name_mappings and cleaned in role_name_mappings:
+                return (role_name_mappings[cleaned], True, "mapping")
+            else:
+                return (cleaned, False, "role_only_no_mapping")
+
         # 役職+人名パターン（括弧なし）: 「松井市長」→「松井」を抽出
         for role in role_keywords:
             if cleaned.endswith(role) and len(cleaned) > len(role):
@@ -456,14 +469,6 @@ class MinutesProcessAgent:
                 if name:
                     return (name, True, "role_suffix")
 
-        # 役職のみかどうかチェック
-        is_role_only = cleaned in role_keywords
-        if is_role_only:
-            if role_name_mappings and cleaned in role_name_mappings:
-                return (role_name_mappings[cleaned], True, "mapping")
-            else:
-                return (cleaned, False, "role_only_no_mapping")
-
         # 人名として扱う（敬称除去）
         name = self._remove_honorifics(cleaned)
         if name:
@@ -471,7 +476,7 @@ class MinutesProcessAgent:
         return (cleaned, True, "as_is")
 
     def _remove_honorifics(self, name: str) -> str:
-        """敬称を除去する。"""
+        """敬称を除去する（複数の敬称にも対応）。"""
         honorifics = [
             "君",
             "氏",
@@ -485,9 +490,15 @@ class MinutesProcessAgent:
             "先生",
         ]
         result = name
-        for h in honorifics:
-            if result.endswith(h):
-                result = result[: -len(h)]
+        # 複数の敬称がネストしている場合にも対応（例: 「山田太郎議員先生」）
+        changed = True
+        while changed:
+            changed = False
+            for h in honorifics:
+                if result.endswith(h):
+                    result = result[: -len(h)]
+                    changed = True
+                    break
         return result.strip()
 
     async def _normalize_speaker_names(
@@ -522,25 +533,30 @@ class MinutesProcessAgent:
             dict.fromkeys(speech.speaker for speech in divided_speech_list)
         )
 
-        print(f"Normalizing {len(unique_speakers)} unique speaker names...")
-        print(f"Input speakers: {unique_speakers}")
-        print(f"Role name mappings: {state.role_name_mappings}")
+        logger.info(
+            "発言者名の正規化を開始",
+            unique_speaker_count=len(unique_speakers),
+            has_mappings=bool(state.role_name_mappings),
+        )
+        logger.debug("正規化対象発言者", speakers=unique_speakers)
+        if state.role_name_mappings:
+            logger.debug("役職-人名マッピング", mappings=state.role_name_mappings)
 
         # 正規化マッピングを構築
         normalization_map: dict[str, tuple[str, bool, str]] = {}
 
         # まずLLMで正規化を試みる
         try:
-            print("Trying LLM-based normalization...")
+            logger.debug("LLMベース正規化を試行")
             normalized_results = await b.NormalizeSpeakerNames(
                 speakers=unique_speakers,
                 role_name_mappings=state.role_name_mappings,
             )
-            print(f"LLM returned {len(normalized_results)} results")
+            logger.debug("LLM正規化結果", result_count=len(normalized_results))
 
             if len(normalized_results) == len(unique_speakers):
                 # LLM成功: インデックスベースでマッピング
-                print("Using LLM results (index-based mapping)")
+                logger.info("LLMベースの正規化を使用")
                 for speaker, normalized in zip(
                     unique_speakers, normalized_results, strict=True
                 ):
@@ -549,22 +565,24 @@ class MinutesProcessAgent:
                         normalized.is_valid,
                         normalized.extraction_method,
                     )
-                    print(
-                        f"  [LLM] '{speaker}' → '{normalized.normalized_name}' "
-                        f"(valid={normalized.is_valid}, "
-                        f"method={normalized.extraction_method})"
+                    logger.debug(
+                        "LLM正規化結果",
+                        original=speaker,
+                        normalized=normalized.normalized_name,
+                        is_valid=normalized.is_valid,
+                        method=normalized.extraction_method,
                     )
             else:
                 # LLMの出力数が一致しない場合はルールベースにフォールバック
-                print(
-                    f"LLM result count mismatch "
-                    f"({len(normalized_results)} vs {len(unique_speakers)}), "
-                    f"falling back to rule-based"
+                logger.warning(
+                    "LLM結果数不一致のためルールベースにフォールバック",
+                    llm_count=len(normalized_results),
+                    expected_count=len(unique_speakers),
                 )
                 raise ValueError("LLM result count mismatch")
         except Exception as e:
             # LLM失敗時はルールベースにフォールバック
-            print(f"LLM normalization failed: {e}, using rule-based fallback")
+            logger.warning("LLM正規化失敗、ルールベースを使用", error=str(e))
             for speaker in unique_speakers:
                 normalized_name, is_valid, method = (
                     self._normalize_speaker_name_rule_based(
@@ -572,9 +590,12 @@ class MinutesProcessAgent:
                     )
                 )
                 normalization_map[speaker] = (normalized_name, is_valid, method)
-                print(
-                    f"  [Rule] '{speaker}' → '{normalized_name}' "
-                    f"(valid={is_valid}, method={method})"
+                logger.debug(
+                    "ルールベース正規化結果",
+                    original=speaker,
+                    normalized=normalized_name,
+                    is_valid=is_valid,
+                    method=method,
                 )
 
         # 正規化結果を元の発言データに適用
@@ -586,7 +607,10 @@ class MinutesProcessAgent:
 
             # マッピングに存在しない場合はそのまま使用（フォールバック）
             if speaker_name not in normalization_map:
-                print(f"Warning: Speaker '{speaker_name}' not in map, using as-is")
+                logger.warning(
+                    "発言者がマッピングに存在しないためそのまま使用",
+                    speaker=speaker_name,
+                )
                 normalized_name = speaker_name
                 is_valid = bool(speaker_name and speaker_name.strip())
                 extraction_method = "fallback"
@@ -596,9 +620,10 @@ class MinutesProcessAgent:
                 ]
 
             if not is_valid:
-                print(
-                    f"Skipping invalid speaker: {speaker_name} "
-                    f"(method: {extraction_method})"
+                logger.debug(
+                    "無効な発言者をスキップ",
+                    speaker=speaker_name,
+                    method=extraction_method,
                 )
                 skipped_count += 1
                 continue
@@ -615,14 +640,17 @@ class MinutesProcessAgent:
 
             # ログ出力（変換があった場合のみ）
             if speaker_name != normalized_name:
-                print(
-                    f"Normalized: {speaker_name} → {normalized_name} "
-                    f"(method: {extraction_method})"
+                logger.debug(
+                    "発言者名を正規化",
+                    original=speaker_name,
+                    normalized=normalized_name,
+                    method=extraction_method,
                 )
 
-        print(
-            f"normalize_speaker_names_done: {len(normalized_speech_list)} valid, "
-            f"{skipped_count} skipped"
+        logger.info(
+            "発言者名正規化完了",
+            valid_count=len(normalized_speech_list),
+            skipped_count=skipped_count,
         )
 
         # 正規化済みリストをメモリに保存
