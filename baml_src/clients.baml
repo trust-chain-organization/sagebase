@@ -53,13 +53,13 @@ client<llm> CustomHaiku {
   }
 }
 
-// Google AI client for Sagebase (gemini-2.0-flash)
+// Google AI client for Sagebase (gemini-2.5-flash)
 // BAML automatically handles structured output based on function return types
 client<llm> Gemini2Flash {
   provider google-ai
   retry_policy Exponential
   options {
-    model "gemini-2.0-flash"
+    model "gemini-2.5-flash"
     api_key env.GOOGLE_API_KEY
   }
 }

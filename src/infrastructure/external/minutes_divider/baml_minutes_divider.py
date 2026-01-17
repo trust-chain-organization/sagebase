@@ -585,6 +585,9 @@ class BAMLMinutesDivider(IMinutesDividerService):
     ) -> SpeakerAndSpeechContentList:
         """発言者と発言内容に分割する（BAML使用）
 
+        セクション全体を直接DivideSpeechに渡す。
+        発言者マーカー（○議長（名前）など）はDivideSpeechプロンプトで認識される。
+
         Args:
             section_string: セクション文字列
 
@@ -593,35 +596,16 @@ class BAMLMinutesDivider(IMinutesDividerService):
         """
         section_text = section_string.section_string
 
-        logger.info("=== speech_divide_run started ===")
-        logger.info(f"Section text length: {len(section_text)}")
-
-        # 境界検出と分割
-        logger.info("Calling detect_attendee_boundary...")
-        boundary = await self.detect_attendee_boundary(section_text)
-
-        logger.info("Calling split_minutes_by_boundary...")
-        attendee_part, speech_part = self.split_minutes_by_boundary(
-            section_text, boundary
-        )
-
-        if not speech_part:
-            logger.info("No speech content found in section")
-            return SpeakerAndSpeechContentList(speaker_and_speech_content_list=[])
-
-        # 発言部分のみを処理対象とする
-        section_text = speech_part
-
-        # 発言部分が短すぎる場合でも、明らかに発言パターンが含まれている場合は処理を続行
-        has_speech_pattern = bool(re.search(r"^[○◆]", section_text, re.MULTILINE))
+        # 発言パターンが含まれているかチェック
+        # ○◆◎●などの記号で始まる発言者マーカーがあるか確認
+        has_speech_pattern = bool(re.search(r"[○◆◎●]", section_text))
 
         if len(section_text) < 30 and not has_speech_pattern:
-            logger.info("Speech part too short and no speech pattern found, skipping")
+            logger.debug("セクションが短く発言パターンもないためスキップ")
             return SpeakerAndSpeechContentList(speaker_and_speech_content_list=[])
 
         try:
-            # BAMLを呼び出し
-            logger.info("Calling BAML DivideSpeech")
+            # BAMLを呼び出し（セクション全体を渡す）
             baml_result = await b.DivideSpeech(section_text)
 
             # BAML結果をPydanticモデルに変換
