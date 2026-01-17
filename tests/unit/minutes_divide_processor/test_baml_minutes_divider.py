@@ -463,3 +463,91 @@ class TestBAMLMinutesDivider:
 
         # Assert - should detect long section
         assert len(result.redivide_section_string_list) > 0
+
+    # ========================================
+    # Issue #953: 区切り線を無視するテスト
+    # ========================================
+
+    @pytest.mark.asyncio
+    async def test_section_divide_run_ignores_separator_lines(self, divider):
+        """Test that section division ignores separator lines like ～～～～
+
+        Issue #953: 京都市会議事録などで使用される区切り線（～～～）が
+        セクション境界として誤認識される問題のテスト
+        """
+
+        # Mock BAML result - 区切り線を無視して発言者で分割
+        class MockSectionInfo:
+            def __init__(self, chapter_number, keyword):
+                self.chapter_number = chapter_number
+                self.keyword = keyword
+
+        # 期待される結果: 区切り線ではなく発言者で分割される
+        mock_result = [
+            MockSectionInfo(1, "○議長（西村義直）　ただ今から、令和7年京"),
+            MockSectionInfo(2, "○議長（西村義直）　この場合、議長から御報"),
+        ]
+
+        with patch(
+            "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.DivideMinutesToKeywords"
+        ) as mock_baml:
+            mock_baml.return_value = mock_result
+
+            # 京都市会議事録風のテストデータ（区切り線を含む）
+            separator_line = "～" * 35
+            test_minutes = f"""{separator_line}
+　〔午前10時1分開会〕
+○議長（西村義直）　ただ今から、令和7年京都市会定例会を開会いたします。
+{separator_line}
+○議長（西村義直）　この場合、議長から御報告申し上げます。
+{separator_line}"""
+
+            result = await divider.section_divide_run(test_minutes)
+
+            # Assert
+            assert len(result.section_info_list) == 2
+            # 区切り線ではなく発言者で分割されていることを確認
+            assert "○議長" in result.section_info_list[0].keyword
+            assert "○議長" in result.section_info_list[1].keyword
+
+            # Verify BAML was called with the test data
+            mock_baml.assert_called_once_with(test_minutes)
+
+    @pytest.mark.asyncio
+    async def test_section_divide_run_with_various_separator_patterns(self, divider):
+        """Test that various separator patterns are ignored
+
+        Issue #953: 様々な区切り線パターン（---、===、━━━など）が
+        無視されることを確認
+        """
+
+        class MockSectionInfo:
+            def __init__(self, chapter_number, keyword):
+                self.chapter_number = chapter_number
+                self.keyword = keyword
+
+        # 期待される結果: 発言者で分割される
+        mock_result = [
+            MockSectionInfo(1, "○委員長（山田太郎）　会議を開きます。"),
+            MockSectionInfo(2, "◆佐藤議員　質問があります。"),
+        ]
+
+        with patch(
+            "src.infrastructure.external.minutes_divider.baml_minutes_divider.b.DivideMinutesToKeywords"
+        ) as mock_baml:
+            mock_baml.return_value = mock_result
+
+            # 様々な区切り線パターンを含むテストデータ
+            test_minutes = """════════════════════════════════
+○委員長（山田太郎）　会議を開きます。
+────────────────────────────────
+◆佐藤議員　質問があります。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━"""
+
+            result = await divider.section_divide_run(test_minutes)
+
+            # Assert
+            assert len(result.section_info_list) == 2
+            # 区切り線ではなく発言者で分割されていることを確認
+            assert "○委員長" in result.section_info_list[0].keyword
+            assert "◆佐藤議員" in result.section_info_list[1].keyword
