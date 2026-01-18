@@ -113,6 +113,14 @@ src/
 - pytest-asyncioを使用した非同期テストを書く時
 - CI失敗を防ぐためのテスト品質を確保したい時
 
+#### logging-guidelines
+**使用タイミング**:
+- ログ出力を追加・修正する時
+- デバッグ用コードを書く時
+- 新しいモジュールを作成する時（loggerの初期化）
+- `print(` をコードに追加しようとする時
+- エラーハンドリングを実装する時
+
 ### Development Workflow
 
 #### project-conventions
