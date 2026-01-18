@@ -1,5 +1,7 @@
 """Use case for creating parliamentary group memberships from matched members."""
 
+import logging
+
 from datetime import date
 from uuid import UUID
 
@@ -9,6 +11,9 @@ from src.domain.repositories.extracted_parliamentary_group_member_repository imp
 from src.domain.repositories.parliamentary_group_membership_repository import (
     ParliamentaryGroupMembershipRepository,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class CreateParliamentaryGroupMembershipsUseCase:
@@ -114,7 +119,9 @@ class CreateParliamentaryGroupMembershipsUseCase:
                 )
             except Exception as e:
                 # エラーが発生した場合はスキップ
-                print(f"Failed to create membership for {member.extracted_name}: {e}")
+                logger.warning(
+                    f"Failed to create membership for {member.extracted_name}: {e}"
+                )
                 skipped_count += 1
 
         return {

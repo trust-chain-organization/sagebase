@@ -209,8 +209,8 @@ class LinkAnalysisDomainService:
             else:
                 logger.debug(f"✗ Not a child page: {link.url}")
 
-        print(
-            f"DEBUG filter_child_pages: Filtered {len(child_pages)} "
+        logger.debug(
+            f"filter_child_pages: Filtered {len(child_pages)} "
             f"child pages from {len(links)} total links"
         )
         return child_pages

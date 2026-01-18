@@ -161,15 +161,15 @@ class BAMLMinutesDivider(IMinutesDividerService):
 
                     if start_index == -1:
                         start_index = 0
-                        print(
+                        logger.warning(
                             f"キーワード '{section_info.keyword}' が"
-                            + "見つからないため、先頭から開始します"
+                            "見つからないため、先頭から開始します"
                         )
             # キーワードが見つからない場合はスキップ
             if start_index == -1:
-                print(
-                    f"警告: キーワード '{section_info.keyword}' が"
-                    + "見つかりません。スキップします。"
+                logger.warning(
+                    f"キーワード '{section_info.keyword}' が"
+                    "見つかりません。スキップします。"
                 )
                 skipped_keywords.append(section_info.keyword)
                 i += 1
@@ -198,9 +198,9 @@ class BAMLMinutesDivider(IMinutesDividerService):
                 if next_keyword_index != -1:
                     break
                 else:
-                    print(
-                        f"警告: キーワード '{next_section.keyword}' が議事録に"
-                        + "見つかりません。スキップします。"
+                    logger.warning(
+                        f"キーワード '{next_section.keyword}' が議事録に"
+                        "見つかりません。スキップします。"
                     )
                     skipped_keywords.append(next_section.keyword)
                     j += 1
@@ -239,9 +239,11 @@ class BAMLMinutesDivider(IMinutesDividerService):
         redivide_list: list[RedivideSectionString] = []
         for index, section_string in enumerate(section_string_list.section_string_list):
             size_in_bytes = len(section_string.section_string.encode("utf-8"))
-            print(f"size_in_bytes: {size_in_bytes}")
+            logger.debug(f"size_in_bytes: {size_in_bytes}")
             if size_in_bytes > 6000:  # 6000文字より多いか確認
-                print("section_stringの文字数が6000文字を超えています。再分割します。")
+                logger.info(
+                    "section_stringの文字数が6000文字を超えています。再分割します。"
+                )
                 redivide_dict = RedivideSectionString(
                     original_index=index,
                     redivide_section_string_bytes=size_in_bytes,

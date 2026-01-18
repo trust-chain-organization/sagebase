@@ -71,13 +71,9 @@ class AnalyzePartyPageLinksUseCase:
             input_dto.html_content, input_dto.current_url
         )
         logger.info(f"Extracted {len(all_links)} total links")
-        print(
-            f"DEBUG LinkAnalysis: Extracted {len(all_links)} total links "
-            f"from {input_dto.current_url}"
-        )
         if all_links:
             sample_urls = [link.url for link in all_links[:5]]
-            print(f"DEBUG LinkAnalysis: Sample links = {sample_urls}")
+            logger.debug(f"Sample links = {sample_urls}")
 
         # Step 2: Filter for child pages and siblings
         child_links = self._link_analysis.filter_child_pages(
@@ -87,13 +83,13 @@ class AnalyzePartyPageLinksUseCase:
             all_links, input_dto.current_url
         )
 
-        print(
-            f"DEBUG LinkAnalysis: After filtering - "
-            f"child_links={len(child_links)}, sibling_links={len(sibling_links)}"
+        logger.debug(
+            f"After filtering - child_links={len(child_links)}, "
+            f"sibling_links={len(sibling_links)}"
         )
         if child_links:
             sample_child_urls = [link.url for link in child_links[:5]]
-            print(f"DEBUG LinkAnalysis: Sample child links = {sample_child_urls}")
+            logger.debug(f"Sample child links = {sample_child_urls}")
 
         # Combine child and sibling links for classification
         links_to_classify = list(set(child_links + sibling_links))
@@ -108,10 +104,6 @@ class AnalyzePartyPageLinksUseCase:
             f"{len(sibling_links)} sibling links, "
             f"{len(links_to_classify)} total to classify"
         )
-        print(
-            f"DEBUG LinkAnalysis: {len(links_to_classify)} links to classify "
-            f"(after excluding current page)"
-        )
 
         # Step 3: Classify links if any exist
         if links_to_classify:
@@ -121,14 +113,14 @@ class AnalyzePartyPageLinksUseCase:
                 context=input_dto.context,
             )
             classifications_count = len(classification_result.classifications)
-            print(f"DEBUG LinkAnalysis: LLM classified {classifications_count} links")
+            logger.debug(f"LLM classified {classifications_count} links")
             # Show classification breakdown
             from collections import Counter
 
             type_counts = Counter(
                 c.link_type.value for c in classification_result.classifications
             )
-            print(f"DEBUG LinkAnalysis: Classification breakdown = {dict(type_counts)}")
+            logger.debug(f"Classification breakdown = {dict(type_counts)}")
         else:
             # No links to classify
             from src.domain.services.interfaces.llm_link_classifier_service import (
@@ -176,12 +168,6 @@ class AnalyzePartyPageLinksUseCase:
         logger.info(
             f"Classification complete: {len(member_list_urls)} navigable pages "
             f"(member lists + hierarchical), {len(profile_urls)} profiles"
-        )
-        print(
-            f"DEBUG LinkAnalysis: Final result - "
-            f"{len(member_list_urls)} navigable pages "
-            f"(member lists + hierarchical), "
-            f"{len(profile_urls)} profiles (confidence >= 0.7)"
         )
 
         # Return output DTO

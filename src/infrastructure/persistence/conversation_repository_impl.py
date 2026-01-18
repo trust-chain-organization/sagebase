@@ -421,13 +421,13 @@ class ConversationRepositoryImpl(
 
         if conversation_id is not None:
             if speaker_id:
-                print(
-                    f"➕ 新規追加: {speaker_and_speech_content.speaker} "
+                logger.debug(
+                    f"新規追加: {speaker_and_speech_content.speaker} "
                     f"(ID: {conversation_id}, Speaker ID: {speaker_id})"
                 )
             else:
-                print(
-                    f"➕ 新規追加: {speaker_and_speech_content.speaker} "
+                logger.debug(
+                    f"新規追加: {speaker_and_speech_content.speaker} "
                     f"(ID: {conversation_id}, Speaker ID: NULL)"
                 )
 
