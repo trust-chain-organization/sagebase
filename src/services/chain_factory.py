@@ -111,33 +111,6 @@ Return a JSON object with extracted politician data."""
         chain = prompt | llm  # type: ignore[misc]
         return chain  # type: ignore[return-value]
 
-    def create_speaker_matching_chain(
-        self, output_schema: type[BaseModel]
-    ) -> RunnableSerializable[dict[str, Any], BaseModel]:
-        """
-        Create chain for matching speakers to politicians
-
-        Args:
-            output_schema: Schema for match result
-
-        Returns:
-            Configured chain
-        """
-        try:
-            prompt = self.prompt_manager.get_prompt("speaker_match")
-        except Exception:
-            template = """Match the following speaker to available politicians:
-
-Speaker: {speaker_name}
-Available speakers: {available_speakers}
-
-Return a JSON object with match results."""
-            prompt = ChatPromptTemplate.from_template(template)
-
-        llm = self.llm_service.get_structured_llm(output_schema)
-        chain = prompt | llm  # type: ignore[misc]
-        return chain  # type: ignore[return-value]
-
     def create_generic_chain(
         self,
         prompt_template: str,

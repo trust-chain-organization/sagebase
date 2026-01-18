@@ -310,20 +310,7 @@ sequenceDiagram
 
 **データ変換**: `PDF/Text → Raw Text → LLM JSON → Conversation Entities → Database Records`
 
-### 2. 発言者マッチングフロー
-
-> 📖 詳細: [diagrams/data-flow-speaker-matching.mmd](diagrams/data-flow-speaker-matching.mmd)
-
-ルールベース + LLMハイブリッドアプローチによる発言者と政治家のマッチング：
-
-**マッチング戦略**:
-- **フェーズ1**: 発言者抽出（名前正規化、既存speaker検索、新規speaker作成）
-- **フェーズ2**: 政治家マッチング（候補検索、LLMファジーマッチング、信頼度≥0.7で自動リンク）
-
-**なぜLLMマッチングが必要か**:
-日本語の議事録では名前の表記揺れが多い（例：山田太郎君、山田議員、山田太郎）
-
-### 3. 政治家情報スクレイピングフロー
+### 2. 政治家情報スクレイピングフロー
 
 > 📖 詳細: [diagrams/data-flow-politician-scraping.mmd](diagrams/data-flow-politician-scraping.mmd)
 
@@ -713,7 +700,7 @@ graph TB
      - `monitoring-dashboard`: 監視ダッシュボード (ポート8502)
      - `scraper-worker`: 議事録スクレイピングワーカー
      - `processor-worker`: LLM議事録処理ワーカー
-     - `matcher-worker`: 発言者マッチングワーカー
+     - `matcher-worker`: 政治家マッチングワーカー
      - `api-service`: FastAPI (将来実装)
 
 #### データベース
@@ -954,12 +941,12 @@ External Websites
    → Vertex AI (Gemini API: テキスト分割・構造化)
    → Database (conversations テーブル保存)
 
-3. Speaker Matching
+3. Politician Matching
    Automatic Trigger
    → Matcher Worker (Cloud Run)
    → Database (speakers, politicians 取得)
    → Vertex AI (Gemini API: ファジーマッチング)
-   → Database (speaker リンク更新)
+   → Database (speaker-politician リンク更新)
 
 4. Monitoring & Reporting
    User Access (Monitoring Dashboard)

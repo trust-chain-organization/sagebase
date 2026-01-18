@@ -76,7 +76,6 @@ src/
 - [Layer Dependency](docs/diagrams/layer-dependency.mmd)
 - [Component Interaction](docs/diagrams/component-interaction.mmd)
 - [Minutes Processing Flow](docs/diagrams/data-flow-minutes-processing.mmd)
-- [Speaker Matching Flow](docs/diagrams/data-flow-speaker-matching.mmd)
 - [Repository Pattern](docs/diagrams/repository-pattern.mmd)
 
 **📖 Full documentation**: [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)
@@ -178,7 +177,7 @@ src/
 - 議事録処理のワークフローを理解したい時
 - Web scrapingのパイプラインを確認したい時
 - 政治家データ収集の処理フローを知りたい時
-- 話者マッチングの依存関係・実行順序を理解したい時
+- 政治家マッチングの依存関係・実行順序を理解したい時
 - データ処理の全体像を把握したい時
 
 #### baml-integration
@@ -309,15 +308,9 @@ Sagebaseでは、以下の機能にBAML (Boundary ML)を使用しています。
 - **実装**: `src/infrastructure/external/parliamentary_group_member_extractor/baml_extractor.py`
 - **備考**: Pydantic実装は削除済み、BAML実装のみ使用
 
-#### 4. 話者マッチング（Speaker Matching） **BAML専用**
-- **BAML定義**: `baml_src/speaker_matching.baml`
-- **実装**: `src/domain/services/baml_speaker_matching_service.py`
-- **備考**: Pydantic実装は削除済み、BAML実装のみ使用
-- **ハイブリッドアプローチ**: ルールベースマッチング（高速パス）+ BAMLマッチング
-
-#### 5. 政治家マッチング（Politician Matching） **BAML専用**
+#### 4. 政治家マッチング（Politician Matching） **BAML専用**
 - **BAML定義**: `baml_src/politician_matching.baml`
-- **実装**: `src/domain/services/baml_politician_matching_service.py`
+- **実装**: `src/infrastructure/external/politician_matching/baml_politician_matching_service.py`
 - **備考**: Pydantic実装は削除済み、BAML実装のみ使用
 - **ハイブリッドアプローチ**: ルールベースマッチング（高速パス）+ BAMLマッチング
 
@@ -327,7 +320,6 @@ Sagebaseでは、以下の機能にBAML (Boundary ML)を使用しています。
 
 ### トークン削減効果
 - **議事録分割**: 約10-15%削減
-- **話者マッチング**: 約5-10%削減（目標）
 - **政治家マッチング**: 約10-15%削減（目標）
 
 ### Usage in Streamlit

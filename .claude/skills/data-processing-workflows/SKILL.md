@@ -1,6 +1,6 @@
 ---
 name: data-processing-workflows
-description: Polibaseのデータ処理ワークフローとパイプラインを説明します。議事録処理、Web scraping、政治家データ収集、話者マッチングなどの処理フロー、依存関係、実行順序を理解する際にアクティベートされます。
+description: Polibaseのデータ処理ワークフローとパイプラインを説明します。議事録処理、Web scraping、政治家データ収集、政治家マッチングなどの処理フロー、依存関係、実行順序を理解する際にアクティベートされます。
 ---
 
 # Data Processing Workflows（データ処理ワークフロー）
@@ -13,7 +13,7 @@ Polibaseの各種データ処理ワークフロー、パイプライン、シス
 - `src/minutes_divide_processor/`, `src/web_scraper/` ディレクトリでの作業時
 - ユーザーが「処理フロー」「パイプライン」「ワークフロー」「データ処理」と言った時
 - 処理の順序や依存関係に関する質問時
-- 議事録処理、スクレイピング、話者マッチングの実装・修正時
+- 議事録処理、スクレイピング、政治家マッチングの実装・修正時
 
 ## システム設計原則
 
@@ -66,7 +66,7 @@ Conversations
   ↓ 話者情報を抽出
 Speakers
   ↓
-[3] Speaker Matching
+[3] Politician Matching
   ↓ 政治家とマッチング
 Linked Conversations
 ```
@@ -91,15 +91,15 @@ Linked Conversations
 **入力:** `conversations` テーブル
 **出力:** `speakers` テーブルのレコード
 
-#### ステップ3: Speaker Matching
-**ファイル:** `update_speaker_links_llm.py`
+#### ステップ3: Politician Matching
+**ファイル:** `src/infrastructure/external/politician_matching/`
 
 **処理内容:**
 - ルールベース + LLMのハイブリッドマッチング
-- 会話を話者レコードにリンク
+- 話者を政治家にリンク
 
 **入力:** `speakers`, `politicians` テーブル
-**出力:** リンク済み `conversations`
+**出力:** リンク済み `speakers`
 
 #### ステップ4: Politician Data Collection
 **コマンド:** `sagebase scrape-politicians`
@@ -149,7 +149,7 @@ Meetings Table (gcs_pdf_uri, gcs_text_uri)
 - Minutes Dividerが `--meeting-id` パラメータでGCSからデータを直接取得
 
 #### ステップ3: 以降の処理
-標準フロー（話者抽出、話者マッチング）と同じ
+標準フロー（話者抽出、政治家マッチング）と同じ
 
 ### Conference Member Extraction フロー（段階的処理）
 
@@ -211,7 +211,7 @@ politician_affiliations
 ### 議事録処理の場合
 - [ ] **ステップ1**: Minutes Divider で議事録を分割
 - [ ] **ステップ2**: Speaker Extraction で話者を抽出
-- [ ] **ステップ3**: Speaker Matching で政治家とマッチング
+- [ ] **ステップ3**: Politician Matching で政治家とマッチング
 - [ ] **順序厳守**: この順序を変更しないこと
 
 ### Web Scrapingの場合
@@ -251,4 +251,3 @@ politician_affiliations
 
 視覚的なフロー図：
 - [Minutes Processing Flow](../../../docs/diagrams/data-flow-minutes-processing.mmd)
-- [Speaker Matching Flow](../../../docs/diagrams/data-flow-speaker-matching.mmd)

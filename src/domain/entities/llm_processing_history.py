@@ -12,6 +12,8 @@ class ProcessingType(Enum):
 
     MINUTES_DIVISION = "minutes_division"
     SPEECH_EXTRACTION = "speech_extraction"
+    # SPEAKER_MATCHING is deprecated and kept only for backward compatibility
+    # with existing historical records. Do not use for new processing.
     SPEAKER_MATCHING = "speaker_matching"
     POLITICIAN_EXTRACTION = "politician_extraction"
     CONFERENCE_MEMBER_MATCHING = "conference_member_matching"

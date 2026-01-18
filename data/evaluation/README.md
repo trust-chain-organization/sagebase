@@ -12,7 +12,6 @@ data/evaluation/
 ├── README.md                    # このファイル
 ├── datasets/                    # タスク別データセット
 │   ├── minutes_division/        # 議事録分割タスク
-│   ├── speaker_matching/        # 発言者マッチングタスク
 │   └── conference_member_matching/ # 議会メンバーマッチングタスク
 └── results/                     # 評価結果（gitignored）
     └── .gitkeep
@@ -30,19 +29,7 @@ PDFや文字列形式の議事録を個別の発言に分割するタスク。
 **出力**:
 - `conversations`: 発言者名、内容、順序を含む発言の配列
 
-### 2. speaker_matching（発言者マッチング）
-議事録の発言者を既存の政治家データベースとマッチングするタスク。
-
-**入力**:
-- `speaker_name`: マッチング対象の発言者名
-- `context`: 会議コンテキストと候補者リスト
-
-**出力**:
-- `matched_politician_id`: マッチした政治家のID
-- `confidence`: マッチング信頼度（0-1）
-- `match_reason`: マッチング理由の説明
-
-### 3. conference_member_matching（議会メンバーマッチング）
+### 2. conference_member_matching（議会メンバーマッチング）
 議会メンバーリストと政治家データベースのバッチ名寄せ処理を評価するタスク。
 
 **入力**:
@@ -83,7 +70,7 @@ PDFや文字列形式の議事録を個別の発言に分割するタスク。
 ```json
 {
   "version": "1.0.0",           // セマンティックバージョニング
-  "task_type": "タスク名",       // 上記4タスクのいずれか
+  "task_type": "タスク名",       // 上記2タスクのいずれか
   "metadata": {
     "created_at": "ISO8601日時",
     "created_by": "作成者",

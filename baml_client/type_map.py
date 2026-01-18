@@ -19,12 +19,6 @@ type_map = {
     "types.AttendeesMapping": types.AttendeesMapping,
     "stream_types.AttendeesMapping": stream_types.AttendeesMapping,
 
-    "types.ConfidenceJudgement": types.ConfidenceJudgement,
-    "stream_types.ConfidenceJudgement": stream_types.ConfidenceJudgement,
-
-    "types.ContributingFactor": types.ContributingFactor,
-    "stream_types.ContributingFactor": stream_types.ContributingFactor,
-
     "types.ExtractedMember": types.ExtractedMember,
     "stream_types.ExtractedMember": stream_types.ExtractedMember,
 
@@ -66,9 +60,6 @@ type_map = {
 
     "types.SpeakerAndSpeechContent": types.SpeakerAndSpeechContent,
     "stream_types.SpeakerAndSpeechContent": stream_types.SpeakerAndSpeechContent,
-
-    "types.SpeakerMatch": types.SpeakerMatch,
-    "stream_types.SpeakerMatch": stream_types.SpeakerMatch,
 
 
 }

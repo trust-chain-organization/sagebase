@@ -41,26 +41,13 @@ def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
 # #########################################################################
 
 # #########################################################################
-# Generated classes (18)
+# Generated classes (15)
 # #########################################################################
 
 class AttendeesMapping(BaseModel):
     attendees_mapping: typing.Optional[typing.Dict[str, typing.Optional[str]]] = Field(default=None, description='役職から人名へのマッピング（使用しない場合はnull）')
     regular_attendees: typing.List[str] = Field(description='出席者の人名リスト')
     confidence: float = Field(description='抽出の信頼度（0.0-1.0）')
-
-class ConfidenceJudgement(BaseModel):
-    confidence: float = Field(description='確信度 (0.0-1.0)')
-    confidence_level: str = Field(description='確信度レベル (HIGH/MEDIUM/LOW)')
-    should_match: bool = Field(description='マッチすべきかどうか (confidence >= 0.8)')
-    reason: str = Field(description='判定理由の説明')
-    contributing_factors: typing.List["ContributingFactor"] = Field(description='確信度に寄与した要素')
-    recommendation: str = Field(description='推奨アクション')
-
-class ContributingFactor(BaseModel):
-    factor: str = Field(description='要素名 (例: base_score, affiliation, party)')
-    impact: float = Field(description='スコアへの影響 (-1.0 to 1.0)')
-    description: str = Field(description='説明')
 
 class ExtractedMember(BaseModel):
     name: str = Field(description='議員名（フルネーム）')
@@ -145,13 +132,6 @@ class SpeakerAndSpeechContent(BaseModel):
     chapter_number: int = Field(description='分割した文字列を前から順に割り振った番号')
     sub_chapter_number: int = Field(description='再分割した場合の文字列番号')
     speech_order: int = Field(description='発言順')
-
-class SpeakerMatch(BaseModel):
-    matched: bool = Field(description='マッチングが成功したか')
-    speaker_id: typing.Optional[int] = Field(default=None, description='マッチした発言者のID（マッチしない場合はnull）')
-    speaker_name: typing.Optional[str] = Field(default=None, description='マッチした発言者の名前（マッチしない場合はnull）')
-    confidence: float = Field(description='マッチングの信頼度（0.0-1.0）')
-    reason: str = Field(description='マッチング判定の理由')
 
 # #########################################################################
 # Generated type aliases (0)

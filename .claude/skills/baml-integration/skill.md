@@ -36,7 +36,6 @@ sagebase/
 │   ├── clients.baml            # LLMクライアント設定
 │   ├── generators.baml         # コード生成設定
 │   ├── minutes_divider.baml    # 議事録分割
-│   ├── speaker_matching.baml   # 話者マッチング
 │   └── politician_matching.baml # 政治家マッチング
 └── baml_client/                 # 自動生成されたPythonコード
     ├── async_client.py         # 非同期クライアント
@@ -109,10 +108,10 @@ uv run python -c "import sys; sys.argv = ['baml', 'generate', '--from', 'baml_sr
 **確認方法**:
 ```bash
 # 新しい関数が生成されたか確認
-grep -n "MatchSpeaker" baml_client/async_client.py
+grep -n "MatchPolitician" baml_client/async_client.py
 
 # 型チェックでエラーがないか確認
-uv run --frozen pyright src/domain/services/baml_speaker_matching_service.py
+uv run --frozen pyright src/infrastructure/external/politician_matching/baml_politician_matching_service.py
 ```
 
 ### Generated Code Usage
@@ -213,20 +212,20 @@ def mock_baml_client(monkeypatch):
         confidence=0.95,
         reason="完全一致"
     )
-    mock_b.MatchSpeaker = mock_match_speaker
+    mock_b.MatchPolitician = mock_match_politician
 
     monkeypatch.setattr("baml_client.async_client.b", mock_b)
     return mock_b
 
 @pytest.mark.asyncio
-async def test_baml_speaker_matching(mock_baml_client):
+async def test_baml_politician_matching(mock_baml_client):
     """BAMLマッチングのテスト"""
-    service = BAMLSpeakerMatchingService(mock_llm, mock_repo)
+    service = BAMLPoliticianMatchingService(mock_llm, mock_repo)
     result = await service.find_best_match("山田太郎")
 
     assert result.matched is True
-    assert result.speaker_id == 1
-    mock_baml_client.MatchSpeaker.assert_awaited_once()
+    assert result.politician_id == 1
+    mock_baml_client.MatchPolitician.assert_awaited_once()
 ```
 
 ## Token Optimization Tips
@@ -291,10 +290,10 @@ prompt #"
 
 ### ❌ Don't: Forget to Regenerate Client
 ```python
-# speaker_matching.bamlを作成
+# politician_matching.bamlを作成
 
 # ❌ すぐに使おうとする
-result = await b.MatchSpeaker(...)  # AttributeError!
+result = await b.MatchPolitician(...)  # AttributeError!
 ```
 
 ### ✅ Do: Regenerate After Changes
@@ -351,13 +350,13 @@ cat baml_client/types.py | grep -A 10 "class SpeakerMatch"
 ### Type Check
 ```bash
 # 型エラーを確認
-uv run --frozen pyright src/domain/services/baml_speaker_matching_service.py
+uv run --frozen pyright src/infrastructure/external/politician_matching/baml_politician_matching_service.py
 ```
 
 ### Run Tests
 ```bash
 # BAML実装のテストを実行
-uv run pytest tests/domain/services/test_baml_speaker_matching_service.py -v
+uv run pytest tests/infrastructure/external/politician_matching/test_baml_politician_matching_service.py -v
 ```
 
 ## Migration Checklist
@@ -391,7 +390,6 @@ uv run pytest tests/domain/services/test_baml_speaker_matching_service.py -v
 ## Examples
 
 実装例は以下のファイルを参照:
-- `baml_src/speaker_matching.baml` - 話者マッチングBAML定義
-- `src/domain/services/baml_speaker_matching_service.py` - BAML実装サービス
-- `src/domain/services/factories/speaker_matching_factory.py` - ファクトリー
-- `tests/domain/services/test_baml_speaker_matching_service.py` - テスト
+- `baml_src/politician_matching.baml` - 政治家マッチングBAML定義
+- `src/infrastructure/external/politician_matching/baml_politician_matching_service.py` - BAML実装サービス
+- `tests/infrastructure/external/politician_matching/test_baml_politician_matching_service.py` - テスト

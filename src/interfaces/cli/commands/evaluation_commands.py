@@ -16,7 +16,6 @@ class EvaluationCommands(BaseCommand):
         "--task",
         type=click.Choice(
             [
-                "speaker_matching",
                 "party_member_extraction",
                 "conference_member_matching",
             ]
@@ -46,15 +45,15 @@ class EvaluationCommands(BaseCommand):
         """Run LLM evaluation tests (LLM評価テストの実行)
 
         This command runs evaluation tests to measure LLM performance
-        on various tasks such as minutes division, speaker matching,
-        party member extraction, and conference member matching.
+        on various tasks such as party member extraction and
+        conference member matching.
 
         Examples:
             # Evaluate specific task
-            sagebase evaluate --task minutes_division
+            sagebase evaluate --task party_member_extraction
 
             # Evaluate with custom dataset
-            sagebase evaluate --task speaker_matching --dataset custom.json
+            sagebase evaluate --task conference_member_matching --dataset custom.json
 
             # Evaluate all tasks
             sagebase evaluate --all

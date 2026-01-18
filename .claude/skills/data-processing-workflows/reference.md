@@ -62,7 +62,7 @@ docker compose -f docker/docker-compose.yml [-f docker/docker-compose.override.y
 - 同じ名前の異なる話者は区別されない（マッチングで解決）
 - NULL speaker_nameは無視される
 
-### Speaker Matching の詳細
+### Politician Matching の詳細
 
 #### ハイブリッドアプローチ
 
@@ -203,7 +203,7 @@ echo "GOOGLE_API_KEY=your-key-here" >> .env
 docker compose -f docker/docker-compose.yml [-f docker/docker-compose.override.yml] restart
 ```
 
-### 問題2: Speaker Matchingの精度が低い
+### 問題2: Politician Matchingの精度が低い
 
 **症状:**
 - 話者と政治家のマッチングが不正確
@@ -340,7 +340,7 @@ session.commit()
 ## ベストプラクティス
 
 ### 処理順序の厳守
-- 議事録処理は必ず **Minutes Divider → Speaker Extraction → Speaker Matching** の順
+- 議事録処理は必ず **Minutes Divider → Speaker Extraction → Politician Matching** の順
 - Conference Member Extractionは **Extract → Match → Create** の順
 
 ### エラーハンドリング
@@ -361,7 +361,6 @@ session.commit()
 ### プロジェクト内ドキュメント
 - [ARCHITECTURE.md](../../../docs/ARCHITECTURE.md): システム全体のアーキテクチャ
 - [Minutes Processing Flow](../../../docs/diagrams/data-flow-minutes-processing.mmd): 議事録処理フロー図
-- [Speaker Matching Flow](../../../docs/diagrams/data-flow-speaker-matching.mmd): 話者マッチングフロー図
 
 ### コマンドリファレンス
 - [sagebase-commands](../../sagebase-commands/): すべてのコマンドの詳細

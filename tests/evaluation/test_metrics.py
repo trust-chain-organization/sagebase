@@ -1,7 +1,5 @@
 """Tests for evaluation metrics calculation"""
 
-import pytest
-
 from src.evaluation.metrics import EvaluationMetrics, MetricsCalculator
 
 
@@ -29,33 +27,6 @@ class TestEvaluationMetrics:
 
 class TestMetricsCalculator:
     """Test MetricsCalculator class"""
-
-    def test_calculate_speaker_matching_metrics_success(self):
-        """Test successful speaker matching metrics calculation"""
-        expected = {
-            "id": "sm_001",
-            "expected_output": {
-                "results": [
-                    {"speaker_id": 1, "politician_id": 101, "confidence_score": 0.95},
-                    {"speaker_id": 2, "politician_id": 102, "confidence_score": 0.90},
-                ]
-            },
-        }
-
-        actual = {
-            "results": [
-                {"speaker_id": 1, "politician_id": 101, "confidence_score": 0.95},
-                {"speaker_id": 2, "politician_id": 102, "confidence_score": 0.88},
-            ]
-        }
-
-        metrics = MetricsCalculator.calculate_speaker_matching_metrics(expected, actual)
-
-        assert metrics.task_type == "speaker_matching"
-        assert metrics.test_case_id == "sm_001"
-        assert metrics.metrics["politician_id_match_rate"] == 1.0
-        assert metrics.metrics["confidence_score_mean"] == pytest.approx(0.915, 0.01)
-        assert metrics.passed is True
 
     def test_calculate_party_member_extraction_metrics_success(self):
         """Test successful party member extraction metrics calculation"""
@@ -146,13 +117,15 @@ class TestMetricsCalculator:
 
     def test_calculate_metrics_with_none_values(self):
         """Test metrics calculation handles None values gracefully"""
-        expected = {"id": "sm_001", "expected_output": {"results": None}}
+        expected = {"id": "cm_001", "expected_output": {"matched_members": None}}
         actual = {}
 
-        metrics = MetricsCalculator.calculate_speaker_matching_metrics(expected, actual)
+        metrics = MetricsCalculator.calculate_conference_member_matching_metrics(
+            expected, actual
+        )
 
         # Should handle None gracefully with default values and set error
-        assert metrics.error is not None  # Error is expected when results is None
+        assert (
+            metrics.error is not None
+        )  # Error is expected when matched_members is None
         assert metrics.passed is False
-        assert metrics.metrics["politician_id_match_rate"] == 0.0
-        assert metrics.metrics["confidence_score_mean"] == 0.0

@@ -12,9 +12,6 @@ from sqlalchemy.orm import Session, registry
 from src.domain.entities.conversation import Conversation
 from src.domain.repositories.conversation_repository import ConversationRepository
 from src.domain.repositories.session_adapter import ISessionAdapter
-from src.domain.services.baml_speaker_matching_service import (
-    BAMLSpeakerMatchingService as SpeakerMatchingService,
-)
 from src.infrastructure.persistence.base_repository_impl import BaseRepositoryImpl
 from src.minutes_divide_processor.models import SpeakerAndSpeechContent
 
@@ -118,20 +115,17 @@ class ConversationRepositoryImpl(
 
     sync_session: Session | ISessionAdapter | None
     async_session: AsyncSession | None
-    speaker_matching_service: SpeakerMatchingService | None
 
     def __init__(
         self,
         session: AsyncSession | Session | ISessionAdapter,
         model_class: type[Any] | None = None,
-        speaker_matching_service: SpeakerMatchingService | None = None,
     ):
         """Initialize repository.
 
         Args:
             session: Database session (async, sync, or session adapter)
             model_class: Optional model class for compatibility
-            speaker_matching_service: Optional speaker matching service
         """
         # Use dynamic model if no model class provided
         if model_class is None:
@@ -151,8 +145,6 @@ class ConversationRepositoryImpl(
             self.session = session  # type: ignore[assignment]
             self.entity_class = Conversation
             self.model_class = model_class
-
-        self.speaker_matching_service = speaker_matching_service
 
     async def get_by_minutes(
         self, minutes_id: int, limit: int | None = None
@@ -443,12 +435,6 @@ class ConversationRepositoryImpl(
 
     async def _find_speaker_id(self, speaker_name: str) -> int | None:
         """Find speaker ID by name."""
-        if self.speaker_matching_service and hasattr(
-            self.speaker_matching_service, "find_speaker_id"
-        ):
-            return self.speaker_matching_service.find_speaker_id(speaker_name)  # type: ignore
-
-        # Fallback to legacy implementation
         if self.async_session is not None:
             query = text("""
                 SELECT id FROM speakers
@@ -696,13 +682,6 @@ class ConversationRepositoryImpl(
 
     async def update_speaker_links(self) -> int:
         """Update speaker links for conversations."""
-        if self.speaker_matching_service and hasattr(
-            self.speaker_matching_service, "update_all_conversations"
-        ):
-            # Use speaker matching service if available
-            return self.speaker_matching_service.update_all_conversations()  # type: ignore
-
-        # Fallback to basic implementation
         update_query = text("""
             UPDATE conversations c
             SET speaker_id = s.id

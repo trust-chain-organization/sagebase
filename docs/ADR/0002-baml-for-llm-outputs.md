@@ -168,7 +168,6 @@ result = SpeakerMatchResult.model_validate_json(response.content)
 
 ```
 baml_src/
-├── speaker_matching.baml          # 話者マッチング
 ├── politician_matching.baml       # 政治家マッチング
 ├── member_extraction.baml         # 会議体メンバー抽出
 ├── parliamentary_group_member_extractor.baml  # 議員団メンバー抽出
@@ -180,10 +179,10 @@ baml_src/
 #### 2. BAMLファイルの構造
 
 ```baml
-// baml_src/speaker_matching.baml
+// baml_src/politician_matching.baml
 
 // スキーマ定義
-class SpeakerMatchResult {
+class PoliticianMatchResult {
   matched bool @description("マッチングが成功したか")
   confidence float @description("信頼度 (0.0-1.0)")
   matched_id int? @description("マッチした政治家のID")
@@ -194,12 +193,12 @@ class SpeakerMatchResult {
 function MatchSpeakerToPolitician(
   speaker_name: string,
   candidates: Candidate[]
-) -> SpeakerMatchResult {
+) -> PoliticianMatchResult {
   client Gemini
   prompt #"
-    以下の話者を政治家候補とマッチングしてください。
+    以下の発言者を政治家候補とマッチングしてください。
 
-    話者: {{ speaker_name }}
+    発言者: {{ speaker_name }}
 
     候補:
     {% for candidate in candidates %}
@@ -219,21 +218,21 @@ function MatchSpeakerToPolitician(
 #### 3. Pythonでの使用
 
 ```python
-# src/domain/services/baml_speaker_matching_service.py
+# src/infrastructure/external/politician_matching/baml_politician_matching_service.py
 
 from baml_client import b  # 自動生成されたクライアント
-from baml_client.types import SpeakerMatchResult, Candidate
+from baml_client.types import PoliticianMatchResult, Candidate
 
-class BAMLSpeakerMatchingService:
+class BAMLPoliticianMatchingService:
     async def match_speaker_to_politician(
         self, speaker_name: str, candidates: list[Candidate]
-    ) -> SpeakerMatchResult:
+    ) -> PoliticianMatchResult:
         # BAMLクライアント呼び出し（型安全）
         result = await b.MatchSpeakerToPolitician(
             speaker_name=speaker_name,
             candidates=candidates
         )
-        return result  # 型: SpeakerMatchResult（自動的にPydanticモデル）
+        return result  # 型: PoliticianMatchResult（自動的にPydanticモデル）
 ```
 
 #### 4. ハイブリッドアプローチ
@@ -241,7 +240,7 @@ class BAMLSpeakerMatchingService:
 コスト削減のため、**ルールベース + BAML**のハイブリッドアプローチを採用：
 
 ```python
-class SpeakerMatchingService:
+class PoliticianMatchingService:
     async def match_speaker(
         self, speaker_name: str, candidates: list[Politician]
     ) -> MatchResult:
@@ -352,9 +351,8 @@ Pydantic実装からBAMLへの移行は段階的に実施：
 - [BAML Official Documentation](https://docs.boundaryml.com/)
 - [BAML GitHub Repository](https://github.com/BoundaryML/baml)
 - [.claude/skills/baml-integration/](../../.claude/skills/baml-integration/) - BAML統合ガイド
-- `baml_src/` - BAMLファイル（11個）
-- `src/domain/services/baml_speaker_matching_service.py` - BAML話者マッチングサービス
-- `src/domain/services/baml_politician_matching_service.py` - BAML政治家マッチングサービス
+- `baml_src/` - BAMLファイル
+- `src/infrastructure/external/politician_matching/baml_politician_matching_service.py` - BAML政治家マッチングサービス
 
 ## Notes
 

@@ -29,76 +29,6 @@ class MetricsCalculator:
     """Calculate metrics for different evaluation tasks"""
 
     @staticmethod
-    def calculate_speaker_matching_metrics(
-        expected: dict[str, Any], actual: dict[str, Any]
-    ) -> EvaluationMetrics:
-        """Calculate metrics for speaker matching task
-
-        Metrics:
-        - politician_id_match_rate: Percentage of correctly matched politician IDs
-        - confidence_score_mean: Average confidence score
-        - match_accuracy: Overall matching accuracy
-        """
-        metrics = EvaluationMetrics(
-            task_type="speaker_matching", test_case_id=expected.get("id", "unknown")
-        )
-
-        try:
-            expected_results = expected.get("expected_output", {}).get("results", [])
-            actual_results = actual.get("results", [])
-
-            if expected_results:
-                # Calculate politician ID match rate
-                id_matches = 0
-                confidence_scores = []
-
-                for exp_result in expected_results:
-                    speaker_id = exp_result["speaker_id"]
-                    exp_politician_id = exp_result.get("politician_id")
-
-                    # Find corresponding actual result
-                    act_result = next(
-                        (r for r in actual_results if r["speaker_id"] == speaker_id),
-                        None,
-                    )
-
-                    if act_result:
-                        if exp_politician_id == act_result.get("politician_id"):
-                            id_matches += 1
-                        if "confidence_score" in act_result:
-                            confidence_scores.append(act_result["confidence_score"])
-
-                metrics.metrics["politician_id_match_rate"] = id_matches / len(
-                    expected_results
-                )
-                metrics.metrics["confidence_score_mean"] = (
-                    sum(confidence_scores) / len(confidence_scores)
-                    if confidence_scores
-                    else 0.0
-                )
-            else:
-                metrics.metrics["politician_id_match_rate"] = 0.0
-                metrics.metrics["confidence_score_mean"] = 0.0
-
-            # Overall accuracy
-            metrics.metrics["match_accuracy"] = metrics.metrics[
-                "politician_id_match_rate"
-            ]
-
-            # Count statistics
-            metrics.metrics["expected_matches"] = len(expected_results)
-            metrics.metrics["actual_matches"] = len(actual_results)
-
-            # Determine if test passed (90% threshold for ID matching)
-            metrics.passed = metrics.metrics["politician_id_match_rate"] >= 0.9
-
-        except Exception as e:
-            metrics.error = str(e)
-            metrics.passed = False
-
-        return metrics
-
-    @staticmethod
     def calculate_party_member_extraction_metrics(
         expected: dict[str, Any], actual: dict[str, Any]
     ) -> EvaluationMetrics:
@@ -283,7 +213,6 @@ class MetricsCalculator:
             Calculated metrics
         """
         calculators = {
-            "speaker_matching": cls.calculate_speaker_matching_metrics,
             "party_member_extraction": cls.calculate_party_member_extraction_metrics,
             "conference_member_matching": (
                 cls.calculate_conference_member_matching_metrics

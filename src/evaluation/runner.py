@@ -78,9 +78,6 @@ class EvaluationRunner:
                         "expected_output", {}
                     ).get("speaker_and_speech_content_list", [])
                 },
-                "speaker_matching": {
-                    "results": test_case.get("expected_output", {}).get("results", [])
-                },
                 "conference_member_matching": {
                     "matched_members": test_case.get("expected_output", {}).get(
                         "matched_members", []
@@ -91,9 +88,7 @@ class EvaluationRunner:
 
         # Use real LLM services
         try:
-            if task_type == "speaker_matching":
-                return self._execute_speaker_matching(test_case)
-            elif task_type == "conference_member_matching":
+            if task_type == "conference_member_matching":
                 return self._execute_conference_member_matching(test_case)
             else:
                 logger.error(f"Unknown task type: {task_type}")
@@ -101,87 +96,6 @@ class EvaluationRunner:
         except Exception as e:
             logger.error(f"Error executing test case: {e}")
             return {}
-
-    def _execute_speaker_matching(self, test_case: dict[str, Any]) -> dict[str, Any]:
-        """Execute speaker matching task using LLM
-
-        Args:
-            test_case: Test case data with speakers and politicians
-
-        Returns:
-            Dict with matching results
-        """
-        try:
-            input_data = test_case.get("input", {})
-            speakers = input_data.get("speakers", [])
-            politicians = input_data.get("politicians", [])
-
-            # Simple LLM-based matching
-            prompt = f"""以下の話者と政治家をマッチングしてください。
-
-話者リスト:
-{json.dumps(speakers, ensure_ascii=False, indent=2)}
-
-政治家リスト:
-{json.dumps(politicians, ensure_ascii=False, indent=2)}
-
-各話者に最も適切な政治家IDを割り当て、信頼度スコア(0-1)を付けて返してください。
-JSON形式で、以下のような構造で返してください:
-{{"results": [{{"speaker_id": 1, "politician_id": 101,
- "confidence_score": 0.95}}, ...]}}"""
-
-            # Use the LLM directly
-            messages = [{"role": "user", "content": prompt}]
-            response = self.llm_service.invoke_llm(messages)
-
-            # Parse LLM response
-            try:
-                import re
-
-                # Ensure response is a string
-                response_text = (
-                    str(response) if not isinstance(response, str) else response
-                )
-                json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                if json_match:
-                    result = json.loads(json_match.group())
-                    return result
-            except json.JSONDecodeError:
-                logger.error(f"Failed to parse LLM response: {response}")
-
-            # Fallback to simple name matching
-            results = []
-            for speaker in speakers:
-                best_match = None
-                best_score = 0.0
-
-                for politician in politicians:
-                    if (
-                        speaker["name"]
-                        .replace("議員", "")
-                        .replace("委員長", "")
-                        .replace("部長", "")
-                        in politician["name"]
-                    ):
-                        score = 0.9
-                        if score > best_score:
-                            best_match = politician["id"]
-                            best_score = score
-
-                if best_match:
-                    results.append(
-                        {
-                            "speaker_id": speaker["id"],
-                            "politician_id": best_match,
-                            "confidence_score": best_score,
-                        }
-                    )
-
-            return {"results": results}
-
-        except Exception as e:
-            logger.error(f"Error in speaker matching: {e}")
-            return {"results": []}
 
     def _execute_conference_member_matching(
         self, test_case: dict[str, Any]
@@ -308,7 +222,6 @@ JSON形式で以下のような構造で返してください:
             # Run all tasks
             task_types = [
                 "minutes_division",
-                "speaker_matching",
                 "conference_member_matching",
             ]
         elif task_type:
@@ -431,7 +344,6 @@ JSON形式で以下のような構造で返してください:
         """
         columns_map = {
             "minutes_division": ["Speaker Match", "Content Similarity", "Count"],
-            "speaker_matching": ["ID Match Rate", "Confidence", "Accuracy"],
             "conference_member_matching": ["Precision", "Recall", "F1 Score"],
         }
         return columns_map.get(task_type, ["Metric 1", "Metric 2", "Metric 3"])

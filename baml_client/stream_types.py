@@ -23,26 +23,13 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (18)
+# Generated classes (15)
 # #########################################################################
 
 class AttendeesMapping(BaseModel):
     attendees_mapping: typing.Optional[typing.Dict[str, typing.Optional[str]]] = Field(default=None, description='役職から人名へのマッピング（使用しない場合はnull）')
     regular_attendees: typing.List[str] = Field(description='出席者の人名リスト')
     confidence: typing.Optional[float] = Field(default=None, description='抽出の信頼度（0.0-1.0）')
-
-class ConfidenceJudgement(BaseModel):
-    confidence: typing.Optional[float] = Field(default=None, description='確信度 (0.0-1.0)')
-    confidence_level: typing.Optional[str] = Field(default=None, description='確信度レベル (HIGH/MEDIUM/LOW)')
-    should_match: typing.Optional[bool] = Field(default=None, description='マッチすべきかどうか (confidence >= 0.8)')
-    reason: typing.Optional[str] = Field(default=None, description='判定理由の説明')
-    contributing_factors: typing.List["ContributingFactor"] = Field(description='確信度に寄与した要素')
-    recommendation: typing.Optional[str] = Field(default=None, description='推奨アクション')
-
-class ContributingFactor(BaseModel):
-    factor: typing.Optional[str] = Field(default=None, description='要素名 (例: base_score, affiliation, party)')
-    impact: typing.Optional[float] = Field(default=None, description='スコアへの影響 (-1.0 to 1.0)')
-    description: typing.Optional[str] = Field(default=None, description='説明')
 
 class ExtractedMember(BaseModel):
     name: typing.Optional[str] = Field(default=None, description='議員名（フルネーム）')
@@ -127,13 +114,6 @@ class SpeakerAndSpeechContent(BaseModel):
     chapter_number: typing.Optional[int] = Field(default=None, description='分割した文字列を前から順に割り振った番号')
     sub_chapter_number: typing.Optional[int] = Field(default=None, description='再分割した場合の文字列番号')
     speech_order: typing.Optional[int] = Field(default=None, description='発言順')
-
-class SpeakerMatch(BaseModel):
-    matched: typing.Optional[bool] = Field(default=None, description='マッチングが成功したか')
-    speaker_id: typing.Optional[int] = Field(default=None, description='マッチした発言者のID（マッチしない場合はnull）')
-    speaker_name: typing.Optional[str] = Field(default=None, description='マッチした発言者の名前（マッチしない場合はnull）')
-    confidence: typing.Optional[float] = Field(default=None, description='マッチングの信頼度（0.0-1.0）')
-    reason: typing.Optional[str] = Field(default=None, description='マッチング判定の理由')
 
 # #########################################################################
 # Generated type aliases (0)

@@ -51,22 +51,7 @@ This directory contains Mermaid diagram sources for visualizing Polibase's Clean
 4. Domain validation creates entities
 5. Batch save to database
 
-#### 4. [Speaker Matching Flow](data-flow-speaker-matching.mmd)
-**Purpose**: Shows hybrid rule-based + LLM approach to matching speakers with politicians
-
-**What you'll learn**:
-- Two-phase matching (Speaker extraction → Politician matching)
-- LLM fuzzy matching for name variations
-- Confidence-based linking (≥ 0.7 auto-link)
-- Why LLM is needed (Japanese name variations: 山田太郎君, 山田議員, etc.)
-
-**Key features**:
-- Automatic speaker creation
-- Candidate search by name and party
-- LLM confidence scoring
-- Manual review for low confidence
-
-#### 5. [Politician Scraping Flow](data-flow-politician-scraping.mmd)
+#### 4. [Politician Scraping Flow](data-flow-politician-scraping.mmd)
 **Purpose**: Three-stage process for scraping politician data from party websites
 
 **What you'll learn**:
@@ -82,7 +67,7 @@ This directory contains Mermaid diagram sources for visualizing Polibase's Clean
 
 ### Patterns & Best Practices
 
-#### 6. [Repository Pattern Diagram](repository-pattern.mmd)
+#### 5. [Repository Pattern Diagram](repository-pattern.mmd)
 **Purpose**: Detailed view of repository pattern implementation
 
 **What you'll learn**:
@@ -160,7 +145,6 @@ To update a diagram:
 Layer Dependency (high-level)
     ├─ Component Interaction (mid-level detail)
     │   ├─ Minutes Processing Flow (specific workflow)
-    │   ├─ Speaker Matching Flow (specific workflow)
     │   └─ Politician Scraping Flow (specific workflow)
     └─ Repository Pattern (implementation detail)
 ```

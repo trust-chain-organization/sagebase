@@ -84,23 +84,11 @@ class LlmResponseParser:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="ExtractRoleNameMapping", llm_response=llm_response, mode="request")
         return typing.cast(types.RoleNameMappingResult, __result__)
 
-    def JudgeMatchingConfidence(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> types.ConfidenceJudgement:
-        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="JudgeMatchingConfidence", llm_response=llm_response, mode="request")
-        return typing.cast(types.ConfidenceJudgement, __result__)
-
     def MatchPolitician(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.PoliticianMatch:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="MatchPolitician", llm_response=llm_response, mode="request")
         return typing.cast(types.PoliticianMatch, __result__)
-
-    def MatchSpeaker(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> types.SpeakerMatch:
-        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="MatchSpeaker", llm_response=llm_response, mode="request")
-        return typing.cast(types.SpeakerMatch, __result__)
 
     def NormalizeSpeakerNames(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -182,23 +170,11 @@ class LlmStreamParser:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="ExtractRoleNameMapping", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.RoleNameMappingResult, __result__)
 
-    def JudgeMatchingConfidence(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> stream_types.ConfidenceJudgement:
-        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="JudgeMatchingConfidence", llm_response=llm_response, mode="stream")
-        return typing.cast(stream_types.ConfidenceJudgement, __result__)
-
     def MatchPolitician(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.PoliticianMatch:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="MatchPolitician", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.PoliticianMatch, __result__)
-
-    def MatchSpeaker(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> stream_types.SpeakerMatch:
-        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="MatchSpeaker", llm_response=llm_response, mode="stream")
-        return typing.cast(stream_types.SpeakerMatch, __result__)
 
     def NormalizeSpeakerNames(
         self, llm_response: str, baml_options: BamlCallOptions = {},

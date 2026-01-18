@@ -100,25 +100,6 @@ class TestEvaluationRunner:
             assert len(result["speaker_and_speech_content_list"]) == 1
 
     @pytest.mark.asyncio
-    async def test_execute_test_case_speaker_matching(self):
-        """Test executing speaker matching test case"""
-        # Create runner directly without fixture to ensure use_real_llm=False
-        with patch.dict("os.environ", {"GOOGLE_API_KEY": ""}, clear=False):
-            runner = EvaluationRunner(use_real_llm=False)
-
-            test_case = {
-                "id": "test_001",
-                "expected_output": {
-                    "results": [{"speaker_id": 1, "politician_id": 101}]
-                },
-            }
-
-            result = await runner.execute_test_case("speaker_matching", test_case)
-
-            assert "results" in result
-            assert len(result["results"]) == 1
-
-    @pytest.mark.asyncio
     @patch("src.evaluation.runner.EvaluationRunner.load_dataset")
     @patch(
         "src.evaluation.runner.EvaluationRunner.execute_test_case",
@@ -160,9 +141,9 @@ class TestEvaluationRunner:
 
         metrics = await runner.run_evaluation(run_all=True)
 
-        # Should attempt to run all 3 task types
-        assert mock_load.call_count == 3
-        assert len(metrics) == 3
+        # Should attempt to run all 2 task types
+        assert mock_load.call_count == 2
+        assert len(metrics) == 2
 
     @pytest.mark.asyncio
     async def test_run_evaluation_no_task_specified(self, runner):
@@ -233,11 +214,6 @@ class TestEvaluationRunner:
             "Speaker Match",
             "Content Similarity",
             "Count",
-        ]
-        assert runner._get_metric_columns("speaker_matching") == [
-            "ID Match Rate",
-            "Confidence",
-            "Accuracy",
         ]
         assert runner._get_metric_columns("conference_member_matching") == [
             "Precision",

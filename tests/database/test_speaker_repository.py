@@ -62,8 +62,10 @@ def test_session() -> Iterator[Session]:
                 CREATE TABLE politicians (
                     id INTEGER PRIMARY KEY,
                     name VARCHAR NOT NULL,
+                    prefecture VARCHAR,
+                    electoral_district VARCHAR,
                     political_party_id INTEGER REFERENCES political_parties(id),
-                    speaker_id INTEGER UNIQUE NOT NULL REFERENCES speakers(id)
+                    speaker_id INTEGER REFERENCES speakers(id)
                 )
                 """
             )
@@ -134,10 +136,11 @@ def setup_test_data(session: Session):
         text(
             """
             INSERT INTO politicians
-                (id, name, prefecture, electoral_district, political_party_id)
+                (id, name, prefecture, electoral_district,
+                 political_party_id, speaker_id)
             VALUES
-                (1, '山田太郎', '東京都', '東京1区', 1),
-                (2, '鈴木花子', '大阪府', '大阪1区', 2)
+                (1, '山田太郎', '東京都', '東京1区', 1, 1),
+                (2, '鈴木花子', '大阪府', '大阪1区', 2, 2)
             """
         )
     )

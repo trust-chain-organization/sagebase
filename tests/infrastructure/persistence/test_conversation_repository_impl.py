@@ -324,27 +324,7 @@ async def test_get_conversations_with_pagination_async(
 
 
 @pytest.mark.asyncio
-async def test_update_speaker_links_with_service(
-    conversation_repo_async, mock_async_session
-):
-    """Test update_speaker_links with speaker matching service."""
-    # Setup
-    mock_service = MagicMock()
-    mock_service.update_all_conversations.return_value = 10
-    conversation_repo_async.speaker_matching_service = mock_service
-
-    # Execute
-    updated = await conversation_repo_async.update_speaker_links()
-
-    # Verify
-    assert updated == 10
-    mock_service.update_all_conversations.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_update_speaker_links_without_service(
-    conversation_repo_async, mock_async_session
-):
+async def test_update_speaker_links(conversation_repo_async, mock_async_session):
     """Test update_speaker_links without speaker matching service."""
     # Setup
     mock_result = MagicMock()
