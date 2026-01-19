@@ -1,9 +1,25 @@
-"""Use case for managing politicians."""
+"""Use case for managing politicians.
 
-from dataclasses import dataclass
+Issue #969: UseCase層のリファクタリング
+- DTO定義を politician_dto.py に分離
+- 後方互換性のため、本モジュールからもre-export
+"""
+
 from typing import Any
 from uuid import UUID
 
+from src.application.dtos.politician_dto import (
+    CreatePoliticianInputDto,
+    CreatePoliticianOutputDto,
+    DeletePoliticianInputDto,
+    DeletePoliticianOutputDto,
+    MergePoliticiansInputDto,
+    MergePoliticiansOutputDto,
+    PoliticianListInputDto,
+    PoliticianListOutputDto,
+    UpdatePoliticianInputDto,
+    UpdatePoliticianOutputDto,
+)
 from src.common.logging import get_logger
 from src.domain.entities import Politician
 from src.domain.entities.politician_operation_log import (
@@ -19,96 +35,20 @@ from src.domain.repositories.politician_repository import PoliticianRepository
 logger = get_logger(__name__)
 
 
-@dataclass
-class PoliticianListInputDto:
-    """Input DTO for listing politicians."""
-
-    party_id: int | None = None
-    search_name: str | None = None
-
-
-@dataclass
-class PoliticianListOutputDto:
-    """Output DTO for listing politicians."""
-
-    politicians: list[Politician]
-
-
-@dataclass
-class CreatePoliticianInputDto:
-    """Input DTO for creating a politician."""
-
-    name: str
-    prefecture: str
-    district: str
-    party_id: int | None = None
-    profile_url: str | None = None
-    user_id: UUID | None = None  # 操作ユーザーID（ログ記録用）
-
-
-@dataclass
-class CreatePoliticianOutputDto:
-    """Output DTO for creating a politician."""
-
-    success: bool
-    politician_id: int | None = None
-    error_message: str | None = None
-
-
-@dataclass
-class UpdatePoliticianInputDto:
-    """Input DTO for updating a politician."""
-
-    id: int
-    name: str
-    prefecture: str
-    district: str
-    party_id: int | None = None
-    profile_url: str | None = None
-    user_id: UUID | None = None  # 操作ユーザーID（ログ記録用）
-
-
-@dataclass
-class UpdatePoliticianOutputDto:
-    """Output DTO for updating a politician."""
-
-    success: bool
-    error_message: str | None = None
-
-
-@dataclass
-class DeletePoliticianInputDto:
-    """Input DTO for deleting a politician."""
-
-    id: int
-    user_id: UUID | None = None  # 操作ユーザーID（ログ記録用）
-    force: bool = False  # 警告を無視して削除を実行（speakerとの紐づきを解除）
-
-
-@dataclass
-class DeletePoliticianOutputDto:
-    """Output DTO for deleting a politician."""
-
-    success: bool
-    error_message: str | None = None
-    has_related_data: bool = False  # 関連データがあるかどうか
-    related_data_counts: dict[str, int] | None = None  # テーブル名と件数のマッピング
-
-
-@dataclass
-class MergePoliticiansInputDto:
-    """Input DTO for merging politicians."""
-
-    source_id: int
-    target_id: int
-
-
-@dataclass
-class MergePoliticiansOutputDto:
-    """Output DTO for merging politicians."""
-
-    success: bool
-    error_message: str | None = None
+# 後方互換性のため、DTOをre-export（既存のimport文が動作するように）
+__all__ = [
+    "ManagePoliticiansUseCase",
+    "PoliticianListInputDto",
+    "PoliticianListOutputDto",
+    "CreatePoliticianInputDto",
+    "CreatePoliticianOutputDto",
+    "UpdatePoliticianInputDto",
+    "UpdatePoliticianOutputDto",
+    "DeletePoliticianInputDto",
+    "DeletePoliticianOutputDto",
+    "MergePoliticiansInputDto",
+    "MergePoliticiansOutputDto",
+]
 
 
 class ManagePoliticiansUseCase:

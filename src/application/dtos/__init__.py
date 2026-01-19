@@ -54,8 +54,18 @@ from src.application.dtos.parliamentary_group_membership_dto import (
 )
 from src.application.dtos.politician_dto import (
     CreatePoliticianDTO,
+    CreatePoliticianInputDto,
+    CreatePoliticianOutputDto,
+    DeletePoliticianInputDto,
+    DeletePoliticianOutputDto,
+    MergePoliticiansInputDto,
+    MergePoliticiansOutputDto,
     PoliticianDTO,
+    PoliticianListInputDto,
+    PoliticianListOutputDto,
     UpdatePoliticianDTO,
+    UpdatePoliticianInputDto,
+    UpdatePoliticianOutputDto,
 )
 from src.application.dtos.politician_matching_dto import (
     PoliticianMatchingAgentResult,
@@ -112,8 +122,18 @@ __all__ = [
     "ParliamentaryGroupMembershipWithRelationsDTO",
     # Politician DTOs
     "CreatePoliticianDTO",
+    "CreatePoliticianInputDto",
+    "CreatePoliticianOutputDto",
+    "DeletePoliticianInputDto",
+    "DeletePoliticianOutputDto",
+    "MergePoliticiansInputDto",
+    "MergePoliticiansOutputDto",
     "PoliticianDTO",
+    "PoliticianListInputDto",
+    "PoliticianListOutputDto",
     "UpdatePoliticianDTO",
+    "UpdatePoliticianInputDto",
+    "UpdatePoliticianOutputDto",
     # Politician Matching DTOs
     "PoliticianMatchingAgentResult",
     # Role Name Mapping DTOs
