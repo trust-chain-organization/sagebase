@@ -361,12 +361,9 @@ class ManagePoliticiansUseCase:
                     success=False, error_message="マージ先の政治家が見つかりません。"
                 )
 
-            # TODO: Implement actual merge logic
-            # This would involve updating all references from source to target
-            # and then deleting the source
-
+            # マージ機能は現時点では不要と判断し、未実装のまま
             return MergePoliticiansOutputDto(
-                success=False, error_message="マージ機能は現在実装中です。"
+                success=False, error_message="マージ機能は現在実装されていません。"
             )
         except Exception as e:
             logger.error(f"Failed to merge politicians: {e}")

@@ -282,7 +282,7 @@ def render_edit_delete_tab(presenter: ParliamentaryGroupPresenter) -> None:
 
     with col2:
         st.markdown("#### メンバー情報")
-        # TODO: Display member information when membership repository is available
+        # メンバー情報表示（See: Issue #978）
         st.write("メンバー数: 0名")  # Placeholder
 
         st.markdown("#### 削除")

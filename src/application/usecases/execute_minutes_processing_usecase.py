@@ -234,9 +234,8 @@ class ExecuteMinutesProcessingUseCase:
             except Exception as e:
                 logger.warning(f"Failed to download from GCS: {e}")
 
-        # PDFからのテキスト抽出（将来的に実装）
+        # PDFからのテキスト抽出（See: Issue #981）
         if meeting.gcs_pdf_uri:
-            # TODO: PDF処理の実装
             raise ValueError(
                 f"PDF processing not yet implemented for meeting {meeting.id}"
             )

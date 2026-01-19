@@ -75,8 +75,7 @@ class ParliamentaryGroupMemberCommands(BaseCommand):
         """
         session = get_db_session()
 
-        # リポジトリの初期化
-        # TODO: 型エラーを修正するため、async sessionを使用するようにリファクタリング
+        # リポジトリの初期化（非同期セッション化: See Issue #980）
         member_repo = ExtractedParliamentaryGroupMemberRepositoryImpl(session)  # type: ignore
         politician_repo = PoliticianRepositoryImpl(session)  # type: ignore
         speaker_repo = SpeakerRepositoryImpl(session)  # type: ignore
@@ -103,8 +102,7 @@ class ParliamentaryGroupMemberCommands(BaseCommand):
         """
         session = get_db_session()
 
-        # リポジトリの初期化
-        # TODO: 型エラーを修正するため、async sessionを使用するようにリファクタリング
+        # リポジトリの初期化（非同期セッション化: See Issue #980）
         member_repo = ExtractedParliamentaryGroupMemberRepositoryImpl(session)  # type: ignore
         membership_repo = ParliamentaryGroupMembershipRepositoryImpl(session)  # type: ignore
 

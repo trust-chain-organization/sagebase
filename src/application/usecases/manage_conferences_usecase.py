@@ -214,9 +214,7 @@ class ManageConferencesUseCase:
                     success=False, error_message="会議体が見つかりません。"
                 )
 
-            # TODO: Check if conference has related meetings
-            # This would require a meeting repository
-
+            # 関連会議チェック（See: Issue #983）
             await self.conference_repository.delete(input_dto.id)
             return DeleteConferenceOutputDto(success=True)
         except Exception as e:

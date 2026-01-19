@@ -57,7 +57,7 @@ class MinutesProcessAgent:
             SpeechExtractionAgent,
         )
 
-        # TODO: 環境変数からモデル名を取得するように改善
+        # モデル名の環境変数化（See: Issue #977）
         llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp")
         self.speech_extraction_agent = SpeechExtractionAgent(llm)
 

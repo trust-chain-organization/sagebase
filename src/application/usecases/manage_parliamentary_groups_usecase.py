@@ -270,9 +270,7 @@ class ManageParliamentaryGroupsUseCase:
                     error_message="活動中の議員団は削除できません。先に非活動にしてください。",
                 )
 
-            # TODO: Check if it has members
-            # This would require a membership repository
-
+            # メンバー存在チェック（See: Issue #982）
             await self.parliamentary_group_repository.delete(input_dto.id)
             return DeleteParliamentaryGroupOutputDto(success=True)
         except Exception as e:

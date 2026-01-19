@@ -512,7 +512,7 @@ class TestManagePoliticiansUseCase:
         # Assert
         assert isinstance(result, MergePoliticiansOutputDto)
         assert result.success is False
-        assert "実装中" in result.error_message
+        assert "実装されていません" in result.error_message
 
     @pytest.mark.asyncio
     async def test_merge_politicians_source_not_found(

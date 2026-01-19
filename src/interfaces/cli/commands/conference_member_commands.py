@@ -72,8 +72,7 @@ class ConferenceMemberCommands(BaseCommand):
         """
         session = get_db_session()
 
-        # リポジトリの初期化
-        # TODO: 型エラーを修正するため、async sessionを使用するようにリファクタリング
+        # リポジトリの初期化（非同期セッション化: See Issue #979）
         conference_repo = ConferenceRepositoryImpl(session)  # type: ignore
         politician_repo = PoliticianRepositoryImpl(session)  # type: ignore
         extracted_member_repo = ExtractedConferenceMemberRepositoryImpl(session)  # type: ignore

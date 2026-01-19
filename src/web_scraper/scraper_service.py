@@ -174,9 +174,10 @@ class ScraperService:
             self.logger.warning(f"Failed to save cache for {url}: {e}")
 
     def export_to_pdf(self, minutes: MinutesData, output_path: str) -> bool:
-        """議事録をPDFにエクスポート"""
-        # TODO: PDFエクスポート機能の実装
-        # reportlabやweasyprint等を使用
+        """議事録をPDFにエクスポート
+
+        Note: 未実装。必要に応じてreportlabやweasyprint等を使用して実装。
+        """
         return False
 
     def export_to_text(
