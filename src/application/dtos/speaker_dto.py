@@ -1,9 +1,38 @@
-"""Speaker-related DTOs."""
+"""発言者関連DTO"""
 
 from dataclasses import dataclass
 
-# Re-export from domain layer for backward compatibility
-from src.domain.dtos.speaker_dto import SpeakerWithConversationCountDTO
+from src.domain.entities.politician import Politician
+from src.domain.entities.speaker import Speaker
+
+
+@dataclass
+class SpeakerWithConversationCountDTO:
+    """発言者と発言回数のDTO
+
+    リポジトリコントラクトで使用されます。
+    """
+
+    id: int
+    name: str
+    type: str | None
+    political_party_name: str | None
+    position: str | None
+    is_politician: bool
+    conversation_count: int
+
+
+@dataclass
+class SpeakerWithPoliticianDTO:
+    """発言者と紐付け政治家情報のDTO
+
+    発言者をマッチした政治家データと一緒に取得する際に使用します。
+    ドメインエンティティへの動的属性追加を避けることで
+    Clean Architectureを維持します。
+    """
+
+    speaker: Speaker
+    politician: Politician | None
 
 
 @dataclass
@@ -64,4 +93,5 @@ __all__ = [
     "SpeakerDTO",
     "SpeakerMatchingDTO",
     "SpeakerWithConversationCountDTO",
+    "SpeakerWithPoliticianDTO",
 ]

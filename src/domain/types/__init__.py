@@ -1,17 +1,6 @@
 """Domain type definitions for type safety."""
 
 from .common import EntityId, OptionalDate, OptionalInt, OptionalStr, Timestamp
-from .dto import (
-    ConferenceDTO,
-    ConversationDTO,
-    ExtractedConferenceMemberDTO,
-    GoverningBodyDTO,
-    MeetingDTO,
-    MinutesDTO,
-    ParliamentaryGroupDTO,
-    PoliticianDTO,
-    SpeakerDTO,
-)
 from .llm import (
     LLMConferenceMemberExtractContext,
     LLMExtractResult,
@@ -28,16 +17,6 @@ __all__ = [
     "OptionalStr",
     "OptionalInt",
     "OptionalDate",
-    # DTOs
-    "PoliticianDTO",
-    "SpeakerDTO",
-    "MeetingDTO",
-    "ConversationDTO",
-    "MinutesDTO",
-    "ConferenceDTO",
-    "GoverningBodyDTO",
-    "ParliamentaryGroupDTO",
-    "ExtractedConferenceMemberDTO",
     # LLM types
     "LLMMatchResult",
     "LLMExtractResult",

@@ -13,10 +13,10 @@ from typing import TYPE_CHECKING, Any
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 
+from src.application.dtos.conference_member_extraction_dto import ExtractedMemberDTO
 from src.application.dtos.extraction_result.conference_member_extraction_result import (
     ConferenceMemberExtractionResult,
 )
-from src.domain.dtos.conference_member_dto import ExtractedMemberDTO
 from src.domain.entities.extracted_conference_member import ExtractedConferenceMember
 from src.infrastructure.external.conference_member_extractor.factory import (
     MemberExtractorFactory,

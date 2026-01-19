@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING
 from src.application.dtos.extraction_result.parliamentary_group_member_extraction_result import (  # noqa: E501
     ParliamentaryGroupMemberExtractionResult,
 )
-from src.common.logging import get_logger
-from src.domain.dtos.parliamentary_group_member_dto import (
+from src.application.dtos.parliamentary_group_member_dto import (
     ExtractedParliamentaryGroupMemberDTO,
 )
+from src.common.logging import get_logger
 from src.domain.entities import ParliamentaryGroup
 from src.domain.entities.extracted_parliamentary_group_member import (
     ExtractedParliamentaryGroupMember,

@@ -6,7 +6,7 @@ Clean Architectureの原則に従い、ドメイン層で定義されていま�
 
 from abc import ABC, abstractmethod
 
-from src.domain.dtos.role_name_mapping_dto import RoleNameMappingResultDTO
+from src.application.dtos.role_name_mapping_dto import RoleNameMappingResultDTO
 
 
 class IRoleNameMappingService(ABC):

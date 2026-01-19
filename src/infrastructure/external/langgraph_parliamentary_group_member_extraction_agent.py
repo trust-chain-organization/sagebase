@@ -10,7 +10,7 @@ import logging
 
 from typing import TYPE_CHECKING
 
-from src.domain.dtos.parliamentary_group_member_dto import (
+from src.application.dtos.parliamentary_group_member_dto import (
     ExtractedParliamentaryGroupMemberDTO,
     ParliamentaryGroupMemberAgentResultDTO,
 )

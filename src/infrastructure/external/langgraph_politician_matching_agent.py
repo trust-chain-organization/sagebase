@@ -16,7 +16,7 @@ from langchain_core.messages import BaseMessage, HumanMessage
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import create_react_agent
 
-from src.domain.dtos.politician_matching_dto import PoliticianMatchingAgentResult
+from src.application.dtos.politician_matching_dto import PoliticianMatchingAgentResult
 from src.domain.interfaces.politician_matching_agent import IPoliticianMatchingAgent
 from src.domain.repositories.politician_affiliation_repository import (
     PoliticianAffiliationRepository,

@@ -1,16 +1,12 @@
-"""Conference member extraction DTOs
+"""会議体メンバー抽出DTO
 
 会議体メンバー抽出のためのデータ転送オブジェクト。
 レイヤー間でメンバー情報をやり取りする際に使用されます。
 """
 
-from typing import TYPE_CHECKING, TypedDict
+from typing import TypedDict
 
 from pydantic import BaseModel, Field
-
-
-if TYPE_CHECKING:
-    pass
 
 
 class ExtractedMemberDTO(BaseModel):

@@ -8,6 +8,7 @@ from collections.abc import Callable
 from datetime import UTC
 from typing import Any
 
+from src.application.dtos.base_dto import PoliticianBaseDTO
 from src.domain.entities.llm_processing_history import (
     LLMProcessingHistory,
     ProcessingStatus,
@@ -21,7 +22,6 @@ from src.domain.services.interfaces.llm_service import ILLMService
 from src.domain.types import (
     LLMExtractResult,
     LLMMatchResult,
-    PoliticianDTO,
 )
 
 
@@ -271,7 +271,10 @@ class InstrumentedLLMService(ILLMService):
         )
 
     async def match_conference_member(  # type: ignore[override]
-        self, member_name: str, party_name: str | None, candidates: list[PoliticianDTO]
+        self,
+        member_name: str,
+        party_name: str | None,
+        candidates: list[PoliticianBaseDTO],
     ) -> LLMMatchResult | None:
         """Match a conference member to a politician with history recording."""
         prompt_template = "conference_member_matching"

@@ -6,7 +6,7 @@ Clean Architectureの原則に従い、ドメイン層で定義されていま�
 
 from abc import ABC, abstractmethod
 
-from src.domain.dtos.politician_matching_dto import PoliticianMatchingAgentResult
+from src.application.dtos.politician_matching_dto import PoliticianMatchingAgentResult
 
 
 class IPoliticianMatchingAgent(ABC):

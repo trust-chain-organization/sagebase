@@ -68,7 +68,9 @@ class TestConferenceMemberExtractionTools:
     @pytest.mark.asyncio
     async def test_extract_members_from_html_with_mock(self):
         """BAMLを使用してメンバーを抽出すること（依存性注入でモック使用）"""
-        from src.domain.dtos.conference_member_dto import ExtractedMemberDTO
+        from src.application.dtos.conference_member_extraction_dto import (
+            ExtractedMemberDTO,
+        )
 
         mock_members = [
             ExtractedMemberDTO(
@@ -269,7 +271,9 @@ class TestConferenceMemberExtractionTools:
     @pytest.mark.asyncio
     async def test_extract_members_with_dependency_injection(self):
         """依存性注入でextractorを渡せること"""
-        from src.domain.dtos.conference_member_dto import ExtractedMemberDTO
+        from src.application.dtos.conference_member_extraction_dto import (
+            ExtractedMemberDTO,
+        )
 
         mock_extractor = AsyncMock()
         mock_extractor.extract_members.return_value = [

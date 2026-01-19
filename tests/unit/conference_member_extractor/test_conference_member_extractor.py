@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from src.domain.dtos.conference_member_dto import ExtractedMemberDTO
+from src.application.dtos.conference_member_extraction_dto import ExtractedMemberDTO
 from src.infrastructure.external.conference_member_extractor.extractor import (
     ConferenceMemberExtractor,
 )

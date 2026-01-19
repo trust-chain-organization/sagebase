@@ -8,7 +8,7 @@ import logging
 
 from baml_client.async_client import b
 
-from src.domain.dtos.conference_member_dto import ExtractedMemberDTO
+from src.application.dtos.conference_member_extraction_dto import ExtractedMemberDTO
 from src.domain.interfaces.member_extractor_service import IMemberExtractorService
 
 

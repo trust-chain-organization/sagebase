@@ -12,7 +12,7 @@ from typing import Any
 
 from playwright.async_api import Browser, BrowserContext, Page, async_playwright
 
-from src.domain.dtos.web_page_content_dto import WebPageContentDTO
+from src.application.dtos.web_page_content_dto import WebPageContentDTO
 from src.infrastructure.config.settings import get_settings
 
 

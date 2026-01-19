@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 
 from baml_client.async_client import b
 
-from src.domain.dtos.parliamentary_group_member_dto import (
+from src.application.dtos.parliamentary_group_member_dto import (
     ExtractedParliamentaryGroupMemberDTO,
     ParliamentaryGroupMemberExtractionResultDTO,
 )

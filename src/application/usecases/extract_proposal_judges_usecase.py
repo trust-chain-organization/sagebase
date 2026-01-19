@@ -390,10 +390,10 @@ class ExtractProposalJudgesUseCase:
         # Use LLM for fuzzy matching
         from typing import cast
 
-        from src.domain.types.dto import PoliticianDTO
+        from src.application.dtos.base_dto import PoliticianBaseDTO
 
         candidate_dtos = cast(
-            list[PoliticianDTO],
+            list[PoliticianBaseDTO],
             [
                 {
                     "id": c.id,

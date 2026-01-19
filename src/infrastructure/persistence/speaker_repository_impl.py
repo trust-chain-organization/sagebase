@@ -6,7 +6,7 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.domain.dtos.speaker_dto import (
+from src.application.dtos.speaker_dto import (
     SpeakerWithConversationCountDTO,
     SpeakerWithPoliticianDTO,
 )

@@ -6,12 +6,12 @@ from uuid import uuid4
 
 import pytest
 
-from src.application.dtos.work_history_dto import WorkType
-from src.application.usecases.get_work_history_usecase import GetWorkHistoryUseCase
-from src.domain.dtos.parliamentary_group_membership_dto import (
+from src.application.dtos.parliamentary_group_membership_dto import (
     ParliamentaryGroupMembershipWithRelationsDTO,
 )
-from src.domain.dtos.speaker_dto import SpeakerWithPoliticianDTO
+from src.application.dtos.speaker_dto import SpeakerWithPoliticianDTO
+from src.application.dtos.work_history_dto import WorkType
+from src.application.usecases.get_work_history_usecase import GetWorkHistoryUseCase
 from src.domain.entities.parliamentary_group import ParliamentaryGroup
 from src.domain.entities.parliamentary_group_membership import (
     ParliamentaryGroupMembership,

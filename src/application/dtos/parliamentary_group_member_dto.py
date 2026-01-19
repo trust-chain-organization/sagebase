@@ -1,9 +1,7 @@
-"""Parliamentary group member extraction DTOs
+"""議員団メンバー抽出DTO
 
 議員団メンバー抽出のためのデータ転送オブジェクト。
 レイヤー間でメンバー情報をやり取りする際に使用されます。
-
-Clean Architectureの原則に従い、フレームワーク非依存のdataclassを使用しています。
 """
 
 from dataclasses import dataclass
@@ -17,9 +15,6 @@ class ExtractedParliamentaryGroupMemberDTO:
     HTMLからLLMによって抽出されたメンバー情報を表現します。
     インフラストラクチャ層からアプリケーション層への
     データ転送に使用されます。
-
-    フレームワーク非依存のdataclassとして実装されており、
-    Pydanticなどの外部ライブラリに依存しません。
     """
 
     name: str
@@ -36,9 +31,6 @@ class ParliamentaryGroupMemberExtractionResultDTO:
     議員団URLからのメンバー抽出結果を表現します。
     インフラストラクチャ層からアプリケーション層への
     データ転送に使用されます。
-
-    フレームワーク非依存のdataclassとして実装されており、
-    Pydanticなどの外部ライブラリに依存しません。
     """
 
     parliamentary_group_id: int
@@ -58,8 +50,6 @@ class ParliamentaryGroupMemberAgentResultDTO:
     Note:
         ParliamentaryGroupMemberExtractionResultDTOはURL経由の抽出結果用、
         このDTOはLangGraphエージェント経由の抽出結果用です。
-
-    Issue #905: [LangGraph+BAML] 議員団メンバー抽出のエージェント化
 
     Attributes:
         members: 抽出されたメンバーのリスト

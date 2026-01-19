@@ -1,5 +1,6 @@
 """Domain service for parliamentary group member matching logic."""
 
+from src.application.dtos.base_dto import PoliticianBaseDTO
 from src.domain.entities.extracted_parliamentary_group_member import (
     ExtractedParliamentaryGroupMember,
 )
@@ -7,7 +8,7 @@ from src.domain.entities.politician import Politician
 from src.domain.repositories.politician_repository import PoliticianRepository
 from src.domain.services.interfaces.llm_service import ILLMService
 from src.domain.services.speaker_domain_service import SpeakerDomainService
-from src.domain.types import LLMMatchResult, PoliticianDTO
+from src.domain.types import LLMMatchResult
 
 
 class ParliamentaryGroupMemberMatchingService:
@@ -133,13 +134,13 @@ class ParliamentaryGroupMemberMatchingService:
         if not candidates:
             return None
 
-        # PoliticianDTOのリストに変換
+        # PoliticianBaseDTOのリストに変換
         # Note: PoliticianエンティティにはDTOに必要な全てのフィールドがないため、
         # 利用可能なフィールドのみを使用し、それ以外はNoneまたはダミー値を設定
         from datetime import datetime
 
-        candidate_dtos: list[PoliticianDTO] = [
-            PoliticianDTO(
+        candidate_dtos: list[PoliticianBaseDTO] = [
+            PoliticianBaseDTO(
                 id=p.id or 0,
                 name=p.name,
                 party_id=p.political_party_id,

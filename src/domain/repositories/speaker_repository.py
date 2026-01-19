@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from src.domain.dtos.speaker_dto import (
+from src.application.dtos.speaker_dto import (
     SpeakerWithConversationCountDTO,
     SpeakerWithPoliticianDTO,
 )

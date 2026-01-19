@@ -1,11 +1,14 @@
-"""Data Transfer Object type definitions."""
+"""基本的なデータ転送オブジェクト定義
+
+汎用的に使用されるDTOを定義します。
+"""
 
 from datetime import date, datetime
 from typing import TypedDict
 
 
 class GoverningBodyDTO(TypedDict):
-    """Governing body data transfer object."""
+    """自治体データ転送オブジェクト"""
 
     id: int
     name: str
@@ -16,8 +19,8 @@ class GoverningBodyDTO(TypedDict):
     updated_at: datetime
 
 
-class ConferenceDTO(TypedDict):
-    """Conference data transfer object."""
+class ConferenceBaseDTO(TypedDict):
+    """会議体データ転送オブジェクト（基本型）"""
 
     id: int
     governing_body_id: int
@@ -28,8 +31,13 @@ class ConferenceDTO(TypedDict):
     updated_at: datetime
 
 
-class PoliticianDTO(TypedDict):
-    """Politician data transfer object."""
+class PoliticianBaseDTO(TypedDict):
+    """政治家データ転送オブジェクト（汎用型）
+
+    Note:
+        これはLLMサービス等で使用される汎用的な政治家DTO。
+        アプリケーション層のPoliticianDTOとは異なります。
+    """
 
     id: int
     name: str
@@ -42,8 +50,8 @@ class PoliticianDTO(TypedDict):
     updated_at: datetime
 
 
-class SpeakerDTO(TypedDict):
-    """Speaker data transfer object."""
+class SpeakerBaseDTO(TypedDict):
+    """発言者データ転送オブジェクト（基本型）"""
 
     id: int
     name: str
@@ -57,8 +65,8 @@ class SpeakerDTO(TypedDict):
     updated_at: datetime
 
 
-class MeetingDTO(TypedDict):
-    """Meeting data transfer object."""
+class MeetingBaseDTO(TypedDict):
+    """会議データ転送オブジェクト"""
 
     id: int
     governing_body_id: int
@@ -73,8 +81,8 @@ class MeetingDTO(TypedDict):
     updated_at: datetime
 
 
-class ConversationDTO(TypedDict):
-    """Conversation data transfer object."""
+class ConversationBaseDTO(TypedDict):
+    """発言データ転送オブジェクト"""
 
     id: int
     speaker_id: int
@@ -85,8 +93,8 @@ class ConversationDTO(TypedDict):
     updated_at: datetime
 
 
-class MinutesDTO(TypedDict):
-    """Minutes data transfer object."""
+class MinutesBaseDTO(TypedDict):
+    """議事録データ転送オブジェクト"""
 
     id: int
     meeting_id: int
@@ -95,8 +103,8 @@ class MinutesDTO(TypedDict):
     updated_at: datetime
 
 
-class ParliamentaryGroupDTO(TypedDict):
-    """Parliamentary group data transfer object."""
+class ParliamentaryGroupBaseDTO(TypedDict):
+    """議員団データ転送オブジェクト"""
 
     id: int
     conference_id: int
@@ -108,8 +116,8 @@ class ParliamentaryGroupDTO(TypedDict):
     updated_at: datetime
 
 
-class ExtractedConferenceMemberDTO(TypedDict):
-    """Extracted conference member data transfer object."""
+class ExtractedConferenceMemberBaseDTO(TypedDict):
+    """抽出された会議体メンバーデータ転送オブジェクト"""
 
     id: int
     conference_id: int

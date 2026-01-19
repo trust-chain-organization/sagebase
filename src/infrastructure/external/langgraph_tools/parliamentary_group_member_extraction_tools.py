@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 
 from langchain_core.tools import tool
 
-from src.domain.dtos.parliamentary_group_member_dto import (
+from src.application.dtos.parliamentary_group_member_dto import (
     ExtractedParliamentaryGroupMemberDTO,
 )
 

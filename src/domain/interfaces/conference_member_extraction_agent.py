@@ -6,7 +6,9 @@ Clean Architectureの原則に従い、ドメイン層で定義されていま�
 
 from abc import ABC, abstractmethod
 
-from src.domain.dtos.conference_member_dto import ConferenceMemberExtractionResult
+from src.application.dtos.conference_member_extraction_dto import (
+    ConferenceMemberExtractionResult,
+)
 
 
 class IConferenceMemberExtractionAgent(ABC):

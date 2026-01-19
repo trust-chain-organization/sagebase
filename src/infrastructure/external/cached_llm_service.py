@@ -6,8 +6,8 @@ import json
 from datetime import datetime, timedelta
 from typing import Any
 
+from src.application.dtos.base_dto import PoliticianBaseDTO
 from src.domain.services.interfaces.llm_service import ILLMService
-from src.domain.types import PoliticianDTO
 from src.domain.types.llm import (
     LLMExtractResult,
     LLMMatchResult,
@@ -140,7 +140,7 @@ class CachedLLMService(ILLMService):
         self,
         member_name: str,
         party_name: str | None,
-        candidates: list[PoliticianDTO],
+        candidates: list[PoliticianBaseDTO],
     ) -> LLMMatchResult | None:
         """Match conference member with caching.
 

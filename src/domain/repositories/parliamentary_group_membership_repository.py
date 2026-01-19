@@ -5,7 +5,7 @@ from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
-from src.domain.dtos.parliamentary_group_membership_dto import (
+from src.application.dtos.parliamentary_group_membership_dto import (
     ParliamentaryGroupMembershipWithRelationsDTO,
 )
 from src.domain.entities.parliamentary_group_membership import (

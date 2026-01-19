@@ -11,6 +11,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableSerializable
 from langchain_google_genai import ChatGoogleGenerativeAI
 
+from src.application.dtos.base_dto import PoliticianBaseDTO
 from src.domain.entities.llm_processing_history import LLMProcessingHistory
 from src.domain.repositories.llm_processing_history_repository import (
     LLMProcessingHistoryRepository,
@@ -19,7 +20,6 @@ from src.domain.services.interfaces.llm_service import ILLMService
 from src.domain.types import (
     LLMExtractResult,
     LLMMatchResult,
-    PoliticianDTO,
 )
 from src.infrastructure.external.versioned_prompt_manager import VersionedPromptManager
 
@@ -211,7 +211,10 @@ Format: [{"speaker": "Name", "content": "Speech text"}, ...]"""
             )
 
     async def match_conference_member(
-        self, member_name: str, party_name: str | None, candidates: list[PoliticianDTO]
+        self,
+        member_name: str,
+        party_name: str | None,
+        candidates: list[PoliticianBaseDTO],
     ) -> LLMMatchResult | None:
         """Match conference member to politician using Gemini."""
         try:

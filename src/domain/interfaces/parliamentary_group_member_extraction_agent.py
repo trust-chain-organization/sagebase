@@ -8,7 +8,7 @@ Issue #905: [LangGraph+BAML] 議員団メンバー抽出のエージェント化
 
 from abc import ABC, abstractmethod
 
-from src.domain.dtos.parliamentary_group_member_dto import (
+from src.application.dtos.parliamentary_group_member_dto import (
     ParliamentaryGroupMemberAgentResultDTO,
 )
 

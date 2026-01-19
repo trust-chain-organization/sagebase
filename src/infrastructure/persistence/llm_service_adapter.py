@@ -5,6 +5,7 @@ import asyncio
 from collections.abc import Coroutine
 from typing import Any, TypeVar
 
+from src.application.dtos.base_dto import PoliticianBaseDTO
 from src.domain.entities.llm_processing_history import LLMProcessingHistory
 from src.domain.repositories.llm_processing_history_repository import (
     LLMProcessingHistoryRepository,
@@ -13,7 +14,6 @@ from src.domain.services.interfaces.llm_service import ILLMService
 from src.domain.types import (
     LLMExtractResult,
     LLMMatchResult,
-    PoliticianDTO,
 )
 
 
@@ -132,7 +132,10 @@ class LLMServiceAdapter:
         )
 
     def match_conference_member(
-        self, member_name: str, party_name: str | None, candidates: list[PoliticianDTO]
+        self,
+        member_name: str,
+        party_name: str | None,
+        candidates: list[PoliticianBaseDTO],
     ) -> LLMMatchResult | None:
         """Match a conference member to a politician.
 

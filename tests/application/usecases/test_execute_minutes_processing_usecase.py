@@ -5,13 +5,13 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
+from src.application.dtos.role_name_mapping_dto import (
+    RoleNameMappingDTO,
+    RoleNameMappingResultDTO,
+)
 from src.application.usecases.execute_minutes_processing_usecase import (
     ExecuteMinutesProcessingDTO,
     ExecuteMinutesProcessingUseCase,
-)
-from src.domain.dtos.role_name_mapping_dto import (
-    RoleNameMappingDTO,
-    RoleNameMappingResultDTO,
 )
 from src.domain.entities.conversation import Conversation
 from src.domain.entities.meeting import Meeting

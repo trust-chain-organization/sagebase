@@ -44,7 +44,7 @@ class TestParliamentaryGroupMemberExtractionAgent:
     @pytest.mark.asyncio
     async def test_extract_members_success(self, mock_extractor):
         """extract_membersが正常にメンバーを抽出すること"""
-        from src.domain.dtos.parliamentary_group_member_dto import (
+        from src.application.dtos.parliamentary_group_member_dto import (
             ExtractedParliamentaryGroupMemberDTO,
         )
         from src.infrastructure.external.langgraph_parliamentary_group_member_extraction_agent import (
@@ -129,7 +129,7 @@ class TestParliamentaryGroupMemberExtractionAgent:
     @pytest.mark.asyncio
     async def test_extract_members_with_duplicates(self, mock_extractor):
         """重複メンバーが除去されること"""
-        from src.domain.dtos.parliamentary_group_member_dto import (
+        from src.application.dtos.parliamentary_group_member_dto import (
             ExtractedParliamentaryGroupMemberDTO,
         )
         from src.infrastructure.external.langgraph_parliamentary_group_member_extraction_agent import (
@@ -237,7 +237,7 @@ class TestWorkflowSteps:
     @pytest.mark.asyncio
     async def test_workflow_processes_all_steps(self):
         """ワークフローが抽出→検証→重複除去の順で処理すること"""
-        from src.domain.dtos.parliamentary_group_member_dto import (
+        from src.application.dtos.parliamentary_group_member_dto import (
             ExtractedParliamentaryGroupMemberDTO,
         )
         from src.infrastructure.external.langgraph_parliamentary_group_member_extraction_agent import (
@@ -272,7 +272,7 @@ class TestDTOIntegration:
 
     def test_extraction_result_dto_structure(self):
         """ParliamentaryGroupMemberAgentResultDTOの構造が正しいこと"""
-        from src.domain.dtos.parliamentary_group_member_dto import (
+        from src.application.dtos.parliamentary_group_member_dto import (
             ExtractedParliamentaryGroupMemberDTO,
             ParliamentaryGroupMemberAgentResultDTO,
         )

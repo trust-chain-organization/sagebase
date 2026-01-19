@@ -4,7 +4,7 @@ from datetime import datetime
 
 import pytest
 
-from src.domain.dtos.parliamentary_group_member_dto import (
+from src.application.dtos.parliamentary_group_member_dto import (
     ExtractedParliamentaryGroupMemberDTO,
     ParliamentaryGroupMemberExtractionResultDTO,
 )

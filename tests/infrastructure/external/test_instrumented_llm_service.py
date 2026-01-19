@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from src.application.dtos.base_dto import PoliticianBaseDTO
 from src.domain.entities.llm_processing_history import (
     LLMProcessingHistory,
     ProcessingStatus,
@@ -15,7 +16,6 @@ from src.domain.repositories.llm_processing_history_repository import (
 from src.domain.types import (
     LLMExtractResult,
     LLMMatchResult,
-    PoliticianDTO,
 )
 from src.infrastructure.external.instrumented_llm_service import InstrumentedLLMService
 
@@ -51,7 +51,10 @@ class MockLLMService:
         )
 
     def match_conference_member(
-        self, member_name: str, party_name: str | None, candidates: list[PoliticianDTO]
+        self,
+        member_name: str,
+        party_name: str | None,
+        candidates: list[PoliticianBaseDTO],
     ) -> LLMMatchResult | None:
         return LLMMatchResult(
             matched=True,
@@ -148,8 +151,8 @@ class TestInstrumentedLLMService:
         member_name = "Test Member"
         party_name = "Test Party"
         candidates = [
-            PoliticianDTO(id=1, name="Politician 1", party_name="Party A"),
-            PoliticianDTO(id=2, name="Politician 2", party_name="Party B"),
+            PoliticianBaseDTO(id=1, name="Politician 1", party_name="Party A"),
+            PoliticianBaseDTO(id=2, name="Politician 2", party_name="Party B"),
         ]
 
         result = await instrumented_service.match_conference_member(

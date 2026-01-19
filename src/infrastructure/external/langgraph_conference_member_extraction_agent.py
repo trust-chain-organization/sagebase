@@ -10,7 +10,7 @@ import logging
 
 from typing import TYPE_CHECKING
 
-from src.domain.dtos.conference_member_dto import (
+from src.application.dtos.conference_member_extraction_dto import (
     ConferenceMemberExtractionResult,
     ExtractedMemberDTO,
 )

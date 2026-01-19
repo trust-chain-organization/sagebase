@@ -13,7 +13,7 @@ import logging
 
 from baml_client.async_client import b
 
-from src.domain.dtos.role_name_mapping_dto import (
+from src.application.dtos.role_name_mapping_dto import (
     RoleNameMappingDTO,
     RoleNameMappingResultDTO,
 )

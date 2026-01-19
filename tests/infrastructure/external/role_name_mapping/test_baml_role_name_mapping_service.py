@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.domain.dtos.role_name_mapping_dto import (
+from src.application.dtos.role_name_mapping_dto import (
     RoleNameMappingDTO,
     RoleNameMappingResultDTO,
 )
