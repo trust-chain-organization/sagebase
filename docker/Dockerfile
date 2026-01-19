@@ -65,8 +65,9 @@ ENV PATH="/root/.local/bin:$PATH"
 ENV UV_PROJECT_ENVIRONMENT=/app/.venv
 ENV UV_CACHE_DIR=/root/.cache/uv
 
-# Playwrightのブラウザをインストール（イメージに含める）
-RUN uv run playwright install chromium
+# Playwrightのブラウザをインストール（BuildKitキャッシュを使用してビルド時間短縮）
+RUN --mount=type=cache,target=/root/.cache/ms-playwright \
+    uv run playwright install chromium
 
 # アプリケーションファイルをコピー
 COPY src/ src/
