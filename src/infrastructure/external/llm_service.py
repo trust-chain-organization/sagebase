@@ -21,6 +21,10 @@ from src.domain.types import (
     LLMExtractResult,
     LLMMatchResult,
 )
+from src.infrastructure.exceptions import (
+    LLMServiceException,
+    ResponseParsingException,
+)
 from src.infrastructure.external.versioned_prompt_manager import VersionedPromptManager
 
 
@@ -168,7 +172,19 @@ Format: [{"speaker": "Name", "content": "Speech text"}, ...]"""
     async def extract_party_members(
         self, html_content: str, party_id: int
     ) -> LLMExtractResult:
-        """Extract politician information from HTML using Gemini."""
+        """Extract politician information from HTML using Gemini.
+
+        Args:
+            html_content: HTML content to extract from
+            party_id: Party ID for metadata
+
+        Returns:
+            LLMExtractResult with extracted data or error information
+
+        Note:
+            エラー発生時はLLMExtractResult.success=Falseを返し、
+            呼び出し元でエラー情報を確認できます。
+        """
         try:
             # Prepare prompt with HTML content
             prompt = await self._get_prompt("party_member_extraction", {})
@@ -193,7 +209,20 @@ Format: [{"speaker": "Name", "content": "Speech text"}, ...]"""
                     response_text = str(content)
             else:
                 response_text = str(response)
-            result = json.loads(response_text)
+
+            try:
+                result = json.loads(response_text)
+            except json.JSONDecodeError as json_err:
+                logger.warning(
+                    f"Failed to parse LLM response as JSON: {json_err}. "
+                    f"Response: {response_text[:200]}"
+                )
+                return LLMExtractResult(
+                    success=False,
+                    extracted_data=[],
+                    error=f"JSONパースエラー: {json_err}",
+                    metadata={"party_id": str(party_id), "model": self.model_name},
+                )
 
             return LLMExtractResult(
                 success=result.get("success", False),
@@ -202,11 +231,11 @@ Format: [{"speaker": "Name", "content": "Speech text"}, ...]"""
                 metadata={"party_id": str(party_id), "model": self.model_name},
             )
         except Exception as e:
-            logger.error(f"Failed to extract party members: {e}")
+            logger.error(f"Failed to extract party members: {e}", exc_info=True)
             return LLMExtractResult(
                 success=False,
                 extracted_data=[],
-                error=str(e),
+                error=f"LLM呼び出しエラー: {e}",
                 metadata={"party_id": str(party_id), "model": self.model_name},
             )
 
@@ -216,7 +245,20 @@ Format: [{"speaker": "Name", "content": "Speech text"}, ...]"""
         party_name: str | None,
         candidates: list[PoliticianBaseDTO],
     ) -> LLMMatchResult | None:
-        """Match conference member to politician using Gemini."""
+        """Match conference member to politician using Gemini.
+
+        Args:
+            member_name: Name of the conference member to match
+            party_name: Party name for additional context
+            candidates: List of candidate politicians to match against
+
+        Returns:
+            LLMMatchResult with match information, or None if matching failed
+
+        Note:
+            JSONパースエラーや一般的なエラーの場合はNoneを返します。
+            呼び出し元でNoneチェックが必要です。
+        """
         try:
             # Prepare prompt
             prompt = await self._get_prompt(
@@ -245,7 +287,15 @@ Format: [{"speaker": "Name", "content": "Speech text"}, ...]"""
                     response_text = str(content)
             else:
                 response_text = str(response)
-            result = json.loads(response_text)
+
+            try:
+                result = json.loads(response_text)
+            except json.JSONDecodeError as json_err:
+                logger.warning(
+                    f"Failed to parse LLM response as JSON for member '{member_name}': "
+                    f"{json_err}. Response: {response_text[:200]}"
+                )
+                return None
 
             return LLMMatchResult(
                 matched=result.get("matched", False),
@@ -255,11 +305,25 @@ Format: [{"speaker": "Name", "content": "Speech text"}, ...]"""
                 metadata={"model": self.model_name, "member_name": member_name},
             )
         except Exception as e:
-            logger.error(f"Failed to match conference member: {e}")
+            logger.error(
+                f"Failed to match conference member '{member_name}': {e}",
+                exc_info=True,
+            )
             return None
 
     async def extract_speeches_from_text(self, text: str) -> list[dict[str, str]]:
-        """Extract speeches from minutes text using Gemini."""
+        """Extract speeches from minutes text using Gemini.
+
+        Args:
+            text: Text to extract speeches from
+
+        Returns:
+            List of dictionaries with 'speaker' and 'content' keys
+
+        Raises:
+            ResponseParsingException: When LLM response cannot be parsed as valid JSON
+            LLMServiceException: When LLM invocation fails
+        """
         try:
             # Prepare prompt with text
             prompt = await self._get_prompt("speech_extraction", {})
@@ -282,16 +346,40 @@ Format: [{"speaker": "Name", "content": "Speech text"}, ...]"""
                     response_text = str(content)
             else:
                 response_text = str(response)
-            speeches = json.loads(response_text)
+
+            try:
+                speeches = json.loads(response_text)
+            except json.JSONDecodeError as json_err:
+                logger.error(
+                    f"Failed to parse speech extraction response as JSON: {json_err}. "
+                    f"Response: {response_text[:200]}"
+                )
+                raise ResponseParsingException(
+                    reason=f"JSONパースエラー: {json_err}",
+                    response_sample=response_text[:200],
+                ) from json_err
 
             if not isinstance(speeches, list):
-                logger.error("Invalid response format: expected list")
-                return []
+                actual_type = type(speeches).__name__
+                logger.error(
+                    f"Invalid response format: expected list, got {actual_type}"
+                )
+                raise ResponseParsingException(
+                    reason=f"レスポンス形式が不正です: リストを期待しましたが、"
+                    f"{actual_type}が返されました",
+                    response_sample=str(speeches)[:200],
+                )
 
             return speeches  # type: ignore[return-value]
+        except ResponseParsingException:
+            raise
         except Exception as e:
-            logger.error(f"Failed to extract speeches: {e}")
-            return []
+            logger.error(f"Failed to extract speeches: {e}", exc_info=True)
+            raise LLMServiceException(
+                operation="extract_speeches",
+                reason=str(e),
+                model=self.model_name,
+            ) from e
 
     def get_structured_llm(self, schema: Any) -> Any:
         """Get a structured LLM instance configured with the given schema.
@@ -348,14 +436,21 @@ Format: [{"speaker": "Name", "content": "Speech text"}, ...]"""
 
         Returns:
             Result from the chain invocation
+
+        Raises:
+            LLMServiceException: When chain invocation fails
         """
         # Simple implementation without actual retry logic
         # In production, you'd want to add proper retry logic with exponential backoff
         try:
             return chain.invoke(inputs)
         except Exception as e:
-            logger.error(f"Chain invocation failed: {e}")
-            raise
+            logger.error(f"Chain invocation failed: {e}", exc_info=True)
+            raise LLMServiceException(
+                operation="chain_invoke",
+                reason=str(e),
+                model=self.model_name,
+            ) from e
 
     def invoke_llm(self, messages: list[dict[str, str]]) -> str:
         """Invoke the LLM with messages and return the response content.
@@ -365,6 +460,9 @@ Format: [{"speaker": "Name", "content": "Speech text"}, ...]"""
 
         Returns:
             The response content from the LLM
+
+        Raises:
+            LLMServiceException: When LLM invocation fails
         """
         try:
             response = self._llm.invoke(messages)
@@ -376,5 +474,9 @@ Format: [{"speaker": "Name", "content": "Speech text"}, ...]"""
                 # Convert to string if necessary
                 return str(content)
         except Exception as e:
-            logger.error(f"LLM invocation failed: {e}")
-            raise
+            logger.error(f"LLM invocation failed: {e}", exc_info=True)
+            raise LLMServiceException(
+                operation="invoke_llm",
+                reason=str(e),
+                model=self.model_name,
+            ) from e

@@ -10,8 +10,11 @@ import unicodedata
 
 from typing import Any
 
+from baml_py.errors import BamlValidationError
+
 from baml_client.async_client import b
 
+from src.domain.exceptions import ExternalServiceException
 from src.domain.interfaces.minutes_divider_service import IMinutesDividerService
 
 # 既存のPydanticモデルを使用（BAML結果をこれに変換）
@@ -411,6 +414,9 @@ class BAMLMinutesDivider(IMinutesDividerService):
 
         Returns:
             セクション情報リスト
+
+        Raises:
+            ExternalServiceException: BAML呼び出しエラー（BamlValidationError以外）
         """
         try:
             # BAMLを呼び出し
@@ -436,10 +442,20 @@ class BAMLMinutesDivider(IMinutesDividerService):
             logger.info(f"BAML returned {len(section_info_list)} sections")
             return SectionInfoList(section_info_list=section_info_list)
 
+        except BamlValidationError as e:
+            # LLMが構造化出力を返さなかった場合（許容される状況）
+            logger.warning(
+                f"BAML section_divide_run バリデーション失敗: {e}. "
+                "空のリストを返します。"
+            )
+            return SectionInfoList(section_info_list=[])
         except Exception as e:
             logger.error(f"BAML section_divide_run failed: {e}", exc_info=True)
-            # エラー時は空のリストを返す
-            return SectionInfoList(section_info_list=[])
+            raise ExternalServiceException(
+                service_name="BAML",
+                operation="section_divide_run",
+                reason=str(e),
+            ) from e
 
     async def do_redivide(
         self, redivide_section_string_list: RedivideSectionStringList
@@ -451,8 +467,14 @@ class BAMLMinutesDivider(IMinutesDividerService):
 
         Returns:
             再分割されたセクション情報リスト
+
+        Note:
+            個別のセクション処理でエラーが発生した場合はそのセクションをスキップして続行します。
+            BamlValidationErrorはLLM出力の構造化失敗を示し、その他のエラーもログ出力後にスキップします。
         """
         section_info_list: list[Any] = []
+        errors_occurred: list[tuple[int, str]] = []
+
         for (
             redivide_section_string
         ) in redivide_section_string_list.redivide_section_string_list:
@@ -486,9 +508,32 @@ class BAMLMinutesDivider(IMinutesDividerService):
                     )
                 logger.info(f"BAML returned {len(baml_result)} redivided sections")
 
+            except BamlValidationError as e:
+                # LLMが構造化出力を返さなかった場合（スキップして続行）
+                logger.warning(
+                    f"BAML do_redivide バリデーション失敗 "
+                    f"(original_index={redivide_section_string.original_index}): {e}. "
+                    "スキップして続行します。"
+                )
+                errors_occurred.append(
+                    (
+                        redivide_section_string.original_index,
+                        f"BamlValidationError: {e}",
+                    )
+                )
             except Exception as e:
-                logger.error(f"BAML do_redivide failed: {e}", exc_info=True)
-                # エラー時はスキップして続行
+                logger.error(
+                    f"BAML do_redivide failed "
+                    f"(original_index={redivide_section_string.original_index}): {e}",
+                    exc_info=True,
+                )
+                errors_occurred.append((redivide_section_string.original_index, str(e)))
+
+        if errors_occurred:
+            logger.warning(
+                f"do_redivide completed with {len(errors_occurred)} errors: "
+                f"{errors_occurred}"
+            )
 
         return RedividedSectionInfoList(redivided_section_info_list=section_info_list)
 
@@ -500,6 +545,11 @@ class BAMLMinutesDivider(IMinutesDividerService):
 
         Returns:
             境界検出結果
+
+        Note:
+            BamlValidationErrorの場合は境界なし結果を返します。
+            その他のエラーの場合もフォールバックとして境界なし結果を返しますが、
+            エラー情報をreasonフィールドに含めます。
         """
         logger.info("=== detect_attendee_boundary started ===")
         logger.info(f"Input text length: {len(minutes_text)}")
@@ -526,6 +576,19 @@ class BAMLMinutesDivider(IMinutesDividerService):
 
             return result
 
+        except BamlValidationError as e:
+            # LLMが構造化出力を返さなかった場合
+            logger.warning(
+                f"BAML detect_attendee_boundary バリデーション失敗: {e}. "
+                "境界なし結果を返します。"
+            )
+            return MinutesBoundary(
+                boundary_found=False,
+                boundary_text=None,
+                boundary_type="none",
+                confidence=0.0,
+                reason=f"LLMが構造化出力を返せませんでした: {e}",
+            )
         except Exception as e:
             logger.error(f"BAML detect_attendee_boundary failed: {e}", exc_info=True)
             return MinutesBoundary(
@@ -544,6 +607,10 @@ class BAMLMinutesDivider(IMinutesDividerService):
 
         Returns:
             役職と人名のマッピング
+
+        Note:
+            BamlValidationErrorの場合は空のマッピングを返します。
+            その他のエラーの場合も空のマッピングを返します。
         """
         logger.info("=== extract_attendees_mapping started ===")
         logger.info(f"Attendees text length: {len(attendees_text)}")
@@ -576,6 +643,15 @@ class BAMLMinutesDivider(IMinutesDividerService):
 
             return result
 
+        except BamlValidationError as e:
+            # LLMが構造化出力を返さなかった場合
+            logger.warning(
+                f"BAML extract_attendees_mapping バリデーション失敗: {e}. "
+                "空のマッピングを返します。"
+            )
+            return AttendeesMapping(
+                attendees_mapping={}, regular_attendees=[], confidence=0.0
+            )
         except Exception as e:
             logger.error(f"BAML extract_attendees_mapping failed: {e}", exc_info=True)
             return AttendeesMapping(
@@ -595,6 +671,9 @@ class BAMLMinutesDivider(IMinutesDividerService):
 
         Returns:
             発言者と発言内容のリスト
+
+        Raises:
+            ExternalServiceException: BAML呼び出しエラー（BamlValidationError以外）
         """
         section_text = section_string.section_string
 
@@ -639,6 +718,17 @@ class BAMLMinutesDivider(IMinutesDividerService):
                 speaker_and_speech_content_list=speaker_and_speech_content_list
             )
 
+        except BamlValidationError as e:
+            # LLMが構造化出力を返さなかった場合（許容される状況）
+            logger.warning(
+                f"BAML speech_divide_run バリデーション失敗: {e}. "
+                "空のリストを返します。"
+            )
+            return SpeakerAndSpeechContentList(speaker_and_speech_content_list=[])
         except Exception as e:
             logger.error(f"BAML speech_divide_run failed: {e}", exc_info=True)
-            return SpeakerAndSpeechContentList(speaker_and_speech_content_list=[])
+            raise ExternalServiceException(
+                service_name="BAML",
+                operation="speech_divide_run",
+                reason=str(e),
+            ) from e

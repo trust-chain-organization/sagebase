@@ -200,12 +200,14 @@ class BAMLPoliticianMatchingService:
                 reason=f"LLMが構造化出力を返せませんでした: {resolved_name}",
             )
         except Exception as e:
-            logger.error(f"BAML政治家マッチング中のエラー: {e}")
-            # Wrap errors as ExternalServiceException
+            logger.error(
+                f"BAML政治家マッチング中のエラー: '{resolved_name}' - {e}",
+                exc_info=True,
+            )
             raise ExternalServiceException(
                 service_name="BAML",
                 operation="politician_matching",
-                reason=f"BAML politician matching error: {str(e)}",
+                reason=f"政治家マッチング中にエラーが発生しました: {e}",
             ) from e
 
     def _rule_based_matching(
