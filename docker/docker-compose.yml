@@ -22,7 +22,7 @@ services:
       - ENV_VAR_NAME=env_var_value # 必要な環境変数を設定
       - DATABASE_URL=postgresql://sagebase_user:sagebase_password@postgres:5432/sagebase_db
       - GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json
-      - GOOGLE_CLOUD_PROJECT=trust-chain-828ad
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-}
     ports:
       - "8000:8000" # 必要に応じてポートを設定
       - "8501:8501" # Streamlit用ポート
@@ -55,7 +55,7 @@ services:
       - ENV_VAR_NAME=env_var_value # 必要な環境変数を設定
       - DATABASE_URL=postgresql://sagebase_user:sagebase_password@postgres:5432/sagebase_db
       - GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json
-      - GOOGLE_CLOUD_PROJECT=trust-chain-828ad
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-}
     ports:
       - "8502:8502" # 監視用Streamlitポート
     stdin_open: true
