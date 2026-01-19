@@ -259,3 +259,121 @@ class RepositoryError(DomainException):
             error_code="DOM-008",
             details=details or {},
         )
+
+
+class DataValidationException(DomainException):
+    """入力データ不正の例外
+
+    入力データが期待される形式や制約を満たさない場合に発生
+    """
+
+    def __init__(
+        self,
+        field: str,
+        reason: str,
+        actual_value: Any | None = None,
+    ):
+        """
+        Args:
+            field: 不正なフィールド名
+            reason: 不正な理由
+            actual_value: 実際の値（デバッグ用）
+        """
+        message = f"データ不正 ({field}): {reason}"
+        super().__init__(
+            message=message,
+            error_code="DOM-009",
+            details={
+                "field": field,
+                "reason": reason,
+                "actual_value": str(actual_value)[:200] if actual_value else None,
+            },
+        )
+
+
+class RetryableException(DomainException):
+    """再試行可能な例外の基底クラス
+
+    一時的なエラーで再試行により成功する可能性がある場合に発生
+    """
+
+    def __init__(
+        self,
+        message: str,
+        error_code: str | None = None,
+        details: dict[str, Any] | None = None,
+        retry_after: int | None = None,
+    ):
+        """
+        Args:
+            message: エラーメッセージ
+            error_code: エラーコード
+            details: 追加の詳細情報
+            retry_after: 再試行までの待機時間（秒）
+        """
+        self.retry_after = retry_after
+        super().__init__(
+            message=message,
+            error_code=error_code or "DOM-010",
+            details={**(details or {}), "retry_after": retry_after},
+        )
+
+
+class RateLimitExceededException(RetryableException):
+    """APIレート制限超過の例外
+
+    APIのレート制限に達した場合に発生。再試行可能。
+    """
+
+    def __init__(
+        self,
+        service_name: str,
+        retry_after: int | None = None,
+    ):
+        """
+        Args:
+            service_name: サービス名（例: "Gemini API", "GCS"）
+            retry_after: 再試行までの待機時間（秒）
+        """
+        message = f"{service_name}のレート制限に達しました"
+        if retry_after:
+            message += f" ({retry_after}秒後に再試行可能)"
+        super().__init__(
+            message=message,
+            error_code="DOM-011",
+            details={"service_name": service_name},
+            retry_after=retry_after,
+        )
+
+
+class TemporaryServiceException(RetryableException):
+    """一時的なサービスエラーの例外
+
+    外部サービスの一時的な障害で再試行により成功する可能性がある場合に発生
+    """
+
+    def __init__(
+        self,
+        service_name: str,
+        operation: str,
+        reason: str,
+        retry_after: int | None = None,
+    ):
+        """
+        Args:
+            service_name: サービス名
+            operation: 実行しようとした操作
+            reason: 失敗理由
+            retry_after: 再試行までの待機時間（秒）
+        """
+        message = f"{service_name}の一時的なエラー ({operation}): {reason}"
+        super().__init__(
+            message=message,
+            error_code="DOM-012",
+            details={
+                "service_name": service_name,
+                "operation": operation,
+                "reason": reason,
+            },
+            retry_after=retry_after,
+        )

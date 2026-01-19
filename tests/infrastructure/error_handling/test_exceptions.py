@@ -12,11 +12,15 @@ from src.application.exceptions import (
 from src.domain.exceptions import (
     BusinessRuleViolationException,
     DataIntegrityException,
+    DataValidationException,
     DuplicateEntityException,
     EntityNotFoundException,
     InvalidDomainOperationException,
     InvalidEntityStateException,
     PolibaseException,
+    RateLimitExceededException,
+    RetryableException,
+    TemporaryServiceException,
 )
 from src.infrastructure.exceptions import (
     ConnectionException,
@@ -122,6 +126,127 @@ class TestDomainExceptions:
             exception
         )
         assert exception.error_code == "DOM-006"
+
+
+class TestNewDomainExceptions:
+    """Issue #965で追加された新しいドメイン例外のテスト"""
+
+    def test_data_validation_exception(self):
+        """データバリデーション例外のテスト"""
+        exception = DataValidationException(
+            field="email",
+            reason="有効なメールアドレスではありません",
+            actual_value="invalid-email",
+        )
+        assert "データ不正 (email)" in str(exception)
+        assert exception.error_code == "DOM-009"
+        assert exception.details["field"] == "email"
+        assert exception.details["reason"] == "有効なメールアドレスではありません"
+        assert exception.details["actual_value"] == "invalid-email"
+
+    def test_data_validation_exception_truncates_long_value(self):
+        """長い値が200文字で切り捨てられることを確認"""
+        long_value = "a" * 300
+        exception = DataValidationException(
+            field="content",
+            reason="値が長すぎます",
+            actual_value=long_value,
+        )
+        assert len(exception.details["actual_value"]) == 200
+
+    def test_data_validation_exception_without_actual_value(self):
+        """actual_valueなしでの初期化テスト"""
+        exception = DataValidationException(
+            field="name",
+            reason="必須項目です",
+        )
+        assert exception.details["actual_value"] is None
+
+    def test_retryable_exception_with_retry_after(self):
+        """再試行可能例外のテスト（retry_after指定あり）"""
+        exception = RetryableException(
+            message="一時的なエラー",
+            retry_after=60,
+        )
+        assert exception.retry_after == 60
+        assert exception.error_code == "DOM-010"
+        assert exception.details["retry_after"] == 60
+
+    def test_retryable_exception_without_retry_after(self):
+        """再試行可能例外のテスト（retry_after指定なし）"""
+        exception = RetryableException(
+            message="一時的なエラー",
+        )
+        assert exception.retry_after is None
+        assert exception.error_code == "DOM-010"
+
+    def test_retryable_exception_with_custom_error_code(self):
+        """カスタムエラーコード付きの再試行可能例外テスト"""
+        exception = RetryableException(
+            message="カスタムエラー",
+            error_code="CUSTOM-001",
+            details={"key": "value"},
+        )
+        assert exception.error_code == "CUSTOM-001"
+        assert exception.details["key"] == "value"
+
+    def test_rate_limit_exceeded_exception(self):
+        """レート制限超過例外のテスト"""
+        exception = RateLimitExceededException(
+            service_name="Gemini API",
+            retry_after=30,
+        )
+        assert "Gemini APIのレート制限に達しました" in str(exception)
+        assert "30秒後に再試行可能" in str(exception)
+        assert exception.error_code == "DOM-011"
+        assert exception.retry_after == 30
+        assert exception.details["service_name"] == "Gemini API"
+
+    def test_rate_limit_exceeded_exception_without_retry_after(self):
+        """レート制限超過例外のテスト（retry_after指定なし）"""
+        exception = RateLimitExceededException(service_name="GCS")
+        assert "GCSのレート制限に達しました" in str(exception)
+        assert "秒後" not in str(exception)
+        assert exception.retry_after is None
+
+    def test_rate_limit_exceeded_is_retryable(self):
+        """RateLimitExceededExceptionがRetryableExceptionを継承していることを確認"""
+        exception = RateLimitExceededException(service_name="API", retry_after=10)
+        assert isinstance(exception, RetryableException)
+
+    def test_temporary_service_exception(self):
+        """一時的なサービスエラー例外のテスト"""
+        exception = TemporaryServiceException(
+            service_name="BAML",
+            operation="section_divide",
+            reason="サービスが一時的に利用不可",
+            retry_after=10,
+        )
+        assert "BAMLの一時的なエラー (section_divide)" in str(exception)
+        assert "サービスが一時的に利用不可" in str(exception)
+        assert exception.error_code == "DOM-012"
+        assert exception.retry_after == 10
+        assert exception.details["service_name"] == "BAML"
+        assert exception.details["operation"] == "section_divide"
+        assert exception.details["reason"] == "サービスが一時的に利用不可"
+
+    def test_temporary_service_exception_without_retry_after(self):
+        """一時的なサービスエラー例外のテスト（retry_after指定なし）"""
+        exception = TemporaryServiceException(
+            service_name="LLM",
+            operation="invoke",
+            reason="タイムアウト",
+        )
+        assert exception.retry_after is None
+
+    def test_temporary_service_exception_is_retryable(self):
+        """TemporaryServiceExceptionがRetryableExceptionを継承していることを確認"""
+        exception = TemporaryServiceException(
+            service_name="API",
+            operation="call",
+            reason="error",
+        )
+        assert isinstance(exception, RetryableException)
 
 
 class TestApplicationExceptions:
