@@ -66,8 +66,7 @@ class GCSStorageService(IStorageService):
         Returns:
             True if file exists, False otherwise
         """
-        # TODO: Implement exists check in GCSStorage
-        # For now, try to download and catch exception
+        # GCSStorage.exists() is available for optimization
         try:
             await self.download_file(uri)
             return True
@@ -77,6 +76,8 @@ class GCSStorageService(IStorageService):
     async def delete_file(self, uri: str) -> bool:
         """Delete file from storage.
 
+        Note: Not yet implemented. Use GCSStorage.delete() if needed.
+
         Args:
             uri: Storage URI
 
@@ -84,7 +85,6 @@ class GCSStorageService(IStorageService):
             True if deletion was successful
 
         Raises:
-            StorageError: If deletion fails
+            NotImplementedError: Delete operation is not yet implemented
         """
-        # TODO: Implement delete in GCSStorage
         raise NotImplementedError("Delete operation not yet implemented for GCS")
