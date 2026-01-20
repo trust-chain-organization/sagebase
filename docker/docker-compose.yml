@@ -16,6 +16,8 @@ services:
       - ../uv.lock:/app/uv.lock
       - ../README.md:/app/README.md
       - ~/.config/gcloud:/root/.config/gcloud:ro # GCP認証情報をマウント
+      - ../alembic.ini:/app/alembic.ini # Alembic設定ファイル
+      - ../alembic:/app/alembic # Alembicマイグレーション
     env_file:
       - ../.env
     environment:
@@ -49,6 +51,8 @@ services:
       - ../uv.lock:/app/uv.lock
       - ../README.md:/app/README.md
       - ~/.config/gcloud:/root/.config/gcloud:ro # GCP認証情報をマウント
+      - ../alembic.ini:/app/alembic.ini # Alembic設定ファイル
+      - ../alembic:/app/alembic # Alembicマイグレーション
     env_file:
       - ../.env
     environment:

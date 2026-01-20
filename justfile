@@ -44,9 +44,9 @@ up-detached: _setup_worktree
 	docker compose {{compose_cmd}} up -d
 	echo "Waiting for containers to be ready..."
 	sleep 3
-	# Run database migrations (idempotent - safe to run every time)
-	echo "Running database migrations..."
-	docker compose {{compose_cmd}} exec postgres psql -U sagebase_user -d sagebase_db -f /docker-entrypoint-initdb.d/02_run_migrations.sql 2>&1 | grep -v "^psql:" | grep -v "^$" || true
+	# Run database migrations with Alembic (idempotent - safe to run every time)
+	echo "Running database migrations with Alembic..."
+	docker compose {{compose_cmd}} exec sagebase uv run alembic upgrade head 2>&1 || true
 	echo "✅ Migrations complete!"
 	echo "Containers started in detached mode"
 	echo "Run 'just logs' to view logs"
@@ -59,9 +59,9 @@ up-fast: _setup_worktree
 	# Wait for containers to be healthy
 	echo "Waiting for containers to be ready..."
 	sleep 3
-	# Run database migrations (idempotent - safe to run every time)
-	echo "Running database migrations..."
-	docker compose {{compose_cmd}} exec postgres psql -U sagebase_user -d sagebase_db -f /docker-entrypoint-initdb.d/02_run_migrations.sql 2>&1 | grep -v "^psql:" | grep -v "^$" || true
+	# Run database migrations with Alembic (idempotent - safe to run every time)
+	echo "Running database migrations with Alembic..."
+	docker compose {{compose_cmd}} exec sagebase uv run alembic upgrade head 2>&1 || true
 	echo "✅ Migrations complete!"
 	# Run test-setup.sh if it exists (for initial database setup)
 	if [ -f scripts/test-setup.sh ] && docker compose {{compose_cmd}} exec postgres psql -U sagebase_user -d sagebase_db -c "SELECT COUNT(*) FROM meetings;" 2>/dev/null | grep -q "0"; then
@@ -100,9 +100,9 @@ up: _setup_worktree
 	# Wait for containers to be healthy
 	echo "Waiting for containers to be ready..."
 	sleep 3
-	# Run database migrations (idempotent - safe to run every time)
-	echo "Running database migrations..."
-	docker compose {{compose_cmd}} exec postgres psql -U sagebase_user -d sagebase_db -f /docker-entrypoint-initdb.d/02_run_migrations.sql 2>&1 | grep -v "^psql:" | grep -v "^$" || true
+	# Run database migrations with Alembic (idempotent - safe to run every time)
+	echo "Running database migrations with Alembic..."
+	docker compose {{compose_cmd}} exec sagebase uv run alembic upgrade head 2>&1 || true
 	echo "✅ Migrations complete!"
 	# Note: Playwright is pre-installed in Dockerfile, no need to install here
 	# Run test-setup.sh if it exists (for initial database setup)
@@ -139,12 +139,38 @@ up: _setup_worktree
 db: _setup_worktree
 	docker compose {{compose_cmd}} exec postgres psql -U sagebase_user -d sagebase_db
 
-# Run database migrations (safe to run multiple times, won't lose data)
+# Run database migrations with Alembic (safe to run multiple times, won't lose data)
 migrate: _setup_worktree
 	#!/bin/bash
-	echo "Running database migrations..."
+	echo "Running database migrations with Alembic..."
+	docker compose {{compose_cmd}} exec sagebase uv run alembic upgrade head
+	echo "✅ Migrations complete!"
+
+# Rollback the last migration
+migrate-rollback: _setup_worktree
+	#!/bin/bash
+	echo "Rolling back last migration..."
+	docker compose {{compose_cmd}} exec sagebase uv run alembic downgrade -1
+	echo "✅ Rollback complete!"
+
+# Show current migration version
+migrate-current: _setup_worktree
+	docker compose {{compose_cmd}} exec sagebase uv run alembic current
+
+# Show migration history
+migrate-history: _setup_worktree
+	docker compose {{compose_cmd}} exec sagebase uv run alembic history
+
+# Create a new migration file
+migrate-new message: _setup_worktree
+	docker compose {{compose_cmd}} exec sagebase uv run alembic revision -m "{{message}}"
+
+# Run legacy SQL migrations (for backward compatibility during transition)
+migrate-legacy: _setup_worktree
+	#!/bin/bash
+	echo "Running legacy SQL migrations..."
 	docker compose {{compose_cmd}} exec postgres psql -U sagebase_user -d sagebase_db -f /docker-entrypoint-initdb.d/02_run_migrations.sql
-	echo "Migrations complete!"
+	echo "Legacy migrations complete!"
 
 # Run tests with type checking
 test: _setup_worktree

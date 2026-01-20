@@ -1,111 +1,188 @@
 ---
 name: migration-helper
-description: Assists in creating database migrations for Polibase. Activates when creating migration files, modifying database schema, or adding tables/columns/indexes. Ensures sequential numbering, proper naming, and mandatory addition to 02_run_migrations.sql to prevent inconsistent database states.
+description: Assists in creating database migrations for Sagebase using Alembic. Activates when creating migration files, modifying database schema, or adding tables/columns/indexes. Ensures proper migration structure, rollback support, and Alembic best practices.
 ---
 
-# Migration Helper
+# Migration Helper (Alembic)
 
 ## Purpose
-Assist in creating database migrations following Polibase conventions and ensure proper integration with the migration system.
+Alembicを使用したデータベースマイグレーションの作成を支援します。
 
 ## When to Activate
-This skill activates automatically when:
-- Creating new migration files
-- Modifying database schema
-- Adding tables, columns, indexes, or constraints
-- User mentions "migration", "schema", or "database change"
+このスキルは以下の場合に自動的にアクティベートされます：
+- 新しいマイグレーションファイルを作成する時
+- データベーススキーマを変更する時
+- テーブル、カラム、インデックス、制約を追加する時
+- ユーザーが「migration」「schema」「database change」「マイグレーション」と言及した時
+- ロールバックやマイグレーション履歴について質問された時
 
-## ⚠️ CRITICAL: Mandatory Steps
+## 🚀 Quick Start
 
-**NEVER skip these steps when creating a migration:**
-
-1. **Find Latest Number**: Check `database/migrations/` for highest number
-2. **Create Migration File**: `database/migrations/XXX_description.sql`
-3. **⚠️ UPDATE RUN SCRIPT**: Add to `database/02_run_migrations.sql` (MANDATORY!)
-4. **Test Migration**: Run `./reset-database.sh` to verify
-
-**Skipping step 3 causes inconsistent database states!**
-
-## Quick Checklist
-
-Before completing a migration:
-
-- [ ] **Sequential Number**: Incremented from latest migration
-- [ ] **File Created**: In `database/migrations/XXX_description.sql`
-- [ ] **⚠️ Run Script Updated**: Added to `database/02_run_migrations.sql`
-- [ ] **Idempotent**: Uses `IF NOT EXISTS`/`IF EXISTS`
-- [ ] **Comments**: Header and column comments included
-- [ ] **Indexes**: Created for foreign keys and query columns
-- [ ] **Tested**: Ran `./reset-database.sh` successfully
-
-## Migration Naming
-
-Format: `{number}_{description}.sql`
-
-Examples:
-- `013_create_llm_processing_history.sql`
-- `014_add_email_to_politicians.sql`
-- `015_create_index_on_speakers_name.sql`
-
-Guidelines:
-- Use descriptive names with action verbs
-- Use snake_case
-- Keep concise but clear
-
-## Common Patterns
-
-### Add Table
-```sql
-CREATE TABLE IF NOT EXISTS table_name (
-    id SERIAL PRIMARY KEY,
-    ...
-);
-```
-
-### Add Column
-```sql
-ALTER TABLE table_name
-    ADD COLUMN IF NOT EXISTS column_name type;
-```
-
-### Add Index
-```sql
-CREATE INDEX IF NOT EXISTS idx_table_column
-    ON table_name(column_name);
-```
-
-See [examples.md](examples.md) for detailed patterns.
-
-## Templates
-
-Use templates in `templates/` directory for:
-- New table creation
-- Column addition
-- Index creation
-- Foreign key addition
-- Enum type creation
-
-## Detailed Reference
-
-For comprehensive migration patterns and SQL details, see [reference.md](reference.md).
-
-## Testing
+### 新しいマイグレーションを作成
 
 ```bash
-# Reset database with all migrations
-./reset-database.sh
+# Docker環境内で作成（推奨）
+just migrate-new "add_email_to_politicians"
 
-# Verify migration applied
-docker compose -f docker/docker-compose.yml [-f docker/docker-compose.override.yml] exec postgres \
-    psql -U sagebase_user -d sagebase_db \
-    -c "\d table_name"
+# または直接Alembicコマンド
+docker compose exec sagebase uv run alembic revision -m "add_email_to_politicians"
 ```
 
-## Common Pitfalls
+### マイグレーションを実行
 
-1. **❌ Forgetting 02_run_migrations.sql**: Most common mistake!
-2. **❌ Non-idempotent SQL**: Use `IF NOT EXISTS`
-3. **❌ Missing data migration**: Update existing rows before adding NOT NULL
-4. **❌ Breaking foreign keys**: Drop constraints before dropping tables
+```bash
+# 未適用のマイグレーションを全て適用
+just migrate
 
-See [reference.md](reference.md) for detailed pitfall explanations.
+# 1つ前に戻す
+just migrate-rollback
+```
+
+## ⚠️ CRITICAL: 必須チェックリスト
+
+マイグレーション作成時に必ず確認：
+
+- [ ] **upgrade() 実装**: スキーマ変更のSQLを記述
+- [ ] **downgrade() 実装**: ロールバック用のSQLを記述（必須！）
+- [ ] **冪等性確保**: `IF NOT EXISTS` / `IF EXISTS` を使用
+- [ ] **テスト**: `just migrate` で適用確認
+- [ ] **ロールバックテスト**: `just migrate-rollback` で戻せることを確認
+
+## コマンドリファレンス
+
+### justfile コマンド
+
+| コマンド | 説明 |
+|---------|------|
+| `just migrate` | 未適用マイグレーションを全て適用 |
+| `just migrate-rollback` | 1つ前の状態に戻す |
+| `just migrate-current` | 現在適用されているバージョンを表示 |
+| `just migrate-history` | マイグレーション履歴を表示 |
+| `just migrate-new "説明"` | 新しいマイグレーションファイルを作成 |
+| `just migrate-legacy` | レガシーSQL方式で実行（互換性用） |
+
+### sagebase CLI コマンド
+
+```bash
+sagebase migrate              # マイグレーション実行
+sagebase migrate-rollback     # ロールバック（-n オプションで複数可）
+sagebase migrate-status       # 現在のバージョン確認
+sagebase migrate-history      # 履歴確認
+sagebase migrate-new "説明"   # 新規作成
+```
+
+### 直接 Alembic コマンド
+
+```bash
+# Docker内で実行
+docker compose exec sagebase uv run alembic upgrade head
+docker compose exec sagebase uv run alembic downgrade -1
+docker compose exec sagebase uv run alembic current
+docker compose exec sagebase uv run alembic history --verbose
+docker compose exec sagebase uv run alembic revision -m "説明"
+```
+
+## マイグレーションファイル構造
+
+```python
+"""Add email column to politicians table.
+
+Revision ID: 003
+Revises: 002
+Create Date: 2025-01-20
+"""
+
+from alembic import op
+
+
+revision = "003"
+down_revision = "002"
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    """Apply migration: Add email column."""
+    op.execute("""
+        ALTER TABLE politicians
+        ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+
+        COMMENT ON COLUMN politicians.email IS 'Politician email address';
+
+        CREATE INDEX IF NOT EXISTS idx_politicians_email
+        ON politicians(email);
+    """)
+
+
+def downgrade() -> None:
+    """Rollback migration: Remove email column."""
+    op.execute("""
+        DROP INDEX IF EXISTS idx_politicians_email;
+
+        ALTER TABLE politicians
+        DROP COLUMN IF EXISTS email;
+    """)
+```
+
+## 基本パターン
+
+### カラム追加
+
+```python
+def upgrade() -> None:
+    op.execute("""
+        ALTER TABLE table_name
+        ADD COLUMN IF NOT EXISTS column_name VARCHAR(255);
+    """)
+
+def downgrade() -> None:
+    op.execute("""
+        ALTER TABLE table_name
+        DROP COLUMN IF EXISTS column_name;
+    """)
+```
+
+### テーブル作成
+
+```python
+def upgrade() -> None:
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS new_table (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+
+def downgrade() -> None:
+    op.execute("""
+        DROP TABLE IF EXISTS new_table;
+    """)
+```
+
+### インデックス追加
+
+```python
+def upgrade() -> None:
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS idx_table_column
+        ON table_name(column_name);
+    """)
+
+def downgrade() -> None:
+    op.execute("""
+        DROP INDEX IF EXISTS idx_table_column;
+    """)
+```
+
+## 詳細リファレンス
+
+- [examples.md](examples.md) - 実践的なマイグレーション例
+- [reference.md](reference.md) - 詳細なパターンとベストプラクティス
+
+## レガシーマイグレーションについて
+
+既存の `database/migrations/` 配下の45個のSQLファイルは履歴として保持されています。
+**新規マイグレーションは必ずAlembicを使用してください。**
+
+`just migrate-legacy` は互換性のために残されていますが、通常は使用しません。
