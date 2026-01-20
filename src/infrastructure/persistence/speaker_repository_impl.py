@@ -6,14 +6,12 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.application.dtos.speaker_dto import (
-    SpeakerWithConversationCountDTO,
-    SpeakerWithPoliticianDTO,
-)
+from src.application.dtos.speaker_dto import SpeakerWithConversationCountDTO
 from src.domain.entities.politician import Politician
 from src.domain.entities.speaker import Speaker
 from src.domain.repositories.session_adapter import ISessionAdapter
 from src.domain.repositories.speaker_repository import SpeakerRepository
+from src.domain.value_objects.speaker_with_politician import SpeakerWithPolitician
 from src.infrastructure.persistence.base_repository_impl import BaseRepositoryImpl
 
 
@@ -512,7 +510,7 @@ class SpeakerRepositoryImpl(BaseRepositoryImpl[Speaker], SpeakerRepository):
 
     async def find_by_matched_user(
         self, user_id: "UUID | None" = None
-    ) -> list[SpeakerWithPoliticianDTO]:
+    ) -> list[SpeakerWithPolitician]:
         """指定されたユーザーIDによってマッチングされた発言者と政治家情報を取得する
 
         Args:
@@ -574,9 +572,9 @@ class SpeakerRepositoryImpl(BaseRepositoryImpl[Speaker], SpeakerRepository):
                     district=getattr(row, "politician_district", "") or "",
                 )
 
-            # Create DTO with speaker and politician
+            # Create Value Object with speaker and politician
             results.append(
-                SpeakerWithPoliticianDTO(speaker=speaker, politician=politician)
+                SpeakerWithPolitician(speaker=speaker, politician=politician)
             )
 
         return results
