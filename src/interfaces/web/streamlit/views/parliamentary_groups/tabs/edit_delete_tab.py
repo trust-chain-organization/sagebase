@@ -5,6 +5,7 @@
 
 from typing import Any
 
+import pandas as pd
 import streamlit as st
 
 from src.interfaces.web.streamlit.presenters.parliamentary_group_presenter import (
@@ -79,8 +80,38 @@ def render_edit_delete_tab(presenter: ParliamentaryGroupPresenter) -> None:
 
     with col2:
         st.markdown("#### メンバー情報")
-        # メンバー情報表示（See: Issue #978）
-        st.write("メンバー数: 0名")  # Placeholder
+        # Presenterのメソッドを通じてメンバーシップを取得
+        memberships = presenter.get_memberships_by_group(selected_group.id)
+
+        if memberships:
+            # アクティブメンバー数をカウント
+            active_count = sum(1 for m in memberships if m["is_active"])
+            st.write(f"現在のメンバー数: {active_count}名")
+
+            # 表示用にデータを整形
+            display_data = []
+            for m in memberships:
+                start_date_str = (
+                    m["start_date"].strftime("%Y-%m-%d") if m["start_date"] else "-"
+                )
+                end_date_str = (
+                    m["end_date"].strftime("%Y-%m-%d") if m["end_date"] else "現在"
+                )
+                display_data.append(
+                    {
+                        "政治家": m["politician_name"],
+                        "役職": m["role"] or "-",
+                        "開始日": start_date_str,
+                        "終了日": end_date_str,
+                    }
+                )
+
+            # DataFrameで表示
+            if display_data:
+                df = pd.DataFrame(display_data)
+                st.dataframe(df, use_container_width=True, hide_index=True, height=200)
+        else:
+            st.info("メンバーが登録されていません")
 
         st.markdown("#### 削除")
         st.warning("⚠️ 議員団を削除すると、所属履歴も削除されます")

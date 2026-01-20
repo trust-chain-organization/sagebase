@@ -82,7 +82,7 @@ def render_memberships_list_tab(presenter: ParliamentaryGroupPresenter) -> None:
         )
 
         if all_memberships:
-            _display_memberships(presenter, all_memberships, all_groups)
+            _display_memberships(all_memberships, all_groups)
         else:
             st.info("メンバーシップが登録されていません")
 
@@ -98,8 +98,10 @@ def _get_memberships(
     conf_to_groups: dict[int, list[Any]],
     all_groups: list[Any],
     group_map: dict[str, int | None],
-) -> list[Any]:
+) -> list[dict[str, Any]]:
     """Get memberships based on filters.
+
+    Presenterのメソッドを通じてメンバーシップを取得します。
 
     Args:
         presenter: 議員団プレゼンター
@@ -111,11 +113,10 @@ def _get_memberships(
         group_map: 議員団名からIDへのマップ
 
     Returns:
-        メンバーシップのリスト
+        メンバーシップ情報のリスト（dict形式）
     """
     if selected_group == "すべて":
         # Get all memberships for selected conference or all
-        all_memberships = []
         if selected_conf == "すべて":
             groups_to_query = all_groups
         else:
@@ -125,31 +126,28 @@ def _get_memberships(
             else:
                 groups_to_query = []
 
-        for group in groups_to_query:
-            if group.id:
-                memberships = presenter.membership_repo.get_by_group(group.id)
-                all_memberships.extend(memberships)
+        # Presenterのメソッドを使用して複数グループのメンバーシップを取得
+        group_ids = [g.id for g in groups_to_query if g.id]
+        return presenter.get_memberships_for_groups(group_ids)
     else:
         # Get memberships for specific group
         group_id = group_map.get(selected_group)
         if group_id is not None:
-            all_memberships = presenter.membership_repo.get_by_group(group_id)
+            return presenter.get_memberships_by_group(group_id)
         else:
-            all_memberships = []
-
-    return all_memberships
+            return []
 
 
 def _display_memberships(
-    presenter: ParliamentaryGroupPresenter,
-    all_memberships: list[Any],
+    all_memberships: list[dict[str, Any]],
     all_groups: list[Any],
 ) -> None:
     """Display memberships in a table.
 
+    Presenterから取得したメンバーシップ情報を表形式で表示します。
+
     Args:
-        presenter: 議員団プレゼンター
-        all_memberships: メンバーシップのリスト
+        all_memberships: メンバーシップ情報のリスト（dict形式）
         all_groups: すべての議員団
     """
     # Prepare data for display
@@ -157,35 +155,32 @@ def _display_memberships(
     for membership in all_memberships:
         # Get group name
         group = next(
-            (g for g in all_groups if g.id == membership.parliamentary_group_id),
+            (g for g in all_groups if g.id == membership["parliamentary_group_id"]),
             None,
         )
         group_name = group.name if group else "不明"
 
-        # Get politician name
-        try:
-            politician = presenter.politician_repo.get_by_id(membership.politician_id)
-            politician_name = politician.name if politician else "不明"
-        except Exception:
-            politician_name = "不明"
-
         # Format dates
         start_date_str = (
-            membership.start_date.strftime("%Y-%m-%d") if membership.start_date else "-"
+            membership["start_date"].strftime("%Y-%m-%d")
+            if membership["start_date"]
+            else "-"
         )
         end_date_str = (
-            membership.end_date.strftime("%Y-%m-%d") if membership.end_date else "現在"
+            membership["end_date"].strftime("%Y-%m-%d")
+            if membership["end_date"]
+            else "現在"
         )
 
         membership_data.append(
             {
-                "ID": membership.id,
+                "ID": membership["id"],
                 "議員団": group_name,
-                "政治家": politician_name,
-                "役職": membership.role or "-",
+                "政治家": membership["politician_name"],
+                "役職": membership["role"] or "-",
                 "開始日": start_date_str,
                 "終了日": end_date_str,
-                "状態": "現在" if membership.end_date is None else "過去",
+                "状態": "現在" if membership["is_active"] else "過去",
             }
         )
 
@@ -199,8 +194,8 @@ def _display_memberships(
     with col1:
         st.metric("総メンバーシップ数", len(all_memberships))
     with col2:
-        active_count = sum(1 for m in all_memberships if m.end_date is None)
+        active_count = sum(1 for m in all_memberships if m["is_active"])
         st.metric("現在のメンバー数", active_count)
     with col3:
-        past_count = sum(1 for m in all_memberships if m.end_date is not None)
+        past_count = sum(1 for m in all_memberships if not m["is_active"])
         st.metric("過去のメンバー数", past_count)

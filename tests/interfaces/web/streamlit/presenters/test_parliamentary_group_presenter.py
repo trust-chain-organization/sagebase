@@ -433,6 +433,153 @@ class TestHandleAction:
             presenter.handle_action("unknown")
 
 
+class TestGetMembershipsByGroup:
+    """get_memberships_by_groupメソッドのテスト"""
+
+    async def test_get_memberships_by_group_success(self, presenter):
+        """議員団のメンバーシップを取得できることを確認"""
+        from datetime import date
+        from unittest.mock import MagicMock
+
+        from src.domain.entities.parliamentary_group_membership import (
+            ParliamentaryGroupMembership,
+        )
+        from src.domain.entities.politician import Politician
+
+        # Arrange
+        mock_membership = MagicMock(spec=ParliamentaryGroupMembership)
+        mock_membership.id = 1
+        mock_membership.politician_id = 10
+        mock_membership.parliamentary_group_id = 100
+        mock_membership.role = "幹事長"
+        mock_membership.start_date = date(2023, 1, 1)
+        mock_membership.end_date = None
+
+        mock_politician = MagicMock(spec=Politician)
+        mock_politician.name = "山田太郎"
+
+        presenter.membership_repo = MagicMock()
+        presenter.membership_repo.get_by_group = AsyncMock(
+            return_value=[mock_membership]
+        )
+        presenter.politician_repo = MagicMock()
+        presenter.politician_repo.get_by_id = AsyncMock(return_value=mock_politician)
+
+        # Act
+        result = await presenter._get_memberships_by_group_async(100)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0]["id"] == 1
+        assert result[0]["politician_name"] == "山田太郎"
+        assert result[0]["role"] == "幹事長"
+        assert result[0]["is_active"] is True
+
+    async def test_get_memberships_by_group_politician_not_found(self, presenter):
+        """政治家が見つからない場合に「不明」を返すことを確認"""
+        from datetime import date
+        from unittest.mock import MagicMock
+
+        from src.domain.entities.parliamentary_group_membership import (
+            ParliamentaryGroupMembership,
+        )
+
+        # Arrange
+        mock_membership = MagicMock(spec=ParliamentaryGroupMembership)
+        mock_membership.id = 1
+        mock_membership.politician_id = 10
+        mock_membership.parliamentary_group_id = 100
+        mock_membership.role = None
+        mock_membership.start_date = date(2023, 1, 1)
+        mock_membership.end_date = date(2024, 1, 1)
+
+        presenter.membership_repo = MagicMock()
+        presenter.membership_repo.get_by_group = AsyncMock(
+            return_value=[mock_membership]
+        )
+        presenter.politician_repo = MagicMock()
+        presenter.politician_repo.get_by_id = AsyncMock(
+            side_effect=Exception("Not found")
+        )
+
+        # Act
+        result = await presenter._get_memberships_by_group_async(100)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0]["politician_name"] == "不明"
+        assert result[0]["is_active"] is False
+
+    async def test_get_memberships_by_group_exception(self, presenter):
+        """リポジトリで例外発生時に空リストを返すことを確認"""
+        # Arrange
+        presenter.membership_repo = MagicMock()
+        presenter.membership_repo.get_by_group = AsyncMock(
+            side_effect=Exception("Database error")
+        )
+
+        # Act
+        result = await presenter._get_memberships_by_group_async(100)
+
+        # Assert
+        assert result == []
+
+
+class TestGetMembershipsForGroups:
+    """get_memberships_for_groupsメソッドのテスト"""
+
+    async def test_get_memberships_for_groups_success(self, presenter):
+        """複数の議員団のメンバーシップを取得できることを確認"""
+        from datetime import date
+        from unittest.mock import MagicMock
+
+        from src.domain.entities.parliamentary_group_membership import (
+            ParliamentaryGroupMembership,
+        )
+        from src.domain.entities.politician import Politician
+
+        # Arrange
+        def create_mock_membership(id, group_id, politician_id):
+            mock = MagicMock(spec=ParliamentaryGroupMembership)
+            mock.id = id
+            mock.politician_id = politician_id
+            mock.parliamentary_group_id = group_id
+            mock.role = None
+            mock.start_date = date(2023, 1, 1)
+            mock.end_date = None
+            return mock
+
+        mock_memberships_group1 = [create_mock_membership(1, 100, 10)]
+        mock_memberships_group2 = [
+            create_mock_membership(2, 101, 11),
+            create_mock_membership(3, 101, 12),
+        ]
+
+        mock_politician = MagicMock(spec=Politician)
+        mock_politician.name = "テスト政治家"
+
+        presenter.membership_repo = MagicMock()
+        presenter.membership_repo.get_by_group = AsyncMock(
+            side_effect=[mock_memberships_group1, mock_memberships_group2]
+        )
+        presenter.politician_repo = MagicMock()
+        presenter.politician_repo.get_by_id = AsyncMock(return_value=mock_politician)
+
+        # Act
+        result = await presenter._get_memberships_for_groups_async([100, 101])
+
+        # Assert
+        assert len(result) == 3
+
+    async def test_get_memberships_for_groups_empty(self, presenter):
+        """空のグループIDリストで空リストを返すことを確認"""
+        # Act
+        result = await presenter._get_memberships_for_groups_async([])
+
+        # Assert
+        assert result == []
+
+
 class TestCreatedGroupsManagement:
     """作成した議員団の管理テスト"""
 
