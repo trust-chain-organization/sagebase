@@ -78,7 +78,6 @@ from src.application.dtos.speaker_dto import (
     CreateSpeakerDTO,
     SpeakerDTO,
     SpeakerMatchingDTO,
-    SpeakerWithConversationCountDTO,
     UpdateSpeakerDTO,
 )
 from src.application.dtos.web_page_content_dto import WebPageContentDTO
@@ -142,7 +141,6 @@ __all__ = [
     "CreateSpeakerDTO",
     "SpeakerDTO",
     "SpeakerMatchingDTO",
-    "SpeakerWithConversationCountDTO",
     "UpdateSpeakerDTO",
     # Web Page Content DTOs
     "WebPageContentDTO",

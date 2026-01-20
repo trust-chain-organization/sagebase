@@ -6,11 +6,13 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.application.dtos.speaker_dto import SpeakerWithConversationCountDTO
 from src.domain.entities.politician import Politician
 from src.domain.entities.speaker import Speaker
 from src.domain.repositories.session_adapter import ISessionAdapter
 from src.domain.repositories.speaker_repository import SpeakerRepository
+from src.domain.value_objects.speaker_with_conversation_count import (
+    SpeakerWithConversationCount,
+)
 from src.domain.value_objects.speaker_with_politician import SpeakerWithPolitician
 from src.infrastructure.persistence.base_repository_impl import BaseRepositoryImpl
 
@@ -165,7 +167,7 @@ class SpeakerRepositoryImpl(BaseRepositoryImpl[Speaker], SpeakerRepository):
         offset: int | None = None,
         speaker_type: str | None = None,
         is_politician: bool | None = None,
-    ) -> list[SpeakerWithConversationCountDTO]:
+    ) -> list[SpeakerWithConversationCount]:
         """Get speakers with their conversation count."""
         # Build the WHERE clause conditions
         conditions = []
@@ -212,9 +214,9 @@ class SpeakerRepositoryImpl(BaseRepositoryImpl[Speaker], SpeakerRepository):
         result = await self.session.execute(query, params)
         rows = result.fetchall()
 
-        # Convert rows to DTOs
+        # Convert rows to Value Objects
         return [
-            SpeakerWithConversationCountDTO(
+            SpeakerWithConversationCount(
                 id=row.id,
                 name=row.name,
                 type=row.type,
