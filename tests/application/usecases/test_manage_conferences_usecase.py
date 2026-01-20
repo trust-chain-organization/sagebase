@@ -17,6 +17,7 @@ from src.application.usecases.manage_conferences_usecase import (
     UpdateConferenceOutputDto,
 )
 from src.domain.entities.conference import Conference
+from src.domain.entities.meeting import Meeting
 
 
 class TestManageConferencesUseCase:
@@ -291,6 +292,69 @@ class TestManageConferencesUseCase:
         # Assert
         assert result.success is False
         assert "Delete failed" in result.error_message
+
+    @pytest.mark.asyncio
+    async def test_delete_conference_with_related_meetings_error(
+        self, mock_conference_repository
+    ):
+        """Test deleting a conference with related meetings returns error."""
+        # Arrange
+        mock_meeting_repository = AsyncMock()
+        use_case = ManageConferencesUseCase(
+            conference_repository=mock_conference_repository,
+            meeting_repository=mock_meeting_repository,
+        )
+        existing_conference = Conference(id=1, name="東京都議会", governing_body_id=13)
+        mock_conference_repository.get_by_id.return_value = existing_conference
+        # Return a meeting to indicate related meetings exist
+        from datetime import date as datetime_date
+
+        mock_meeting_repository.get_by_conference.return_value = [
+            Meeting(
+                id=1,
+                conference_id=1,
+                date=datetime_date(2024, 1, 1),
+                url="http://example.com/meeting1",
+            )
+        ]
+
+        input_dto = DeleteConferenceInputDto(id=1)
+
+        # Act
+        result = await use_case.delete_conference(input_dto)
+
+        # Assert
+        assert result.success is False
+        assert "関連する会議が存在するため削除できません" in result.error_message
+        mock_conference_repository.delete.assert_not_called()
+        mock_meeting_repository.get_by_conference.assert_called_once_with(1, limit=1)
+
+    @pytest.mark.asyncio
+    async def test_delete_conference_no_related_meetings_success(
+        self, mock_conference_repository
+    ):
+        """Test deleting a conference with no related meetings succeeds."""
+        # Arrange
+        mock_meeting_repository = AsyncMock()
+        use_case = ManageConferencesUseCase(
+            conference_repository=mock_conference_repository,
+            meeting_repository=mock_meeting_repository,
+        )
+        existing_conference = Conference(id=1, name="東京都議会", governing_body_id=13)
+        mock_conference_repository.get_by_id.return_value = existing_conference
+        # Return empty list to indicate no related meetings
+        mock_meeting_repository.get_by_conference.return_value = []
+        mock_conference_repository.delete.return_value = None
+
+        input_dto = DeleteConferenceInputDto(id=1)
+
+        # Act
+        result = await use_case.delete_conference(input_dto)
+
+        # Assert
+        assert result.success is True
+        mock_conference_repository.delete.assert_called_once_with(1)
+        mock_meeting_repository.get_by_conference.assert_called_once_with(1, limit=1)
 
     @pytest.mark.asyncio
     async def test_generate_seed_file_success(

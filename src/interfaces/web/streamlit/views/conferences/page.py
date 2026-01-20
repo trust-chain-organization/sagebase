@@ -26,6 +26,9 @@ from src.infrastructure.persistence.extracted_conference_member_repository_impl 
 from src.infrastructure.persistence.governing_body_repository_impl import (
     GoverningBodyRepositoryImpl,
 )
+from src.infrastructure.persistence.meeting_repository_impl import (
+    MeetingRepositoryImpl,
+)
 from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
 from src.interfaces.web.streamlit.presenters.conference_presenter import (
     ConferencePresenter,
@@ -44,10 +47,14 @@ def render_conferences_page() -> None:
     conference_repo = RepositoryAdapter(ConferenceRepositoryImpl)
     governing_body_repo = RepositoryAdapter(GoverningBodyRepositoryImpl)
     extracted_member_repo = RepositoryAdapter(ExtractedConferenceMemberRepositoryImpl)
+    meeting_repo = RepositoryAdapter(MeetingRepositoryImpl)
 
     # Initialize use case and presenter
     # Type: ignore - RepositoryAdapter duck-types as repository protocol
-    use_case = ManageConferencesUseCase(conference_repo)  # type: ignore[arg-type]
+    use_case = ManageConferencesUseCase(
+        conference_repo,  # type: ignore[arg-type]
+        meeting_repo,  # type: ignore[arg-type]
+    )
     presenter = ConferencePresenter(use_case)
 
     # Create tabs

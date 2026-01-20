@@ -138,21 +138,28 @@ class MeetingRepositoryImpl(BaseRepositoryImpl[Meeting], MeetingRepository):
         """Get all meetings for a conference."""
         async_executor = self._get_async_executor()
         if async_executor:
-            query = select(self.model_class).where(
-                self.model_class.conference_id == conference_id
+            # Use raw SQL for async session to avoid model_class issues
+            from sqlalchemy import text
+
+            sql = (
+                "SELECT * FROM meetings "
+                "WHERE conference_id = :conference_id ORDER BY date DESC"
             )
+            params: dict[str, Any] = {"conference_id": conference_id}
             if limit:
-                query = query.limit(limit)
-            query = query.order_by(self.model_class.date.desc())
-            result = await async_executor.execute(query)
-            models = result.scalars().all()
-            return [self._to_entity(model) for model in models]
+                sql += " LIMIT :limit"
+                params["limit"] = limit
+            result = await async_executor.execute(text(sql), params)
+            return [self._dict_to_entity(dict(row._mapping)) for row in result]  # type: ignore
         else:
             # Use raw SQL for sync session
             if self.sync_session:
                 from sqlalchemy import text
 
-                sql = "SELECT * FROM meetings WHERE conference_id = :conference_id"
+                sql = (
+                    "SELECT * FROM meetings "
+                    "WHERE conference_id = :conference_id ORDER BY date DESC"
+                )
                 params = {"conference_id": conference_id}
                 if limit:
                     sql += " LIMIT :limit"

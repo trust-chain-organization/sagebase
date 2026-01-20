@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from src.common.logging import get_logger
 from src.domain.entities import Conference
 from src.domain.repositories.conference_repository import ConferenceRepository
+from src.domain.repositories.meeting_repository import MeetingRepository
 
 
 logger = get_logger(__name__)
@@ -95,13 +96,19 @@ class GenerateSeedFileOutputDto:
 class ManageConferencesUseCase:
     """Use case for managing conferences."""
 
-    def __init__(self, conference_repository: ConferenceRepository):
+    def __init__(
+        self,
+        conference_repository: ConferenceRepository,
+        meeting_repository: MeetingRepository | None = None,
+    ):
         """Initialize the use case.
 
         Args:
             conference_repository: Repository instance (can be sync or async)
+            meeting_repository: Meeting repository for deletion checks (optional)
         """
         self.conference_repository = conference_repository
+        self.meeting_repository = meeting_repository
 
     async def list_conferences(
         self, input_dto: ConferenceListInputDto
@@ -214,7 +221,17 @@ class ManageConferencesUseCase:
                     success=False, error_message="会議体が見つかりません。"
                 )
 
-            # 関連会議チェック（See: Issue #983）
+            # 関連会議の存在チェック
+            if self.meeting_repository:
+                meetings = await self.meeting_repository.get_by_conference(
+                    input_dto.id, limit=1
+                )
+                if meetings:
+                    return DeleteConferenceOutputDto(
+                        success=False,
+                        error_message="関連する会議が存在するため削除できません。先に会議を削除してください。",
+                    )
+
             await self.conference_repository.delete(input_dto.id)
             return DeleteConferenceOutputDto(success=True)
         except Exception as e:

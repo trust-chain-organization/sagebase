@@ -132,20 +132,10 @@ class TestMeetingRepositoryImpl:
         sample_meeting_dict: dict[str, Any],
     ) -> None:
         """Test get_by_conference returns list of meetings."""
-        mock_meeting1 = MagicMock()
-        mock_meeting1.id = 1
-        mock_meeting1.conference_id = 10
-        mock_meeting1.date = date(2024, 1, 15)
-        mock_meeting1.url = "https://example.com/meeting"
-        mock_meeting1.name = "本会議"
-        mock_meeting1.gcs_pdf_uri = "gs://bucket/meeting.pdf"
-        mock_meeting1.gcs_text_uri = "gs://bucket/meeting.txt"
-        mock_meeting1.attendees_mapping = None
-
+        mock_row = MagicMock()
+        mock_row._mapping = sample_meeting_dict
         mock_result = MagicMock()
-        mock_result.scalars = MagicMock(
-            return_value=MagicMock(all=MagicMock(return_value=[mock_meeting1]))
-        )
+        mock_result.__iter__ = MagicMock(return_value=iter([mock_row]))
         mock_session.execute.return_value = mock_result
 
         result = await repository.get_by_conference(10)
@@ -160,9 +150,7 @@ class TestMeetingRepositoryImpl:
     ) -> None:
         """Test get_by_conference with limit."""
         mock_result = MagicMock()
-        mock_result.scalars = MagicMock(
-            return_value=MagicMock(all=MagicMock(return_value=[]))
-        )
+        mock_result.__iter__ = MagicMock(return_value=iter([]))
         mock_session.execute.return_value = mock_result
 
         result = await repository.get_by_conference(10, limit=5)
