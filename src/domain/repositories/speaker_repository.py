@@ -5,9 +5,11 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from src.application.dtos.speaker_dto import SpeakerWithConversationCountDTO
 from src.domain.entities.speaker import Speaker
 from src.domain.repositories.base import BaseRepository
+from src.domain.value_objects.speaker_with_conversation_count import (
+    SpeakerWithConversationCount,
+)
 from src.domain.value_objects.speaker_with_politician import SpeakerWithPolitician
 
 
@@ -46,7 +48,7 @@ class SpeakerRepository(BaseRepository[Speaker]):
         offset: int | None = None,
         speaker_type: str | None = None,
         is_politician: bool | None = None,
-    ) -> list[SpeakerWithConversationCountDTO]:
+    ) -> list[SpeakerWithConversationCount]:
         """Get speakers with their conversation count."""
         pass
 

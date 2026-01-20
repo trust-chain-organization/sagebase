@@ -4,22 +4,6 @@ from dataclasses import dataclass
 
 
 @dataclass
-class SpeakerWithConversationCountDTO:
-    """発言者と発言回数のDTO
-
-    リポジトリコントラクトで使用されます。
-    """
-
-    id: int
-    name: str
-    type: str | None
-    political_party_name: str | None
-    position: str | None
-    is_politician: bool
-    conversation_count: int
-
-
-@dataclass
 class CreateSpeakerDTO:
     """DTO for creating a speaker."""
 
@@ -76,5 +60,4 @@ __all__ = [
     "UpdateSpeakerDTO",
     "SpeakerDTO",
     "SpeakerMatchingDTO",
-    "SpeakerWithConversationCountDTO",
 ]
