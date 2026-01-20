@@ -17,6 +17,7 @@ from src.interfaces.cli.commands.coverage_commands import get_coverage_commands
 from src.interfaces.cli.commands.di_example_commands import get_di_example_commands
 from src.interfaces.cli.commands.evaluation_commands import get_evaluation_commands
 from src.interfaces.cli.commands.maintenance_commands import get_maintenance_commands
+from src.interfaces.cli.commands.migration_commands import get_migration_commands
 from src.interfaces.cli.commands.parliamentary_group_commands import (
     get_parliamentary_group_commands,
 )
@@ -104,6 +105,7 @@ def register_legacy_commands(cli_group: click.Group) -> None:
         get_prompt_commands,
         get_di_example_commands,
         get_maintenance_commands,
+        get_migration_commands,
     ]
 
     for getter in command_getters:

@@ -92,7 +92,26 @@ just exec uv run sagebase database backup
 just exec uv run sagebase database restore backup.sql
 
 # Reset database
-./reset-database.sh
+just clean && just up
+```
+
+### Migration Commands (Alembic)
+
+```bash
+# Run migrations (apply all pending)
+just migrate
+
+# Rollback last migration
+just migrate-rollback
+
+# Show current version
+just migrate-current
+
+# Show migration history
+just migrate-history
+
+# Create new migration
+just migrate-new "add_column_to_table"
 ```
 
 ## Command Categories
@@ -101,9 +120,10 @@ just exec uv run sagebase database restore backup.sql
 2. **Application Execution**: Process minutes, scrape, UI
 3. **Testing**: pytest, coverage, evaluation
 4. **Code Quality**: ruff, pyright, pre-commit
-5. **Database**: backup, restore, migrations
-6. **Conference Members**: Extract, match, create affiliations
-7. **Parliamentary Groups**: Extract, match, memberships
+5. **Database**: backup, restore, connect
+6. **Migrations**: Alembic (migrate, rollback, history)
+7. **Conference Members**: Extract, match, create affiliations
+8. **Parliamentary Groups**: Extract, match, memberships
 
 ## Detailed Reference
 
