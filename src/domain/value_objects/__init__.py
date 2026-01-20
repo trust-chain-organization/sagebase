@@ -3,6 +3,7 @@
 from src.domain.value_objects.page_classification import PageClassification, PageType
 from src.domain.value_objects.politician_match import PoliticianMatch
 from src.domain.value_objects.speaker_speech import SpeakerSpeech
+from src.domain.value_objects.speaker_with_politician import SpeakerWithPolitician
 
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "PageType",
     "PoliticianMatch",
     "SpeakerSpeech",
+    "SpeakerWithPolitician",
 ]

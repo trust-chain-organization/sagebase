@@ -9,7 +9,6 @@ import pytest
 from src.application.dtos.parliamentary_group_membership_dto import (
     ParliamentaryGroupMembershipWithRelationsDTO,
 )
-from src.application.dtos.speaker_dto import SpeakerWithPoliticianDTO
 from src.application.dtos.work_history_dto import WorkType
 from src.application.usecases.get_work_history_usecase import GetWorkHistoryUseCase
 from src.domain.entities.parliamentary_group import ParliamentaryGroup
@@ -23,6 +22,7 @@ from src.domain.entities.politician_operation_log import (
 )
 from src.domain.entities.speaker import Speaker
 from src.domain.entities.user import User
+from src.domain.value_objects.speaker_with_politician import SpeakerWithPolitician
 
 
 @pytest.mark.asyncio
@@ -49,7 +49,7 @@ async def test_get_work_history_all_types():
         matched_by_user_id=user_id,
         updated_at=datetime.now(),
     )
-    speaker_dto = SpeakerWithPoliticianDTO(speaker=speaker, politician=politician)
+    speaker_dto = SpeakerWithPolitician(speaker=speaker, politician=politician)
     speaker_repo.find_by_matched_user = AsyncMock(return_value=[speaker_dto])
 
     # 議員団メンバー作成作業のテストデータ
@@ -112,7 +112,7 @@ async def test_get_work_history_filter_by_user_id():
         matched_by_user_id=user_id_1,
         updated_at=datetime.now(),
     )
-    speaker1_dto = SpeakerWithPoliticianDTO(speaker=speaker1, politician=politician1)
+    speaker1_dto = SpeakerWithPolitician(speaker=speaker1, politician=politician1)
 
     speaker_repo.find_by_matched_user = AsyncMock(return_value=[speaker1_dto])
     membership_repo.find_by_created_user = AsyncMock(return_value=[])
@@ -154,7 +154,7 @@ async def test_get_work_history_filter_by_work_type_speaker_matching():
         matched_by_user_id=user_id,
         updated_at=datetime.now(),
     )
-    speaker_dto = SpeakerWithPoliticianDTO(speaker=speaker, politician=politician)
+    speaker_dto = SpeakerWithPolitician(speaker=speaker, politician=politician)
     speaker_repo.find_by_matched_user = AsyncMock(return_value=[speaker_dto])
 
     membership_repo.find_by_created_user = AsyncMock(return_value=[])
@@ -249,7 +249,7 @@ async def test_get_work_history_filter_by_date_range():
         matched_by_user_id=user_id,
         updated_at=datetime(2024, 1, 10, 10, 0),  # Within range
     )
-    speaker1_dto = SpeakerWithPoliticianDTO(speaker=speaker1, politician=politician1)
+    speaker1_dto = SpeakerWithPolitician(speaker=speaker1, politician=politician1)
 
     politician2 = Politician(
         id=2, name="Politician 2", prefecture="東京都", district="東京2区"
@@ -261,7 +261,7 @@ async def test_get_work_history_filter_by_date_range():
         matched_by_user_id=user_id,
         updated_at=datetime(2024, 1, 20, 10, 0),  # Outside range
     )
-    speaker2_dto = SpeakerWithPoliticianDTO(speaker=speaker2, politician=politician2)
+    speaker2_dto = SpeakerWithPolitician(speaker=speaker2, politician=politician2)
 
     speaker_repo.find_by_matched_user = AsyncMock(
         return_value=[speaker1_dto, speaker2_dto]
@@ -310,7 +310,7 @@ async def test_get_work_history_pagination():
             matched_by_user_id=user_id,
             updated_at=datetime(2024, 1, i + 1, 10, 0),
         )
-        speaker_dto = SpeakerWithPoliticianDTO(speaker=speaker, politician=politician)
+        speaker_dto = SpeakerWithPolitician(speaker=speaker, politician=politician)
         speaker_dtos.append(speaker_dto)
 
     speaker_repo.find_by_matched_user = AsyncMock(return_value=speaker_dtos)
@@ -386,7 +386,7 @@ async def test_get_work_history_speaker_without_updated_at():
         matched_by_user_id=user_id,
         updated_at=None,  # No timestamp
     )
-    speaker1_dto = SpeakerWithPoliticianDTO(speaker=speaker1, politician=politician1)
+    speaker1_dto = SpeakerWithPolitician(speaker=speaker1, politician=politician1)
 
     # Speaker with updated_at
     politician2 = Politician(
@@ -399,7 +399,7 @@ async def test_get_work_history_speaker_without_updated_at():
         matched_by_user_id=user_id,
         updated_at=datetime.now(),
     )
-    speaker2_dto = SpeakerWithPoliticianDTO(speaker=speaker2, politician=politician2)
+    speaker2_dto = SpeakerWithPolitician(speaker=speaker2, politician=politician2)
 
     speaker_repo.find_by_matched_user = AsyncMock(
         return_value=[speaker1_dto, speaker2_dto]
@@ -512,7 +512,7 @@ async def test_get_work_history_sorted_by_date_descending():
         matched_by_user_id=user_id,
         updated_at=datetime(2024, 1, 15, 10, 0),  # Later date
     )
-    speaker_dto = SpeakerWithPoliticianDTO(speaker=speaker, politician=politician1)
+    speaker_dto = SpeakerWithPolitician(speaker=speaker, politician=politician1)
 
     politician2 = Politician(
         id=2, name="Politician 2", prefecture="東京都", district="東京2区"

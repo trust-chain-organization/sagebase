@@ -5,12 +5,10 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from src.application.dtos.speaker_dto import (
-    SpeakerWithConversationCountDTO,
-    SpeakerWithPoliticianDTO,
-)
+from src.application.dtos.speaker_dto import SpeakerWithConversationCountDTO
 from src.domain.entities.speaker import Speaker
 from src.domain.repositories.base import BaseRepository
+from src.domain.value_objects.speaker_with_politician import SpeakerWithPolitician
 
 
 class SpeakerRepository(BaseRepository[Speaker]):
@@ -99,14 +97,14 @@ class SpeakerRepository(BaseRepository[Speaker]):
     @abstractmethod
     async def find_by_matched_user(
         self, user_id: "UUID | None" = None
-    ) -> list[SpeakerWithPoliticianDTO]:
+    ) -> list[SpeakerWithPolitician]:
         """指定されたユーザーIDによってマッチングされた発言者と政治家情報を取得する
 
         Args:
             user_id: フィルタリング対象のユーザーID（Noneの場合は全ユーザー）
 
         Returns:
-            発言者と紐付けられた政治家情報を含むDTOのリスト
+            発言者と紐付けられた政治家情報を含むValue Objectのリスト
         """
         pass
 
