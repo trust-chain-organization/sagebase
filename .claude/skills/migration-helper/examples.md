@@ -1,461 +1,643 @@
-# Migration Examples
+# Alembic Migration Examples
 
-This document provides real-world migration examples from the Polibase project.
+Sagebaseプロジェクトの実践的なAlembicマイグレーション例集です。
 
-## Example 1: Creating a New Table
+## Example 1: カラム追加（基本）
 
-Based on `013_create_llm_processing_history.sql`:
+```python
+"""Add email column to politicians table.
 
-```sql
--- Migration: 013 - Create LLM processing history table
--- Description: Track LLM API calls for auditing and debugging
--- Date: 2025-01-15
+Revision ID: 003
+Revises: 002
+Create Date: 2025-01-20
+"""
 
-CREATE TABLE IF NOT EXISTS llm_processing_history (
-    -- Primary key
-    id SERIAL PRIMARY KEY,
+from alembic import op
 
-    -- Request information
-    prompt TEXT NOT NULL,
-    model_name VARCHAR(100) NOT NULL,
-    temperature NUMERIC(3,2),
 
-    -- Response information
-    response TEXT,
-    tokens_used INTEGER,
-    processing_time_ms INTEGER,
+revision = "003"
+down_revision = "002"
+branch_labels = None
+depends_on = None
 
-    -- Metadata
-    status VARCHAR(50) NOT NULL DEFAULT 'pending',
-    error_message TEXT,
-    request_metadata JSONB,
 
-    -- Timestamps
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    completed_at TIMESTAMP
-);
+def upgrade() -> None:
+    """Add email column with index."""
+    op.execute("""
+        -- カラム追加
+        ALTER TABLE politicians
+        ADD COLUMN IF NOT EXISTS email VARCHAR(255);
 
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_llm_history_created
-    ON llm_processing_history(created_at DESC);
+        -- コメント追加
+        COMMENT ON COLUMN politicians.email IS 'Politician email address';
 
-CREATE INDEX IF NOT EXISTS idx_llm_history_status
-    ON llm_processing_history(status)
-    WHERE status != 'completed';  -- Partial index
+        -- インデックス追加
+        CREATE INDEX IF NOT EXISTS idx_politicians_email
+        ON politicians(email);
+    """)
 
-CREATE INDEX IF NOT EXISTS idx_llm_history_model
-    ON llm_processing_history(model_name, created_at DESC);
 
--- Comments
-COMMENT ON TABLE llm_processing_history IS 'History of LLM API calls for auditing and debugging';
-COMMENT ON COLUMN llm_processing_history.prompt IS 'Input prompt sent to LLM';
-COMMENT ON COLUMN llm_processing_history.tokens_used IS 'Number of tokens consumed';
-COMMENT ON COLUMN llm_processing_history.request_metadata IS 'Additional request context in JSON format';
+def downgrade() -> None:
+    """Remove email column and index."""
+    op.execute("""
+        DROP INDEX IF EXISTS idx_politicians_email;
+        ALTER TABLE politicians DROP COLUMN IF EXISTS email;
+    """)
 ```
 
-## Example 2: Adding Columns
+## Example 2: 新しいテーブル作成
 
-Based on `004_add_gcs_uri_to_meetings.sql`:
+```python
+"""Create audit_logs table.
 
-```sql
--- Migration: 004 - Add GCS URI columns to meetings
--- Description: Support Google Cloud Storage integration for meeting documents
--- Date: 2024-12-01
+Revision ID: 004
+Revises: 003
+Create Date: 2025-01-20
+"""
 
--- Add GCS URI columns
-ALTER TABLE meetings
-    ADD COLUMN IF NOT EXISTS gcs_pdf_uri VARCHAR(500),
-    ADD COLUMN IF NOT EXISTS gcs_text_uri VARCHAR(500);
+from alembic import op
 
--- Add comments
-COMMENT ON COLUMN meetings.gcs_pdf_uri IS 'Google Cloud Storage URI for PDF file (gs://bucket/path)';
-COMMENT ON COLUMN meetings.gcs_text_uri IS 'Google Cloud Storage URI for extracted text file';
 
--- Create index for queries filtering by GCS files
-CREATE INDEX IF NOT EXISTS idx_meetings_has_gcs_files
-    ON meetings(id)
-    WHERE gcs_pdf_uri IS NOT NULL;
-```
+revision = "004"
+down_revision = "003"
+branch_labels = None
+depends_on = None
 
-## Example 3: Adding a Column with Data Migration
 
-Based on `006_add_role_to_politician_affiliations.sql`:
-
-```sql
--- Migration: 006 - Add role column to politician_affiliations
--- Description: Track politician roles in conferences (e.g., 議長, 副議長)
--- Date: 2024-12-10
-
--- Step 1: Add nullable column
-ALTER TABLE politician_affiliations
-    ADD COLUMN IF NOT EXISTS role VARCHAR(100);
-
--- Step 2: Populate default value for existing rows
-UPDATE politician_affiliations
-    SET role = '議員'
-    WHERE role IS NULL;
-
--- Step 3: Add constraint (optional - keep nullable for now)
--- ALTER TABLE politician_affiliations
---     ALTER COLUMN role SET NOT NULL;
-
--- Add comment
-COMMENT ON COLUMN politician_affiliations.role IS
-    'Role in conference (e.g., 議長, 副議長, 委員長, 議員)';
-
--- Create index for role queries
-CREATE INDEX IF NOT EXISTS idx_politician_affiliations_role
-    ON politician_affiliations(role);
-```
-
-## Example 4: Creating Staging Table
-
-Based on `007_create_extracted_conference_members_table.sql`:
-
-```sql
--- Migration: 007 - Create extracted conference members staging table
--- Description: Staging table for conference member extraction and matching
--- Date: 2024-12-15
-
-CREATE TABLE IF NOT EXISTS extracted_conference_members (
-    -- Primary key
-    id SERIAL PRIMARY KEY,
-
-    -- Conference reference
-    conference_id INTEGER NOT NULL,
-
-    -- Extracted data
-    name VARCHAR(255) NOT NULL,
-    party VARCHAR(255),
-    role VARCHAR(100),
-    raw_text TEXT,
-
-    -- Matching results
-    matched_politician_id INTEGER,
-    match_confidence NUMERIC(3,2),
-    matching_status VARCHAR(50) NOT NULL DEFAULT 'pending',
-
-    -- Metadata
-    extraction_metadata JSONB,
-
-    -- Timestamps
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    matched_at TIMESTAMP,
-
-    -- Foreign keys
-    CONSTRAINT fk_extracted_members_conference
-        FOREIGN KEY (conference_id)
-        REFERENCES conferences(id)
-        ON DELETE CASCADE,
-
-    CONSTRAINT fk_extracted_members_politician
-        FOREIGN KEY (matched_politician_id)
-        REFERENCES politicians(id)
-        ON DELETE SET NULL
-);
-
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_extracted_members_conference
-    ON extracted_conference_members(conference_id);
-
-CREATE INDEX IF NOT EXISTS idx_extracted_members_status
-    ON extracted_conference_members(matching_status);
-
-CREATE INDEX IF NOT EXISTS idx_extracted_members_politician
-    ON extracted_conference_members(matched_politician_id);
-
--- Comments
-COMMENT ON TABLE extracted_conference_members IS
-    'Staging table for conference member extraction and matching workflow';
-COMMENT ON COLUMN extracted_conference_members.matching_status IS
-    'Status: pending, matched, needs_review, no_match';
-COMMENT ON COLUMN extracted_conference_members.match_confidence IS
-    'Confidence score for politician match (0.0-1.0)';
-```
-
-## Example 5: Creating Related Tables
-
-Based on `008_create_parliamentary_groups_tables.sql`:
-
-```sql
--- Migration: 008 - Create parliamentary groups tables
--- Description: Support parliamentary groups (議員団/会派) management
--- Date: 2024-12-20
-
--- Main parliamentary groups table
-CREATE TABLE IF NOT EXISTS parliamentary_groups (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    conference_id INTEGER NOT NULL,
-    description TEXT,
-    website_url VARCHAR(500),
-    members_list_url VARCHAR(500),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    -- Foreign key
-    CONSTRAINT fk_parliamentary_groups_conference
-        FOREIGN KEY (conference_id)
-        REFERENCES conferences(id)
-        ON DELETE CASCADE,
-
-    -- Unique constraint
-    CONSTRAINT uq_parliamentary_groups_name_conference
-        UNIQUE (name, conference_id)
-);
-
--- Parliamentary group memberships table
-CREATE TABLE IF NOT EXISTS parliamentary_group_memberships (
-    id SERIAL PRIMARY KEY,
-    parliamentary_group_id INTEGER NOT NULL,
-    politician_id INTEGER NOT NULL,
-    role VARCHAR(100),
-    start_date DATE NOT NULL,
-    end_date DATE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    -- Foreign keys
-    CONSTRAINT fk_pg_memberships_group
-        FOREIGN KEY (parliamentary_group_id)
-        REFERENCES parliamentary_groups(id)
-        ON DELETE CASCADE,
-
-    CONSTRAINT fk_pg_memberships_politician
-        FOREIGN KEY (politician_id)
-        REFERENCES politicians(id)
-        ON DELETE CASCADE,
-
-    -- Ensure no overlapping memberships
-    CONSTRAINT chk_pg_memberships_dates
-        CHECK (end_date IS NULL OR end_date > start_date)
-);
-
--- Indexes for parliamentary_groups
-CREATE INDEX IF NOT EXISTS idx_parliamentary_groups_conference
-    ON parliamentary_groups(conference_id);
-
-CREATE INDEX IF NOT EXISTS idx_parliamentary_groups_name
-    ON parliamentary_groups(name);
-
--- Indexes for memberships
-CREATE INDEX IF NOT EXISTS idx_pg_memberships_group
-    ON parliamentary_group_memberships(parliamentary_group_id);
-
-CREATE INDEX IF NOT EXISTS idx_pg_memberships_politician
-    ON parliamentary_group_memberships(politician_id);
-
-CREATE INDEX IF NOT EXISTS idx_pg_memberships_dates
-    ON parliamentary_group_memberships(start_date, end_date);
-
--- Comments
-COMMENT ON TABLE parliamentary_groups IS
-    'Parliamentary groups (議員団/会派) within conferences';
-COMMENT ON TABLE parliamentary_group_memberships IS
-    'Tracks politician membership in parliamentary groups over time';
-COMMENT ON COLUMN parliamentary_group_memberships.role IS
-    'Role in group (e.g., 団長, 幹事長, 幹事, 一般)';
-```
-
-## Example 6: Adding Organization Code
-
-Based on `011_add_organization_code_to_governing_bodies.sql`:
-
-```sql
--- Migration: 011 - Add organization code to governing bodies
--- Description: Track organization codes for coverage analysis
--- Date: 2025-01-10
-
--- Add columns
-ALTER TABLE governing_bodies
-    ADD COLUMN IF NOT EXISTS organization_code VARCHAR(20),
-    ADD COLUMN IF NOT EXISTS organization_type VARCHAR(50);
-
--- Add unique constraint on organization code
-ALTER TABLE governing_bodies
-    ADD CONSTRAINT uq_governing_bodies_org_code
-        UNIQUE (organization_code);
-
--- Create index
-CREATE INDEX IF NOT EXISTS idx_governing_bodies_org_code
-    ON governing_bodies(organization_code);
-
-CREATE INDEX IF NOT EXISTS idx_governing_bodies_org_type
-    ON governing_bodies(organization_type);
-
--- Add comments
-COMMENT ON COLUMN governing_bodies.organization_code IS
-    'Organization code from government registry (e.g., 131008 for Tokyo)';
-COMMENT ON COLUMN governing_bodies.organization_type IS
-    'Type: 国, 都道府県, 市区町村';
-```
-
-## Example 7: Creating Enum Type
-
-```sql
--- Migration: XXX - Create status enum
--- Description: Add enum type for entity status
-
--- Create enum (idempotent)
-DO $$ BEGIN
-    CREATE TYPE entity_status AS ENUM (
-        'pending',
-        'active',
-        'inactive',
-        'archived'
-    );
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
--- Use in existing table
-ALTER TABLE table_name
-    ADD COLUMN IF NOT EXISTS status entity_status DEFAULT 'pending';
-
--- Or create new table with enum
-CREATE TABLE IF NOT EXISTS new_table (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    status entity_status NOT NULL DEFAULT 'active'
-);
-```
-
-## Example 8: Complex Data Migration
-
-```sql
--- Migration: XXX - Migrate legacy data format
--- Description: Convert old format to new structure
-
-DO $$
-DECLARE
-    rec RECORD;
-    new_value TEXT;
-BEGIN
-    -- Process each record
-    FOR rec IN SELECT * FROM table_name WHERE old_field IS NOT NULL AND new_field IS NULL
-    LOOP
-        -- Complex transformation
-        new_value := CONCAT(
-            UPPER(SUBSTRING(rec.old_field, 1, 1)),
-            LOWER(SUBSTRING(rec.old_field, 2))
+def upgrade() -> None:
+    """Create audit_logs table with indexes."""
+    op.execute("""
+        -- テーブル作成
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id SERIAL PRIMARY KEY,
+            entity_type VARCHAR(100) NOT NULL,
+            entity_id INTEGER NOT NULL,
+            action VARCHAR(50) NOT NULL,
+            user_id UUID,
+            old_value JSONB,
+            new_value JSONB,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
 
-        -- Update record
-        UPDATE table_name
-            SET new_field = new_value,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = rec.id;
+        -- インデックス作成
+        CREATE INDEX IF NOT EXISTS idx_audit_logs_entity
+        ON audit_logs(entity_type, entity_id);
 
-        -- Log progress every 100 records
-        IF rec.id % 100 = 0 THEN
-            RAISE NOTICE 'Processed % records', rec.id;
-        END IF;
-    END LOOP;
+        CREATE INDEX IF NOT EXISTS idx_audit_logs_created
+        ON audit_logs(created_at DESC);
 
-    RAISE NOTICE 'Data migration completed';
-END $$;
+        CREATE INDEX IF NOT EXISTS idx_audit_logs_user
+        ON audit_logs(user_id);
+
+        -- テーブルコメント
+        COMMENT ON TABLE audit_logs IS 'Audit trail for entity changes';
+        COMMENT ON COLUMN audit_logs.action IS 'Action type: create, update, delete';
+    """)
+
+
+def downgrade() -> None:
+    """Drop audit_logs table."""
+    op.execute("""
+        DROP TABLE IF EXISTS audit_logs;
+    """)
 ```
 
-## Example 9: Adding Composite Index
+## Example 3: NOT NULL カラム追加（既存データ対応）
 
-```sql
--- Migration: XXX - Add composite index for performance
--- Description: Optimize queries filtering by multiple columns
+```python
+"""Add status column to meetings (with default value for existing rows).
 
--- For queries like: WHERE conference_id = ? AND status = ? ORDER BY created_at DESC
-CREATE INDEX IF NOT EXISTS idx_affiliations_conference_status_date
-    ON politician_affiliations(conference_id, status, created_at DESC);
+Revision ID: 005
+Revises: 004
+Create Date: 2025-01-20
+"""
 
--- For queries like: WHERE politician_id = ? AND start_date <= ? AND (end_date IS NULL OR end_date >= ?)
-CREATE INDEX IF NOT EXISTS idx_memberships_politician_dates
-    ON parliamentary_group_memberships(politician_id, start_date, end_date);
+from alembic import op
+
+
+revision = "005"
+down_revision = "004"
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    """Add status column with safe migration for existing data."""
+    op.execute("""
+        -- Step 1: nullable カラムを追加
+        ALTER TABLE meetings
+        ADD COLUMN IF NOT EXISTS status VARCHAR(50);
+
+        -- Step 2: 既存レコードにデフォルト値を設定
+        UPDATE meetings
+        SET status = 'active'
+        WHERE status IS NULL;
+
+        -- Step 3: NOT NULL 制約を追加
+        ALTER TABLE meetings
+        ALTER COLUMN status SET NOT NULL;
+
+        -- Step 4: デフォルト値を設定
+        ALTER TABLE meetings
+        ALTER COLUMN status SET DEFAULT 'pending';
+
+        -- コメント追加
+        COMMENT ON COLUMN meetings.status IS 'Meeting status: pending, active, completed, cancelled';
+
+        -- インデックス追加
+        CREATE INDEX IF NOT EXISTS idx_meetings_status
+        ON meetings(status);
+    """)
+
+
+def downgrade() -> None:
+    """Remove status column."""
+    op.execute("""
+        DROP INDEX IF EXISTS idx_meetings_status;
+        ALTER TABLE meetings DROP COLUMN IF EXISTS status;
+    """)
 ```
 
-## Example 10: Conditional Migration
+## Example 4: 外部キー追加
 
-```sql
--- Migration: XXX - Conditional schema update
--- Description: Only apply changes if certain conditions met
+```python
+"""Add foreign key from speakers to conferences.
 
-DO $$
-BEGIN
-    -- Check if column exists
-    IF NOT EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_name = 'table_name' AND column_name = 'new_column'
-    ) THEN
-        ALTER TABLE table_name ADD COLUMN new_column VARCHAR(255);
-        RAISE NOTICE 'Added new_column';
-    ELSE
-        RAISE NOTICE 'Column already exists, skipping';
-    END IF;
+Revision ID: 006
+Revises: 005
+Create Date: 2025-01-20
+"""
 
-    -- Check table row count before expensive operation
-    IF (SELECT COUNT(*) FROM table_name) < 10000 THEN
-        -- Safe to do synchronous update
-        UPDATE table_name SET new_column = old_column;
-    ELSE
-        RAISE NOTICE 'Table too large, update manually or in batches';
-    END IF;
-END $$;
+from alembic import op
+
+
+revision = "006"
+down_revision = "005"
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    """Add conference_id foreign key to speakers."""
+    op.execute("""
+        -- カラム追加
+        ALTER TABLE speakers
+        ADD COLUMN IF NOT EXISTS conference_id INTEGER;
+
+        -- 外部キー制約追加
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint
+                WHERE conname = 'fk_speakers_conference'
+            ) THEN
+                ALTER TABLE speakers
+                ADD CONSTRAINT fk_speakers_conference
+                FOREIGN KEY (conference_id)
+                REFERENCES conferences(id)
+                ON DELETE SET NULL;
+            END IF;
+        END $$;
+
+        -- インデックス追加（外部キーには必須）
+        CREATE INDEX IF NOT EXISTS idx_speakers_conference
+        ON speakers(conference_id);
+
+        -- コメント
+        COMMENT ON COLUMN speakers.conference_id IS 'Reference to the conference where this speaker appeared';
+    """)
+
+
+def downgrade() -> None:
+    """Remove conference_id from speakers."""
+    op.execute("""
+        -- 外部キー制約を削除
+        ALTER TABLE speakers
+        DROP CONSTRAINT IF EXISTS fk_speakers_conference;
+
+        -- インデックスを削除
+        DROP INDEX IF EXISTS idx_speakers_conference;
+
+        -- カラムを削除
+        ALTER TABLE speakers
+        DROP COLUMN IF EXISTS conference_id;
+    """)
 ```
 
-## Anti-Patterns to Avoid
+## Example 5: 複合ユニーク制約追加
 
-### ❌ Bad: Non-Idempotent
+```python
+"""Add unique constraint on parliamentary_group_memberships.
 
-```sql
--- Will fail on second run
-CREATE TABLE my_table (...);
-ALTER TABLE my_table ADD COLUMN my_column VARCHAR(255);
+Revision ID: 007
+Revises: 006
+Create Date: 2025-01-20
+"""
+
+from alembic import op
+
+
+revision = "007"
+down_revision = "006"
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    """Add unique constraint to prevent duplicate memberships."""
+    op.execute("""
+        -- 重複データを先に処理（古いレコードを保持）
+        DELETE FROM parliamentary_group_memberships a
+        USING parliamentary_group_memberships b
+        WHERE a.id > b.id
+        AND a.parliamentary_group_id = b.parliamentary_group_id
+        AND a.politician_id = b.politician_id
+        AND a.start_date = b.start_date;
+
+        -- ユニーク制約を追加
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint
+                WHERE conname = 'uq_pgm_group_politician_date'
+            ) THEN
+                ALTER TABLE parliamentary_group_memberships
+                ADD CONSTRAINT uq_pgm_group_politician_date
+                UNIQUE (parliamentary_group_id, politician_id, start_date);
+            END IF;
+        END $$;
+    """)
+
+
+def downgrade() -> None:
+    """Remove unique constraint."""
+    op.execute("""
+        ALTER TABLE parliamentary_group_memberships
+        DROP CONSTRAINT IF EXISTS uq_pgm_group_politician_date;
+    """)
 ```
 
-### ✅ Good: Idempotent
+## Example 6: Enum型の作成と使用
 
-```sql
--- Safe to run multiple times
-CREATE TABLE IF NOT EXISTS my_table (...);
-ALTER TABLE my_table ADD COLUMN IF NOT EXISTS my_column VARCHAR(255);
+```python
+"""Add matching_method enum to extracted_conference_members.
+
+Revision ID: 008
+Revises: 007
+Create Date: 2025-01-20
+"""
+
+from alembic import op
+
+
+revision = "008"
+down_revision = "007"
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    """Create enum type and add column."""
+    op.execute("""
+        -- Enum型を作成（冪等性のためDOブロック使用）
+        DO $$
+        BEGIN
+            CREATE TYPE matching_method AS ENUM (
+                'exact_match',
+                'fuzzy_match',
+                'llm_match',
+                'manual'
+            );
+        EXCEPTION
+            WHEN duplicate_object THEN NULL;
+        END $$;
+
+        -- カラム追加
+        ALTER TABLE extracted_conference_members
+        ADD COLUMN IF NOT EXISTS matching_method matching_method;
+
+        -- 既存データを更新
+        UPDATE extracted_conference_members
+        SET matching_method = 'manual'
+        WHERE matching_status = 'matched'
+        AND matching_method IS NULL;
+
+        -- コメント
+        COMMENT ON COLUMN extracted_conference_members.matching_method IS
+            'Method used for matching: exact_match, fuzzy_match, llm_match, manual';
+    """)
+
+
+def downgrade() -> None:
+    """Remove column and enum type."""
+    op.execute("""
+        -- カラム削除
+        ALTER TABLE extracted_conference_members
+        DROP COLUMN IF EXISTS matching_method;
+
+        -- Enum型削除
+        DROP TYPE IF EXISTS matching_method;
+    """)
 ```
 
-### ❌ Bad: Missing Foreign Key Index
+## Example 7: 大量データのバッチ更新
 
-```sql
--- Slow joins without index
-ALTER TABLE speakers
-    ADD CONSTRAINT fk_speakers_politicians
-    FOREIGN KEY (politician_id) REFERENCES politicians(id);
+```python
+"""Backfill prefecture column for politicians.
+
+Revision ID: 009
+Revises: 008
+Create Date: 2025-01-20
+"""
+
+from alembic import op
+
+
+revision = "009"
+down_revision = "008"
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    """Backfill prefecture from district column."""
+    op.execute("""
+        -- バッチ更新（大量データ対応）
+        DO $$
+        DECLARE
+            batch_size INTEGER := 1000;
+            rows_updated INTEGER;
+            total_updated INTEGER := 0;
+        BEGIN
+            LOOP
+                -- バッチで更新
+                WITH to_update AS (
+                    SELECT id
+                    FROM politicians
+                    WHERE prefecture IS NULL
+                    AND district IS NOT NULL
+                    LIMIT batch_size
+                    FOR UPDATE SKIP LOCKED
+                )
+                UPDATE politicians p
+                SET prefecture = SUBSTRING(p.district FROM 1 FOR 3)
+                FROM to_update
+                WHERE p.id = to_update.id;
+
+                GET DIAGNOSTICS rows_updated = ROW_COUNT;
+                total_updated := total_updated + rows_updated;
+
+                EXIT WHEN rows_updated = 0;
+
+                -- 進捗ログ
+                RAISE NOTICE 'Updated % rows (total: %)', rows_updated, total_updated;
+
+                -- 次のバッチ前に小休止
+                PERFORM pg_sleep(0.1);
+            END LOOP;
+
+            RAISE NOTICE 'Backfill completed. Total rows updated: %', total_updated;
+        END $$;
+    """)
+
+
+def downgrade() -> None:
+    """Clear backfilled prefecture values."""
+    op.execute("""
+        -- 自動生成された prefecture をクリア
+        -- 注意: 手動設定されたものも消える可能性あり
+        UPDATE politicians
+        SET prefecture = NULL
+        WHERE prefecture = SUBSTRING(district FROM 1 FOR 3);
+    """)
 ```
 
-### ✅ Good: Index on Foreign Key
+## Example 8: パーシャルインデックス
 
-```sql
--- Fast joins with index
-ALTER TABLE speakers
-    ADD CONSTRAINT fk_speakers_politicians
-    FOREIGN KEY (politician_id) REFERENCES politicians(id);
+```python
+"""Add partial index for active parliamentary group memberships.
 
-CREATE INDEX IF NOT EXISTS idx_speakers_politician
-    ON speakers(politician_id);
+Revision ID: 010
+Revises: 009
+Create Date: 2025-01-20
+"""
+
+from alembic import op
+
+
+revision = "010"
+down_revision = "009"
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    """Add partial index for active memberships (end_date IS NULL)."""
+    op.execute("""
+        -- 現在アクティブなメンバーシップのみのインデックス
+        CREATE INDEX IF NOT EXISTS idx_pgm_active_by_group
+        ON parliamentary_group_memberships(parliamentary_group_id)
+        WHERE end_date IS NULL;
+
+        -- 現在アクティブなメンバーシップのみのインデックス（政治家別）
+        CREATE INDEX IF NOT EXISTS idx_pgm_active_by_politician
+        ON parliamentary_group_memberships(politician_id)
+        WHERE end_date IS NULL;
+
+        -- コメント
+        COMMENT ON INDEX idx_pgm_active_by_group IS
+            'Partial index for active memberships only (end_date IS NULL)';
+    """)
+
+
+def downgrade() -> None:
+    """Drop partial indexes."""
+    op.execute("""
+        DROP INDEX IF EXISTS idx_pgm_active_by_group;
+        DROP INDEX IF EXISTS idx_pgm_active_by_politician;
+    """)
 ```
 
-### ❌ Bad: Immediate NOT NULL
+## Example 9: JSONBカラムとGINインデックス
 
-```sql
--- Fails if table has data
-ALTER TABLE politicians
-    ADD COLUMN email VARCHAR(255) NOT NULL;
+```python
+"""Add metadata JSONB column to minutes.
+
+Revision ID: 011
+Revises: 010
+Create Date: 2025-01-20
+"""
+
+from alembic import op
+
+
+revision = "011"
+down_revision = "010"
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    """Add metadata JSONB column with GIN index."""
+    op.execute("""
+        -- JSONBカラム追加
+        ALTER TABLE minutes
+        ADD COLUMN IF NOT EXISTS processing_metadata JSONB;
+
+        -- GINインデックス（JSONB検索用）
+        CREATE INDEX IF NOT EXISTS idx_minutes_metadata_gin
+        ON minutes USING GIN (processing_metadata);
+
+        -- 特定のキーに対するインデックス
+        CREATE INDEX IF NOT EXISTS idx_minutes_metadata_status
+        ON minutes ((processing_metadata->>'status'));
+
+        -- コメント
+        COMMENT ON COLUMN minutes.processing_metadata IS
+            'Processing metadata: {status, processor_version, extracted_at, token_count}';
+    """)
+
+
+def downgrade() -> None:
+    """Remove metadata column and indexes."""
+    op.execute("""
+        DROP INDEX IF EXISTS idx_minutes_metadata_status;
+        DROP INDEX IF EXISTS idx_minutes_metadata_gin;
+        ALTER TABLE minutes DROP COLUMN IF EXISTS processing_metadata;
+    """)
 ```
 
-### ✅ Good: Three-Step NOT NULL
+## Example 10: テーブル名変更（リネーム）
 
-```sql
--- Step 1: Add nullable
-ALTER TABLE politicians ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+```python
+"""Rename extracted_politicians to politician_candidates.
 
--- Step 2: Populate
-UPDATE politicians SET email = CONCAT(LOWER(name), '@example.com') WHERE email IS NULL;
+Revision ID: 012
+Revises: 011
+Create Date: 2025-01-20
+"""
 
--- Step 3: Add constraint
-ALTER TABLE politicians ALTER COLUMN email SET NOT NULL;
+from alembic import op
+
+
+revision = "012"
+down_revision = "011"
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    """Rename table and update related objects."""
+    op.execute("""
+        -- テーブル名変更
+        ALTER TABLE IF EXISTS extracted_politicians
+        RENAME TO politician_candidates;
+
+        -- シーケンス名変更（存在する場合）
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'extracted_politicians_id_seq') THEN
+                ALTER SEQUENCE extracted_politicians_id_seq
+                RENAME TO politician_candidates_id_seq;
+            END IF;
+        END $$;
+
+        -- インデックス名変更
+        ALTER INDEX IF EXISTS idx_extracted_politicians_name
+        RENAME TO idx_politician_candidates_name;
+
+        ALTER INDEX IF EXISTS idx_extracted_politicians_status
+        RENAME TO idx_politician_candidates_status;
+
+        -- テーブルコメント更新
+        COMMENT ON TABLE politician_candidates IS
+            'Candidate politicians extracted from various sources (renamed from extracted_politicians)';
+    """)
+
+
+def downgrade() -> None:
+    """Rename back to original names."""
+    op.execute("""
+        ALTER TABLE IF EXISTS politician_candidates
+        RENAME TO extracted_politicians;
+
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'politician_candidates_id_seq') THEN
+                ALTER SEQUENCE politician_candidates_id_seq
+                RENAME TO extracted_politicians_id_seq;
+            END IF;
+        END $$;
+
+        ALTER INDEX IF EXISTS idx_politician_candidates_name
+        RENAME TO idx_extracted_politicians_name;
+
+        ALTER INDEX IF EXISTS idx_politician_candidates_status
+        RENAME TO idx_extracted_politicians_status;
+    """)
+```
+
+## Anti-Patterns（避けるべきパターン）
+
+### ❌ Bad: 冪等でない
+
+```python
+def upgrade() -> None:
+    # 2回実行するとエラー
+    op.execute("CREATE TABLE my_table (...)")
+    op.execute("ALTER TABLE my_table ADD COLUMN my_column VARCHAR(255)")
+```
+
+### ✅ Good: 冪等
+
+```python
+def upgrade() -> None:
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS my_table (...);
+        ALTER TABLE my_table ADD COLUMN IF NOT EXISTS my_column VARCHAR(255);
+    """)
+```
+
+### ❌ Bad: downgrade()がない
+
+```python
+def upgrade() -> None:
+    op.execute("ALTER TABLE x ADD COLUMN y VARCHAR(255)")
+
+def downgrade() -> None:
+    pass  # ロールバック不可能！
+```
+
+### ✅ Good: downgrade()を実装
+
+```python
+def upgrade() -> None:
+    op.execute("ALTER TABLE x ADD COLUMN IF NOT EXISTS y VARCHAR(255)")
+
+def downgrade() -> None:
+    op.execute("ALTER TABLE x DROP COLUMN IF EXISTS y")
+```
+
+### ❌ Bad: 外部キーにインデックスがない
+
+```python
+def upgrade() -> None:
+    op.execute("""
+        ALTER TABLE speakers ADD COLUMN politician_id INTEGER
+        REFERENCES politicians(id);
+        -- インデックスなし！JOINが遅くなる
+    """)
+```
+
+### ✅ Good: 外部キーには必ずインデックス
+
+```python
+def upgrade() -> None:
+    op.execute("""
+        ALTER TABLE speakers ADD COLUMN IF NOT EXISTS politician_id INTEGER
+        REFERENCES politicians(id);
+
+        CREATE INDEX IF NOT EXISTS idx_speakers_politician
+        ON speakers(politician_id);
+    """)
 ```
