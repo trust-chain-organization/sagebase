@@ -522,3 +522,84 @@ class ParliamentaryGroupPresenter(BasePresenter[list[ParliamentaryGroup]]):
                 "no_match": 0,
                 "needs_review": 0,
             }
+
+    def get_memberships_by_group(self, group_id: int) -> list[dict[str, Any]]:
+        """議員団のメンバーシップ一覧を政治家名付きで取得する.
+
+        Args:
+            group_id: 議員団ID
+
+        Returns:
+            メンバーシップ情報のリスト。各要素は以下のキーを持つ:
+            - id: メンバーシップID
+            - politician_id: 政治家ID
+            - politician_name: 政治家名
+            - parliamentary_group_id: 議員団ID
+            - role: 役職
+            - start_date: 開始日
+            - end_date: 終了日
+            - is_active: 現在アクティブかどうか
+        """
+        return self._run_async(self._get_memberships_by_group_async(group_id))
+
+    async def _get_memberships_by_group_async(
+        self, group_id: int
+    ) -> list[dict[str, Any]]:
+        """議員団のメンバーシップ一覧を政治家名付きで取得する（async）."""
+        try:
+            memberships = await self.membership_repo.get_by_group(group_id)
+            result = []
+
+            for membership in memberships:
+                # 政治家名を取得
+                try:
+                    politician = await self.politician_repo.get_by_id(
+                        membership.politician_id
+                    )
+                    politician_name = politician.name if politician else "不明"
+                except Exception as e:
+                    self.logger.warning(
+                        f"政治家情報取得失敗 (ID: {membership.politician_id}): {e}"
+                    )
+                    politician_name = "不明"
+
+                is_active = membership.end_date is None
+
+                result.append(
+                    {
+                        "id": membership.id,
+                        "politician_id": membership.politician_id,
+                        "politician_name": politician_name,
+                        "parliamentary_group_id": membership.parliamentary_group_id,
+                        "role": membership.role,
+                        "start_date": membership.start_date,
+                        "end_date": membership.end_date,
+                        "is_active": is_active,
+                    }
+                )
+
+            return result
+        except Exception as e:
+            self.logger.error(f"Failed to get memberships for group {group_id}: {e}")
+            return []
+
+    def get_memberships_for_groups(self, group_ids: list[int]) -> list[dict[str, Any]]:
+        """複数の議員団のメンバーシップ一覧を政治家名付きで取得する.
+
+        Args:
+            group_ids: 議員団IDのリスト
+
+        Returns:
+            メンバーシップ情報のリスト
+        """
+        return self._run_async(self._get_memberships_for_groups_async(group_ids))
+
+    async def _get_memberships_for_groups_async(
+        self, group_ids: list[int]
+    ) -> list[dict[str, Any]]:
+        """複数の議員団のメンバーシップ一覧を取得する（async）."""
+        all_memberships: list[dict[str, Any]] = []
+        for group_id in group_ids:
+            memberships = await self._get_memberships_by_group_async(group_id)
+            all_memberships.extend(memberships)
+        return all_memberships

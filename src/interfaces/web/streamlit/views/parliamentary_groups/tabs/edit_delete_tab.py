@@ -80,54 +80,35 @@ def render_edit_delete_tab(presenter: ParliamentaryGroupPresenter) -> None:
 
     with col2:
         st.markdown("#### メンバー情報")
-        # メンバーシップを取得して表示
-        memberships = presenter.membership_repo.get_by_group(selected_group.id)
+        # Presenterのメソッドを通じてメンバーシップを取得
+        memberships = presenter.get_memberships_by_group(selected_group.id)
 
         if memberships:
-            # メンバー情報を整理
-            member_data = []
-            active_count = 0
-            for membership in memberships:
-                # 政治家名を取得
-                try:
-                    politician = presenter.politician_repo.get_by_id(
-                        membership.politician_id
-                    )
-                    politician_name = politician.name if politician else "不明"
-                except Exception:
-                    politician_name = "不明"
+            # アクティブメンバー数をカウント
+            active_count = sum(1 for m in memberships if m["is_active"])
+            st.write(f"現在のメンバー数: {active_count}名")
 
-                # 現在アクティブかどうかを判定
-                is_active = membership.end_date is None
-                if is_active:
-                    active_count += 1
-
-                # 日付をフォーマット
+            # 表示用にデータを整形
+            display_data = []
+            for m in memberships:
                 start_date_str = (
-                    membership.start_date.strftime("%Y-%m-%d")
-                    if membership.start_date
-                    else "-"
+                    m["start_date"].strftime("%Y-%m-%d") if m["start_date"] else "-"
                 )
                 end_date_str = (
-                    membership.end_date.strftime("%Y-%m-%d")
-                    if membership.end_date
-                    else "現在"
+                    m["end_date"].strftime("%Y-%m-%d") if m["end_date"] else "現在"
                 )
-
-                member_data.append(
+                display_data.append(
                     {
-                        "政治家": politician_name,
-                        "役職": membership.role or "-",
+                        "政治家": m["politician_name"],
+                        "役職": m["role"] or "-",
                         "開始日": start_date_str,
                         "終了日": end_date_str,
                     }
                 )
 
-            st.write(f"現在のメンバー数: {active_count}名")
-
             # DataFrameで表示
-            if member_data:
-                df = pd.DataFrame(member_data)
+            if display_data:
+                df = pd.DataFrame(display_data)
                 st.dataframe(df, use_container_width=True, hide_index=True, height=200)
         else:
             st.info("メンバーが登録されていません")
