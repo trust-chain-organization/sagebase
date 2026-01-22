@@ -70,6 +70,11 @@ from src.application.dtos.politician_dto import (
 from src.application.dtos.politician_matching_dto import (
     PoliticianMatchingAgentResult,
 )
+from src.application.dtos.proposal_parliamentary_group_judge_dto import (
+    CreateProposalParliamentaryGroupJudgeInputDTO,
+    ProposalParliamentaryGroupJudgeDTO,
+    ProposalParliamentaryGroupJudgeListOutputDTO,
+)
 from src.application.dtos.role_name_mapping_dto import (
     RoleNameMappingDTO,
     RoleNameMappingResultDTO,
@@ -134,6 +139,10 @@ __all__ = [
     "UpdatePoliticianOutputDto",
     # Politician Matching DTOs
     "PoliticianMatchingAgentResult",
+    # Proposal Parliamentary Group Judge DTOs
+    "CreateProposalParliamentaryGroupJudgeInputDTO",
+    "ProposalParliamentaryGroupJudgeDTO",
+    "ProposalParliamentaryGroupJudgeListOutputDTO",
     # Role Name Mapping DTOs
     "RoleNameMappingDTO",
     "RoleNameMappingResultDTO",
