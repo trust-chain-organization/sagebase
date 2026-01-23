@@ -235,6 +235,80 @@ class TestManageProposalSubmitterUseCase:
         assert result.submitter.parliamentary_group_id is None
 
     @pytest.mark.asyncio
+    async def test_set_submitter_committee_success(
+        self,
+        use_case,
+        mock_proposal_repository,
+        mock_proposal_submitter_repository,
+        sample_proposal,
+    ):
+        """正常系: 委員会提出の設定が成功する."""
+        # Arrange
+        mock_proposal_repository.get_by_id.return_value = sample_proposal
+        mock_proposal_submitter_repository.delete_by_proposal.return_value = 0
+
+        created_submitter = ProposalSubmitter(
+            id=4,
+            proposal_id=1,
+            submitter_type=SubmitterType.COMMITTEE,
+            raw_name="総務委員会",
+            is_representative=True,
+            display_order=0,
+        )
+        mock_proposal_submitter_repository.create.return_value = created_submitter
+
+        # Act
+        result = await use_case.set_submitter(
+            proposal_id=1,
+            submitter="総務委員会",
+            submitter_type=SubmitterType.COMMITTEE,
+        )
+
+        # Assert
+        assert result.success is True
+        assert result.submitter is not None
+        assert result.submitter.submitter_type == "committee"
+        assert result.submitter.politician_id is None
+        assert result.submitter.parliamentary_group_id is None
+
+    @pytest.mark.asyncio
+    async def test_set_submitter_other_success(
+        self,
+        use_case,
+        mock_proposal_repository,
+        mock_proposal_submitter_repository,
+        sample_proposal,
+    ):
+        """正常系: その他提出の設定が成功する."""
+        # Arrange
+        mock_proposal_repository.get_by_id.return_value = sample_proposal
+        mock_proposal_submitter_repository.delete_by_proposal.return_value = 0
+
+        created_submitter = ProposalSubmitter(
+            id=5,
+            proposal_id=1,
+            submitter_type=SubmitterType.OTHER,
+            raw_name="住民発議",
+            is_representative=True,
+            display_order=0,
+        )
+        mock_proposal_submitter_repository.create.return_value = created_submitter
+
+        # Act
+        result = await use_case.set_submitter(
+            proposal_id=1,
+            submitter="住民発議",
+            submitter_type=SubmitterType.OTHER,
+        )
+
+        # Assert
+        assert result.success is True
+        assert result.submitter is not None
+        assert result.submitter.submitter_type == "other"
+        assert result.submitter.politician_id is None
+        assert result.submitter.parliamentary_group_id is None
+
+    @pytest.mark.asyncio
     async def test_set_submitter_proposal_not_found(
         self,
         use_case,
