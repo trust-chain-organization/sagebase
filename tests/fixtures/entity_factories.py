@@ -18,7 +18,9 @@ from src.domain.entities.parliamentary_group import ParliamentaryGroup
 from src.domain.entities.political_party import PoliticalParty
 from src.domain.entities.politician import Politician
 from src.domain.entities.politician_affiliation import PoliticianAffiliation
+from src.domain.entities.proposal_submitter import ProposalSubmitter
 from src.domain.entities.speaker import Speaker
+from src.domain.value_objects.submitter_type import SubmitterType
 
 
 def create_governing_body(**kwargs: Any) -> GoverningBody:
@@ -238,3 +240,19 @@ def create_extraction_log(**kwargs: Any) -> ExtractionLog:
     }
     defaults.update(kwargs)
     return ExtractionLog(**defaults)
+
+
+def create_proposal_submitter(**kwargs: Any) -> ProposalSubmitter:
+    """Create a test proposal submitter."""
+    defaults = {
+        "id": 1,
+        "proposal_id": 1,
+        "submitter_type": SubmitterType.POLITICIAN,
+        "politician_id": None,
+        "parliamentary_group_id": None,
+        "raw_name": "山田太郎",
+        "is_representative": False,
+        "display_order": 0,
+    }
+    defaults.update(kwargs)
+    return ProposalSubmitter(**defaults)

@@ -135,6 +135,9 @@ from src.infrastructure.persistence.proposal_parliamentary_group_judge_repositor
 from src.infrastructure.persistence.proposal_repository_impl import (
     ProposalRepositoryImpl,
 )
+from src.infrastructure.persistence.proposal_submitter_repository_impl import (
+    ProposalSubmitterRepositoryImpl,
+)
 from src.infrastructure.persistence.speaker_repository_impl import SpeakerRepositoryImpl
 from src.infrastructure.persistence.unit_of_work_impl import UnitOfWorkImpl
 from src.infrastructure.persistence.user_repository_impl import UserRepositoryImpl
@@ -414,6 +417,11 @@ class RepositoryContainer(containers.DeclarativeContainer):
 
     proposal_parliamentary_group_judge_repository = providers.Factory(
         ProposalParliamentaryGroupJudgeRepositoryImpl,
+        session=database.async_session,
+    )
+
+    proposal_submitter_repository = providers.Factory(
+        ProposalSubmitterRepositoryImpl,
         session=database.async_session,
     )
 

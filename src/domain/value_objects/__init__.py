@@ -7,6 +7,7 @@ from src.domain.value_objects.speaker_with_conversation_count import (
     SpeakerWithConversationCount,
 )
 from src.domain.value_objects.speaker_with_politician import SpeakerWithPolitician
+from src.domain.value_objects.submitter_type import SubmitterType
 
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "SpeakerSpeech",
     "SpeakerWithConversationCount",
     "SpeakerWithPolitician",
+    "SubmitterType",
 ]

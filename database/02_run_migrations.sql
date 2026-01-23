@@ -48,5 +48,6 @@
 \i /docker-entrypoint-initdb.d/02_migrations/043_create_politician_operation_logs.sql
 \i /docker-entrypoint-initdb.d/02_migrations/044_add_prefecture_to_conferences.sql
 \i /docker-entrypoint-initdb.d/02_migrations/045_add_role_name_mappings_to_minutes.sql
+\i /docker-entrypoint-initdb.d/02_migrations/046_create_proposal_submitters.sql
 
 \echo 'Migrations completed.'
