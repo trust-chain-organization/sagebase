@@ -97,14 +97,7 @@ class TestProposalScraperService:
         mock_playwright.return_value = mock_p
 
         # Mock LLM response
-        llm_response = json.dumps(
-            {
-                "content": "環境基本法改正案",
-                "proposal_number": "第210回国会 第1号",
-                "submission_date": "2023年12月1日",
-                "summary": "この法案は環境保護を強化するものです。",
-            }
-        )
+        llm_response = json.dumps({"title": "環境基本法改正案"})
         mock_llm_service.invoke_llm.return_value = llm_response
 
         # Execute
@@ -114,10 +107,7 @@ class TestProposalScraperService:
         # Assert
         assert isinstance(result, ScrapedProposal)
         assert result.url == url
-        assert result.content == "環境基本法改正案"
-        assert result.proposal_number == "第210回国会 第1号"
-        assert result.submission_date == "2023年12月1日"
-        assert result.summary == "この法案は環境保護を強化するものです。"
+        assert result.title == "環境基本法改正案"
 
         # Verify LLM was called
         mock_llm_service.invoke_llm.assert_called_once()
@@ -162,28 +152,18 @@ class TestProposalScraperService:
 
         mock_playwright.return_value = mock_p
 
-        # Mock LLM response - extracts without date format conversion
-        llm_response = json.dumps(
-            {
-                "content": "大阪府デジタル化推進条例案",
-                "proposal_number": "第25号",
-                "submission_date": "令和5年12月20日",
-                "summary": "デジタル技術を活用した行政サービスの向上を図る条例案",
-            }
-        )
+        # Mock LLM response
+        llm_response = json.dumps({"title": "大阪府デジタル化推進条例案"})
         mock_llm_service.invoke_llm.return_value = llm_response
 
         # Execute
         url = "https://www.pref.osaka.lg.jp/test"
         result = await scraper.scrape_proposal(url)
 
-        # Assert - dates are kept as extracted, no conversion
+        # Assert
         assert isinstance(result, ScrapedProposal)
         assert result.url == url
-        assert result.content == "大阪府デジタル化推進条例案"
-        assert result.proposal_number == "第25号"
-        assert result.submission_date == "令和5年12月20日"  # Not converted to ISO
-        assert result.summary == "デジタル技術を活用した行政サービスの向上を図る条例案"
+        assert result.title == "大阪府デジタル化推進条例案"
 
     @pytest.mark.asyncio
     @patch("src.infrastructure.external.proposal_scraper_service.async_playwright")
@@ -247,10 +227,7 @@ class TestProposalScraperService:
         url = "https://www.city.tokyo.lg.jp/test"
         result = await scraper.scrape_proposal(url)
 
-        # Assert - should handle gracefully and return empty fields
+        # Assert - should handle gracefully and return empty title
         assert isinstance(result, ScrapedProposal)
         assert result.url == url
-        assert result.content == ""
-        assert result.proposal_number is None
-        assert result.submission_date is None
-        assert result.summary is None
+        assert result.title == ""
