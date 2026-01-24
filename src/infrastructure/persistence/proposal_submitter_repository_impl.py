@@ -31,6 +31,7 @@ class ProposalSubmitterModel(PydanticBaseModel):
     submitter_type: str
     politician_id: int | None = None
     parliamentary_group_id: int | None = None
+    conference_id: int | None = None
     raw_name: str | None = None
     is_representative: bool = False
     display_order: int = 0
@@ -73,6 +74,7 @@ class ProposalSubmitterRepositoryImpl(
                     submitter_type,
                     politician_id,
                     parliamentary_group_id,
+                    conference_id,
                     raw_name,
                     is_representative,
                     display_order,
@@ -121,6 +123,7 @@ class ProposalSubmitterRepositoryImpl(
                     submitter_type,
                     politician_id,
                     parliamentary_group_id,
+                    conference_id,
                     raw_name,
                     is_representative,
                     display_order,
@@ -171,6 +174,7 @@ class ProposalSubmitterRepositoryImpl(
                     submitter_type,
                     politician_id,
                     parliamentary_group_id,
+                    conference_id,
                     raw_name,
                     is_representative,
                     display_order,
@@ -224,16 +228,17 @@ class ProposalSubmitterRepositoryImpl(
             query = text("""
                 INSERT INTO proposal_submitters (
                     proposal_id, submitter_type, politician_id,
-                    parliamentary_group_id, raw_name, is_representative, display_order
+                    parliamentary_group_id, conference_id, raw_name,
+                    is_representative, display_order
                 )
                 VALUES (
                     :proposal_id, :submitter_type, :politician_id,
-                    :parliamentary_group_id, :raw_name,
+                    :parliamentary_group_id, :conference_id, :raw_name,
                     :is_representative, :display_order
                 )
                 RETURNING id, proposal_id, submitter_type, politician_id,
-                          parliamentary_group_id, raw_name, is_representative,
-                          display_order, created_at, updated_at
+                          parliamentary_group_id, conference_id, raw_name,
+                          is_representative, display_order, created_at, updated_at
             """)
 
             created_submitters = []
@@ -245,6 +250,7 @@ class ProposalSubmitterRepositoryImpl(
                         "submitter_type": submitter.submitter_type.value,
                         "politician_id": submitter.politician_id,
                         "parliamentary_group_id": submitter.parliamentary_group_id,
+                        "conference_id": submitter.conference_id,
                         "raw_name": submitter.raw_name,
                         "is_representative": submitter.is_representative,
                         "display_order": submitter.display_order,
@@ -317,6 +323,7 @@ class ProposalSubmitterRepositoryImpl(
                     submitter_type,
                     politician_id,
                     parliamentary_group_id,
+                    conference_id,
                     raw_name,
                     is_representative,
                     display_order,
@@ -368,6 +375,7 @@ class ProposalSubmitterRepositoryImpl(
                     submitter_type,
                     politician_id,
                     parliamentary_group_id,
+                    conference_id,
                     raw_name,
                     is_representative,
                     display_order,
@@ -410,16 +418,17 @@ class ProposalSubmitterRepositoryImpl(
             query = text("""
                 INSERT INTO proposal_submitters (
                     proposal_id, submitter_type, politician_id,
-                    parliamentary_group_id, raw_name, is_representative, display_order
+                    parliamentary_group_id, conference_id, raw_name,
+                    is_representative, display_order
                 )
                 VALUES (
                     :proposal_id, :submitter_type, :politician_id,
-                    :parliamentary_group_id, :raw_name,
+                    :parliamentary_group_id, :conference_id, :raw_name,
                     :is_representative, :display_order
                 )
                 RETURNING id, proposal_id, submitter_type, politician_id,
-                          parliamentary_group_id, raw_name, is_representative,
-                          display_order, created_at, updated_at
+                          parliamentary_group_id, conference_id, raw_name,
+                          is_representative, display_order, created_at, updated_at
             """)
 
             result = await self.session.execute(
@@ -429,6 +438,7 @@ class ProposalSubmitterRepositoryImpl(
                     "submitter_type": entity.submitter_type.value,
                     "politician_id": entity.politician_id,
                     "parliamentary_group_id": entity.parliamentary_group_id,
+                    "conference_id": entity.conference_id,
                     "raw_name": entity.raw_name,
                     "is_representative": entity.is_representative,
                     "display_order": entity.display_order,
@@ -475,14 +485,15 @@ class ProposalSubmitterRepositoryImpl(
                     submitter_type = :submitter_type,
                     politician_id = :politician_id,
                     parliamentary_group_id = :parliamentary_group_id,
+                    conference_id = :conference_id,
                     raw_name = :raw_name,
                     is_representative = :is_representative,
                     display_order = :display_order,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = :id
                 RETURNING id, proposal_id, submitter_type, politician_id,
-                          parliamentary_group_id, raw_name, is_representative,
-                          display_order, created_at, updated_at
+                          parliamentary_group_id, conference_id, raw_name,
+                          is_representative, display_order, created_at, updated_at
             """)
 
             result = await self.session.execute(
@@ -493,6 +504,7 @@ class ProposalSubmitterRepositoryImpl(
                     "submitter_type": entity.submitter_type.value,
                     "politician_id": entity.politician_id,
                     "parliamentary_group_id": entity.parliamentary_group_id,
+                    "conference_id": entity.conference_id,
                     "raw_name": entity.raw_name,
                     "is_representative": entity.is_representative,
                     "display_order": entity.display_order,
@@ -562,6 +574,7 @@ class ProposalSubmitterRepositoryImpl(
             submitter_type=SubmitterType(model.submitter_type),
             politician_id=model.politician_id,
             parliamentary_group_id=model.parliamentary_group_id,
+            conference_id=model.conference_id,
             raw_name=model.raw_name,
             is_representative=model.is_representative,
             display_order=model.display_order,
@@ -582,6 +595,7 @@ class ProposalSubmitterRepositoryImpl(
             submitter_type=entity.submitter_type.value,
             politician_id=entity.politician_id,
             parliamentary_group_id=entity.parliamentary_group_id,
+            conference_id=entity.conference_id,
             raw_name=entity.raw_name,
             is_representative=entity.is_representative,
             display_order=entity.display_order,
@@ -602,6 +616,7 @@ class ProposalSubmitterRepositoryImpl(
         model.submitter_type = entity.submitter_type.value
         model.politician_id = entity.politician_id
         model.parliamentary_group_id = entity.parliamentary_group_id
+        model.conference_id = entity.conference_id
         model.raw_name = entity.raw_name
         model.is_representative = entity.is_representative
         model.display_order = entity.display_order
@@ -621,6 +636,7 @@ class ProposalSubmitterRepositoryImpl(
             submitter_type=SubmitterType(data["submitter_type"]),
             politician_id=data.get("politician_id"),
             parliamentary_group_id=data.get("parliamentary_group_id"),
+            conference_id=data.get("conference_id"),
             raw_name=data.get("raw_name"),
             is_representative=data.get("is_representative", False),
             display_order=data.get("display_order", 0),

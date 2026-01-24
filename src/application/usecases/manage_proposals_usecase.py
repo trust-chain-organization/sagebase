@@ -5,9 +5,18 @@ listing, creating, updating, and deleting proposals.
 """
 
 from dataclasses import dataclass
+from datetime import datetime
+from uuid import UUID
 
 from src.common.logging import get_logger
 from src.domain.entities.proposal import Proposal
+from src.domain.entities.proposal_operation_log import (
+    ProposalOperationLog,
+    ProposalOperationType,
+)
+from src.domain.repositories.proposal_operation_log_repository import (
+    ProposalOperationLogRepository,
+)
 from src.domain.repositories.proposal_repository import ProposalRepository
 
 
@@ -15,9 +24,9 @@ from src.domain.repositories.proposal_repository import ProposalRepository
 class ProposalListInputDto:
     """Input DTO for listing proposals."""
 
-    filter_type: str | None = None  # 'all', 'by_status', 'by_meeting'
-    status: str | None = None  # Filter by status (if filter_type='by_status')
+    filter_type: str | None = None  # 'all', 'by_meeting', 'by_conference'
     meeting_id: int | None = None  # Filter by meeting (if filter_type='by_meeting')
+    conference_id: int | None = None  # Filter by conference
     order_by: str = "id"
 
 
@@ -28,7 +37,7 @@ class ProposalStatistics:
     total: int
     with_detail_url: int
     with_status_url: int
-    by_status: dict[str, int]  # Count by status
+    with_votes_url: int
 
     @property
     def with_detail_url_percentage(self) -> float:
@@ -57,15 +66,13 @@ class ProposalListOutputDto:
 class CreateProposalInputDto:
     """Input DTO for creating a proposal."""
 
-    content: str
-    status: str | None = None
+    title: str
     detail_url: str | None = None
     status_url: str | None = None
-    submission_date: str | None = None
-    submitter: str | None = None
-    proposal_number: str | None = None
+    votes_url: str | None = None
     meeting_id: int | None = None
-    summary: str | None = None
+    conference_id: int | None = None
+    user_id: UUID | None = None  # 操作を行ったユーザーID
 
 
 @dataclass
@@ -82,15 +89,13 @@ class UpdateProposalInputDto:
     """Input DTO for updating a proposal."""
 
     proposal_id: int
-    content: str | None = None
-    status: str | None = None
+    title: str | None = None
     detail_url: str | None = None
     status_url: str | None = None
-    submission_date: str | None = None
-    submitter: str | None = None
-    proposal_number: str | None = None
+    votes_url: str | None = None
     meeting_id: int | None = None
-    summary: str | None = None
+    conference_id: int | None = None
+    user_id: UUID | None = None  # 操作を行ったユーザーID
 
 
 @dataclass
@@ -107,6 +112,7 @@ class DeleteProposalInputDto:
     """Input DTO for deleting a proposal."""
 
     proposal_id: int
+    user_id: UUID | None = None  # 操作を行ったユーザーID
 
 
 @dataclass
@@ -120,13 +126,19 @@ class DeleteProposalOutputDto:
 class ManageProposalsUseCase:
     """Use case for managing proposals."""
 
-    def __init__(self, repository: ProposalRepository):
+    def __init__(
+        self,
+        repository: ProposalRepository,
+        operation_log_repository: ProposalOperationLogRepository | None = None,
+    ):
         """Initialize the use case.
 
         Args:
             repository: Proposal repository (can be sync or async)
+            operation_log_repository: 議案操作ログリポジトリ（オプション）
         """
         self.repository = repository
+        self.operation_log_repo = operation_log_repository
         self.logger = get_logger(self.__class__.__name__)
 
     async def list_proposals(
@@ -142,11 +154,13 @@ class ManageProposalsUseCase:
         """
         try:
             # Get proposals based on filter
-            if input_dto.filter_type == "by_status" and input_dto.status:
-                proposals = await self.repository.get_by_status(input_dto.status)
-            elif input_dto.filter_type == "by_meeting" and input_dto.meeting_id:
+            if input_dto.filter_type == "by_meeting" and input_dto.meeting_id:
                 proposals = await self.repository.get_by_meeting_id(
                     input_dto.meeting_id
+                )
+            elif input_dto.filter_type == "by_conference" and input_dto.conference_id:
+                proposals = await self.repository.get_by_conference_id(
+                    input_dto.conference_id
                 )
             else:
                 proposals = await self.repository.get_all()
@@ -154,25 +168,18 @@ class ManageProposalsUseCase:
             # Sort proposals
             if input_dto.order_by == "id":
                 proposals.sort(key=lambda p: p.id or 0)
-            elif input_dto.order_by == "submission_date":
-                proposals.sort(key=lambda p: p.submission_date or "", reverse=True)
 
             # Calculate statistics
             total = len(proposals)
             with_detail_url = sum(1 for p in proposals if p.detail_url)
             with_status_url = sum(1 for p in proposals if p.status_url)
-
-            # Count by status
-            status_counts: dict[str, int] = {}
-            for proposal in proposals:
-                status = proposal.status or "未設定"
-                status_counts[status] = status_counts.get(status, 0) + 1
+            with_votes_url = sum(1 for p in proposals if p.votes_url)
 
             statistics = ProposalStatistics(
                 total=total,
                 with_detail_url=with_detail_url,
                 with_status_url=with_status_url,
-                by_status=status_counts,
+                with_votes_url=with_votes_url,
             )
 
             return ProposalListOutputDto(proposals=proposals, statistics=statistics)
@@ -193,34 +200,36 @@ class ManageProposalsUseCase:
             Output DTO with result
         """
         try:
-            # Check for duplicate proposal_number if provided
-            if input_dto.proposal_number:
-                existing = await self.repository.get_by_proposal_number(
-                    input_dto.proposal_number
-                )
-                if existing:
-                    return CreateProposalOutputDto(
-                        success=False,
-                        message=(
-                            f"議案番号 {input_dto.proposal_number} は既に存在します"
-                        ),
-                    )
-
             # Create new proposal entity
             proposal = Proposal(
-                content=input_dto.content,
-                status=input_dto.status,
+                title=input_dto.title,
                 detail_url=input_dto.detail_url,
                 status_url=input_dto.status_url,
-                submission_date=input_dto.submission_date,
-                submitter=input_dto.submitter,
-                proposal_number=input_dto.proposal_number,
+                votes_url=input_dto.votes_url,
                 meeting_id=input_dto.meeting_id,
-                summary=input_dto.summary,
+                conference_id=input_dto.conference_id,
             )
 
             # Save to repository
             created_proposal = await self.repository.create(proposal)
+
+            # 操作ログを記録
+            if self.operation_log_repo and created_proposal.id:
+                operation_log = ProposalOperationLog(
+                    proposal_id=created_proposal.id,
+                    proposal_title=created_proposal.title,
+                    operation_type=ProposalOperationType.CREATE,
+                    user_id=input_dto.user_id,
+                    operation_details={
+                        "detail_url": created_proposal.detail_url,
+                        "status_url": created_proposal.status_url,
+                        "votes_url": created_proposal.votes_url,
+                        "meeting_id": created_proposal.meeting_id,
+                        "conference_id": created_proposal.conference_id,
+                    },
+                    operated_at=datetime.now(),
+                )
+                await self.operation_log_repo.create(operation_log)
 
             return CreateProposalOutputDto(
                 success=True, message="議案を作成しました", proposal=created_proposal
@@ -252,28 +261,55 @@ class ManageProposalsUseCase:
                     message=f"議案ID {input_dto.proposal_id} が見つかりません",
                 )
 
+            # 更新前の状態を保存
+            old_values = {
+                "title": proposal.title,
+                "detail_url": proposal.detail_url,
+                "status_url": proposal.status_url,
+                "votes_url": proposal.votes_url,
+                "meeting_id": proposal.meeting_id,
+                "conference_id": proposal.conference_id,
+            }
+
             # Update fields if provided
-            if input_dto.content is not None:
-                proposal.content = input_dto.content
-            if input_dto.status is not None:
-                proposal.status = input_dto.status
+            if input_dto.title is not None:
+                proposal.title = input_dto.title
             if input_dto.detail_url is not None:
                 proposal.detail_url = input_dto.detail_url
             if input_dto.status_url is not None:
                 proposal.status_url = input_dto.status_url
-            if input_dto.submission_date is not None:
-                proposal.submission_date = input_dto.submission_date
-            if input_dto.submitter is not None:
-                proposal.submitter = input_dto.submitter
-            if input_dto.proposal_number is not None:
-                proposal.proposal_number = input_dto.proposal_number
+            if input_dto.votes_url is not None:
+                proposal.votes_url = input_dto.votes_url
             if input_dto.meeting_id is not None:
                 proposal.meeting_id = input_dto.meeting_id
-            if input_dto.summary is not None:
-                proposal.summary = input_dto.summary
+            if input_dto.conference_id is not None:
+                proposal.conference_id = input_dto.conference_id
 
             # Save updated proposal
             updated_proposal = await self.repository.update(proposal)
+
+            # 操作ログを記録
+            if self.operation_log_repo and updated_proposal.id:
+                new_values = {
+                    "title": updated_proposal.title,
+                    "detail_url": updated_proposal.detail_url,
+                    "status_url": updated_proposal.status_url,
+                    "votes_url": updated_proposal.votes_url,
+                    "meeting_id": updated_proposal.meeting_id,
+                    "conference_id": updated_proposal.conference_id,
+                }
+                operation_log = ProposalOperationLog(
+                    proposal_id=updated_proposal.id,
+                    proposal_title=updated_proposal.title,
+                    operation_type=ProposalOperationType.UPDATE,
+                    user_id=input_dto.user_id,
+                    operation_details={
+                        "old_values": old_values,
+                        "new_values": new_values,
+                    },
+                    operated_at=datetime.now(),
+                )
+                await self.operation_log_repo.create(operation_log)
 
             return UpdateProposalOutputDto(
                 success=True, message="議案を更新しました", proposal=updated_proposal
@@ -305,10 +341,36 @@ class ManageProposalsUseCase:
                     message=f"議案ID {input_dto.proposal_id} が見つかりません",
                 )
 
+            # 削除前に情報を保存
+            proposal_id = proposal.id
+            proposal_title = proposal.title
+
             # Delete the proposal
             success = await self.repository.delete(input_dto.proposal_id)
 
             if success:
+                # 操作ログを記録
+                if self.operation_log_repo and proposal_id:
+                    operation_log = ProposalOperationLog(
+                        proposal_id=proposal_id,
+                        proposal_title=proposal_title,
+                        operation_type=ProposalOperationType.DELETE,
+                        user_id=input_dto.user_id,
+                        operation_details={
+                            "deleted_proposal": {
+                                "id": proposal_id,
+                                "title": proposal_title,
+                                "detail_url": proposal.detail_url,
+                                "status_url": proposal.status_url,
+                                "votes_url": proposal.votes_url,
+                                "meeting_id": proposal.meeting_id,
+                                "conference_id": proposal.conference_id,
+                            }
+                        },
+                        operated_at=datetime.now(),
+                    )
+                    await self.operation_log_repo.create(operation_log)
+
                 return DeleteProposalOutputDto(
                     success=True, message="議案を削除しました"
                 )

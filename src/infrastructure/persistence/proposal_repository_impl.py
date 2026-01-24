@@ -24,15 +24,12 @@ class ProposalModel(PydanticBaseModel):
     """Proposal database model."""
 
     id: int | None = None
-    content: str
-    status: str | None = None
+    title: str
     detail_url: str | None = None
     status_url: str | None = None
-    submission_date: str | None = None
-    submitter: str | None = None
-    proposal_number: str | None = None
+    votes_url: str | None = None
     meeting_id: int | None = None
-    summary: str | None = None
+    conference_id: int | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -55,56 +52,6 @@ class ProposalRepositoryImpl(BaseRepositoryImpl[Proposal], ProposalRepository):
             model_class=ProposalModel,
         )
 
-    async def get_by_status(self, status: str) -> list[Proposal]:
-        """Get proposals by status.
-
-        Args:
-            status: Status to filter by (e.g., "審議中", "可決", "否決")
-
-        Returns:
-            List of proposals with the specified status
-        """
-        try:
-            query = text("""
-                SELECT
-                    id,
-                    content,
-                    status,
-                    detail_url,
-                    status_url,
-                    submission_date,
-                    submitter,
-                    proposal_number,
-                    meeting_id,
-                    summary,
-                    created_at,
-                    updated_at
-                FROM proposals
-                WHERE status = :status
-                ORDER BY created_at DESC
-            """)
-
-            result = await self.session.execute(query, {"status": status})
-            rows = result.fetchall()
-
-            results = []
-            for row in rows:
-                if hasattr(row, "_asdict"):
-                    row_dict = row._asdict()  # type: ignore[attr-defined]
-                elif hasattr(row, "_mapping"):
-                    row_dict = dict(row._mapping)  # type: ignore[attr-defined]
-                else:
-                    row_dict = dict(row)
-                results.append(self._dict_to_entity(row_dict))
-            return results
-
-        except SQLAlchemyError as e:
-            logger.error(f"Database error getting proposals by status: {e}")
-            raise DatabaseError(
-                "Failed to get proposals by status",
-                {"status": status, "error": str(e)},
-            ) from e
-
     async def get_all(
         self, limit: int | None = None, offset: int | None = 0
     ) -> list[Proposal]:
@@ -121,15 +68,12 @@ class ProposalRepositoryImpl(BaseRepositoryImpl[Proposal], ProposalRepository):
             query_text = """
                 SELECT
                     id,
-                    content,
-                    status,
+                    title,
                     detail_url,
                     status_url,
-                    submission_date,
-                    submitter,
-                    proposal_number,
+                    votes_url,
                     meeting_id,
-                    summary,
+                    conference_id,
                     created_at,
                     updated_at
                 FROM proposals
@@ -172,15 +116,12 @@ class ProposalRepositoryImpl(BaseRepositoryImpl[Proposal], ProposalRepository):
             query = text("""
                 SELECT
                     id,
-                    content,
-                    status,
+                    title,
                     detail_url,
                     status_url,
-                    submission_date,
-                    submitter,
-                    proposal_number,
+                    votes_url,
                     meeting_id,
-                    summary,
+                    conference_id,
                     created_at,
                     updated_at
                 FROM proposals
@@ -219,41 +160,26 @@ class ProposalRepositoryImpl(BaseRepositoryImpl[Proposal], ProposalRepository):
         try:
             query = text("""
                 INSERT INTO proposals (
-                    content, status, detail_url, status_url, submission_date,
-                    submitter, proposal_number, meeting_id, summary
+                    title, detail_url, status_url, votes_url,
+                    meeting_id, conference_id
                 )
                 VALUES (
-                    :content, :status, :detail_url, :status_url,
-                    :submission_date, :submitter, :proposal_number, :meeting_id,
-                    :summary
+                    :title, :detail_url, :status_url, :votes_url,
+                    :meeting_id, :conference_id
                 )
-                RETURNING id, content, status, detail_url, status_url,
-                          submission_date, submitter, proposal_number,
-                          meeting_id, summary, created_at, updated_at
+                RETURNING id, title, detail_url, status_url, votes_url,
+                          meeting_id, conference_id, created_at, updated_at
             """)
-
-            # Convert submission_date from ISO string to datetime if needed
-            submission_date_value = None
-            if entity.submission_date:
-                if isinstance(entity.submission_date, str):
-                    submission_date_value = datetime.fromisoformat(
-                        entity.submission_date
-                    )
-                else:
-                    submission_date_value = entity.submission_date
 
             result = await self.session.execute(
                 query,
                 {
-                    "content": entity.content,
-                    "status": entity.status,
+                    "title": entity.title,
                     "detail_url": entity.detail_url,
                     "status_url": entity.status_url,
-                    "submission_date": submission_date_value,
-                    "submitter": entity.submitter,
-                    "proposal_number": entity.proposal_number,
+                    "votes_url": entity.votes_url,
                     "meeting_id": entity.meeting_id,
-                    "summary": entity.summary,
+                    "conference_id": entity.conference_id,
                 },
             )
             row = result.fetchone()
@@ -292,45 +218,28 @@ class ProposalRepositoryImpl(BaseRepositoryImpl[Proposal], ProposalRepository):
         try:
             query = text("""
                 UPDATE proposals
-                SET content = :content,
-                    status = :status,
+                SET title = :title,
                     detail_url = :detail_url,
                     status_url = :status_url,
-                    submission_date = :submission_date,
-                    submitter = :submitter,
-                    proposal_number = :proposal_number,
+                    votes_url = :votes_url,
                     meeting_id = :meeting_id,
-                    summary = :summary,
+                    conference_id = :conference_id,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = :id
-                RETURNING id, content, status, detail_url, status_url,
-                          submission_date, submitter, proposal_number,
-                          meeting_id, summary, created_at, updated_at
+                RETURNING id, title, detail_url, status_url, votes_url,
+                          meeting_id, conference_id, created_at, updated_at
             """)
-
-            # Convert submission_date from ISO string to datetime if needed
-            submission_date_value = None
-            if entity.submission_date:
-                if isinstance(entity.submission_date, str):
-                    submission_date_value = datetime.fromisoformat(
-                        entity.submission_date
-                    )
-                else:
-                    submission_date_value = entity.submission_date
 
             result = await self.session.execute(
                 query,
                 {
                     "id": entity.id,
-                    "content": entity.content,
-                    "status": entity.status,
+                    "title": entity.title,
                     "detail_url": entity.detail_url,
                     "status_url": entity.status_url,
-                    "submission_date": submission_date_value,
-                    "submitter": entity.submitter,
-                    "proposal_number": entity.proposal_number,
+                    "votes_url": entity.votes_url,
                     "meeting_id": entity.meeting_id,
-                    "summary": entity.summary,
+                    "conference_id": entity.conference_id,
                 },
             )
             row = result.fetchone()
@@ -400,15 +309,12 @@ class ProposalRepositoryImpl(BaseRepositoryImpl[Proposal], ProposalRepository):
         """
         return Proposal(
             id=model.id,
-            content=model.content,
-            status=model.status,
+            title=model.title,
             detail_url=model.detail_url,
             status_url=model.status_url,
-            submission_date=model.submission_date,
-            submitter=model.submitter,
-            proposal_number=model.proposal_number,
+            votes_url=model.votes_url,
             meeting_id=model.meeting_id,
-            summary=model.summary,
+            conference_id=model.conference_id,
         )
 
     def _to_model(self, entity: Proposal) -> ProposalModel:
@@ -422,15 +328,12 @@ class ProposalRepositoryImpl(BaseRepositoryImpl[Proposal], ProposalRepository):
         """
         return ProposalModel(
             id=entity.id,
-            content=entity.content,
-            status=entity.status,
+            title=entity.title,
             detail_url=entity.detail_url,
             status_url=entity.status_url,
-            submission_date=entity.submission_date,
-            submitter=entity.submitter,
-            proposal_number=entity.proposal_number,
+            votes_url=entity.votes_url,
             meeting_id=entity.meeting_id,
-            summary=entity.summary,
+            conference_id=entity.conference_id,
         )
 
     def _update_model(self, model: ProposalModel, entity: Proposal) -> None:
@@ -440,15 +343,12 @@ class ProposalRepositoryImpl(BaseRepositoryImpl[Proposal], ProposalRepository):
             model: Database model to update
             entity: Source entity
         """
-        model.content = entity.content
-        model.status = entity.status
+        model.title = entity.title
         model.detail_url = entity.detail_url
         model.status_url = entity.status_url
-        model.submission_date = entity.submission_date
-        model.submitter = entity.submitter
-        model.proposal_number = entity.proposal_number
+        model.votes_url = entity.votes_url
         model.meeting_id = entity.meeting_id
-        model.summary = entity.summary
+        model.conference_id = entity.conference_id
 
     def _dict_to_entity(self, data: dict[str, Any]) -> Proposal:
         """Convert dictionary to entity.
@@ -461,15 +361,12 @@ class ProposalRepositoryImpl(BaseRepositoryImpl[Proposal], ProposalRepository):
         """
         return Proposal(
             id=data.get("id"),
-            content=data["content"],
-            status=data.get("status"),
+            title=data["title"],
             detail_url=data.get("detail_url"),
             status_url=data.get("status_url"),
-            submission_date=data.get("submission_date"),
-            submitter=data.get("submitter"),
-            proposal_number=data.get("proposal_number"),
+            votes_url=data.get("votes_url"),
             meeting_id=data.get("meeting_id"),
-            summary=data.get("summary"),
+            conference_id=data.get("conference_id"),
         )
 
     async def get_by_meeting_id(self, meeting_id: int) -> list[Proposal]:
@@ -485,20 +382,17 @@ class ProposalRepositoryImpl(BaseRepositoryImpl[Proposal], ProposalRepository):
             query = text("""
                 SELECT
                     id,
-                    content,
-                    status,
+                    title,
                     detail_url,
                     status_url,
-                    submission_date,
-                    submitter,
-                    proposal_number,
+                    votes_url,
                     meeting_id,
-                    summary,
+                    conference_id,
                     created_at,
                     updated_at
                 FROM proposals
                 WHERE meeting_id = :meeting_id
-                ORDER BY proposal_number, created_at DESC
+                ORDER BY created_at DESC
             """)
 
             result = await self.session.execute(query, {"meeting_id": meeting_id})
@@ -522,92 +416,33 @@ class ProposalRepositoryImpl(BaseRepositoryImpl[Proposal], ProposalRepository):
                 {"meeting_id": meeting_id, "error": str(e)},
             ) from e
 
-    async def get_by_proposal_number(self, proposal_number: str) -> Proposal | None:
-        """Get proposal by proposal number.
+    async def get_by_conference_id(self, conference_id: int) -> list[Proposal]:
+        """Get proposals by conference ID.
 
         Args:
-            proposal_number: Proposal number (e.g., "議案第1号")
+            conference_id: Conference ID to filter by
 
         Returns:
-            Proposal if found, None otherwise
+            List of proposals associated with the specified conference
         """
         try:
             query = text("""
                 SELECT
                     id,
-                    content,
-                    status,
+                    title,
                     detail_url,
                     status_url,
-                    submission_date,
-                    submitter,
-                    proposal_number,
+                    votes_url,
                     meeting_id,
-                    summary,
+                    conference_id,
                     created_at,
                     updated_at
                 FROM proposals
-                WHERE proposal_number = :proposal_number
+                WHERE conference_id = :conference_id
+                ORDER BY created_at DESC
             """)
 
-            result = await self.session.execute(
-                query, {"proposal_number": proposal_number}
-            )
-            row = result.fetchone()
-
-            if row:
-                if hasattr(row, "_asdict"):
-                    row_dict = row._asdict()  # type: ignore[attr-defined]
-                elif hasattr(row, "_mapping"):
-                    row_dict = dict(row._mapping)  # type: ignore[attr-defined]
-                else:
-                    row_dict = dict(row)
-                return self._dict_to_entity(row_dict)
-            return None
-
-        except SQLAlchemyError as e:
-            logger.error(f"Database error getting proposal by proposal number: {e}")
-            raise DatabaseError(
-                "Failed to get proposal by proposal number",
-                {"proposal_number": proposal_number, "error": str(e)},
-            ) from e
-
-    async def get_by_submission_date_range(
-        self, start_date: str, end_date: str
-    ) -> list[Proposal]:
-        """Get proposals submitted within a date range.
-
-        Args:
-            start_date: Start date in ISO format (YYYY-MM-DD)
-            end_date: End date in ISO format (YYYY-MM-DD)
-
-        Returns:
-            List of proposals submitted within the date range
-        """
-        try:
-            query = text("""
-                SELECT
-                    id,
-                    content,
-                    status,
-                    detail_url,
-                    status_url,
-                    submission_date,
-                    submitter,
-                    proposal_number,
-                    meeting_id,
-                    summary,
-                    created_at,
-                    updated_at
-                FROM proposals
-                WHERE submission_date >= :start_date
-                  AND submission_date <= :end_date
-                ORDER BY submission_date DESC, created_at DESC
-            """)
-
-            result = await self.session.execute(
-                query, {"start_date": start_date, "end_date": end_date}
-            )
+            result = await self.session.execute(query, {"conference_id": conference_id})
             rows = result.fetchall()
 
             results = []
@@ -622,16 +457,14 @@ class ProposalRepositoryImpl(BaseRepositoryImpl[Proposal], ProposalRepository):
             return results
 
         except SQLAlchemyError as e:
-            logger.error(
-                f"Database error getting proposals by submission date range: {e}"
-            )
+            logger.error(f"Database error getting proposals by conference ID: {e}")
             raise DatabaseError(
-                "Failed to get proposals by submission date range",
-                {"start_date": start_date, "end_date": end_date, "error": str(e)},
+                "Failed to get proposals by conference ID",
+                {"conference_id": conference_id, "error": str(e)},
             ) from e
 
     async def find_by_url(self, url: str) -> Proposal | None:
-        """Find proposal by URL (either detail_url or status_url).
+        """Find proposal by URL (detail_url, status_url, or votes_url).
 
         Args:
             url: URL of the proposal
@@ -646,39 +479,28 @@ class ProposalRepositoryImpl(BaseRepositoryImpl[Proposal], ProposalRepository):
             query = text("""
                 SELECT
                     id,
-                    content,
-                    status,
+                    title,
                     detail_url,
                     status_url,
-                    submission_date,
-                    submitter,
-                    proposal_number,
+                    votes_url,
                     meeting_id,
-                    summary,
+                    conference_id,
                     created_at,
                     updated_at
                 FROM proposals
-                WHERE detail_url = :url OR status_url = :url
+                WHERE detail_url = :url OR status_url = :url OR votes_url = :url
             """)
             result = await self.session.execute(query, {"url": url})
             row = result.fetchone()
 
             if row:
-                proposal_model = ProposalModel(
-                    id=row.id,
-                    content=row.content,
-                    status=row.status,
-                    detail_url=row.detail_url,
-                    status_url=row.status_url,
-                    submission_date=row.submission_date,
-                    submitter=row.submitter,
-                    proposal_number=row.proposal_number,
-                    meeting_id=row.meeting_id,
-                    summary=row.summary,
-                    created_at=row.created_at,
-                    updated_at=row.updated_at,
-                )
-                return self._to_entity(proposal_model)
+                if hasattr(row, "_asdict"):
+                    row_dict = row._asdict()  # type: ignore[attr-defined]
+                elif hasattr(row, "_mapping"):
+                    row_dict = dict(row._mapping)  # type: ignore[attr-defined]
+                else:
+                    row_dict = dict(row)
+                return self._dict_to_entity(row_dict)
             return None
 
         except SQLAlchemyError as e:

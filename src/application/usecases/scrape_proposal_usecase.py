@@ -67,17 +67,14 @@ class ScrapeProposalUseCase:
 
         # Create output DTO with scraped data
         output_dto = ScrapeProposalOutputDTO(
-            content=scraped_data.content,
-            proposal_number=scraped_data.proposal_number,
-            submission_date=scraped_data.submission_date,
-            summary=scraped_data.summary,
-            detail_url=scraped_data.url,  # Default to detail_url for scraped content
-            status_url=None,  # Status URL can be set separately
+            title=scraped_data.title,
+            detail_url=scraped_data.url,
+            status_url=None,
+            votes_url=None,
             meeting_id=input_dto.meeting_id,
         )
 
-        proposal_num = output_dto.proposal_number or "No number"
-        logger.info(f"Successfully scraped proposal: {proposal_num}")
+        logger.info(f"Successfully scraped proposal: {output_dto.title[:50]}...")
         return output_dto
 
     async def scrape_and_save(self, input_dto: ScrapeProposalInputDTO) -> ProposalDTO:
@@ -96,15 +93,6 @@ class ScrapeProposalUseCase:
         # First scrape the proposal
         scraped_dto = await self.execute(input_dto)
 
-        # Check if proposal already exists (by URL or proposal number)
-        if scraped_dto.proposal_number:
-            existing = await self.proposal_repo.get_by_proposal_number(
-                scraped_dto.proposal_number
-            )
-            if existing:
-                logger.warning(f"Proposal {scraped_dto.proposal_number} already exists")
-                return self._entity_to_dto(existing)
-
         # Check by URL (detail_url)
         if scraped_dto.detail_url:
             existing_by_url = await self.proposal_repo.find_by_url(
@@ -118,13 +106,11 @@ class ScrapeProposalUseCase:
 
         # Create new proposal entity
         proposal = Proposal(
-            content=scraped_dto.content,
+            title=scraped_dto.title,
             detail_url=scraped_dto.detail_url,
             status_url=scraped_dto.status_url,
-            submission_date=scraped_dto.submission_date,
-            proposal_number=scraped_dto.proposal_number,
+            votes_url=scraped_dto.votes_url,
             meeting_id=scraped_dto.meeting_id,
-            summary=scraped_dto.summary,
         )
 
         # Save to database
@@ -157,16 +143,10 @@ class ScrapeProposalUseCase:
         scraped_dto = await self.execute(input_dto)
 
         # Update the existing proposal
-        existing.content = scraped_dto.content or existing.content
+        existing.title = scraped_dto.title or existing.title
         existing.detail_url = scraped_dto.detail_url or existing.detail_url
         existing.status_url = scraped_dto.status_url or existing.status_url
-        existing.submission_date = (
-            scraped_dto.submission_date or existing.submission_date
-        )
-        existing.proposal_number = (
-            scraped_dto.proposal_number or existing.proposal_number
-        )
-        existing.summary = scraped_dto.summary or existing.summary
+        existing.votes_url = scraped_dto.votes_url or existing.votes_url
 
         # Save updated proposal
         updated_proposal = await self.proposal_repo.update(existing)
@@ -187,11 +167,10 @@ class ScrapeProposalUseCase:
             raise RuntimeError("Proposal ID should not be None")
         return ProposalDTO(
             id=proposal.id,
-            content=proposal.content,
+            title=proposal.title,
             detail_url=proposal.detail_url,
             status_url=proposal.status_url,
-            submission_date=proposal.submission_date,
-            proposal_number=proposal.proposal_number,
+            votes_url=proposal.votes_url,
             meeting_id=proposal.meeting_id,
-            summary=proposal.summary,
+            conference_id=proposal.conference_id,
         )

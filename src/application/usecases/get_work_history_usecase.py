@@ -11,11 +11,15 @@ from uuid import UUID
 
 from src.application.dtos.work_history_dto import WorkHistoryDTO, WorkType
 from src.domain.entities.politician_operation_log import PoliticianOperationType
+from src.domain.entities.proposal_operation_log import ProposalOperationType
 from src.domain.repositories.parliamentary_group_membership_repository import (
     ParliamentaryGroupMembershipRepository,
 )
 from src.domain.repositories.politician_operation_log_repository import (
     PoliticianOperationLogRepository,
+)
+from src.domain.repositories.proposal_operation_log_repository import (
+    ProposalOperationLogRepository,
 )
 from src.domain.repositories.speaker_repository import SpeakerRepository
 from src.domain.repositories.user_repository import IUserRepository
@@ -39,6 +43,7 @@ class GetWorkHistoryUseCase:
         user_repository: IUserRepository,
         politician_operation_log_repository: PoliticianOperationLogRepository
         | None = None,
+        proposal_operation_log_repository: ProposalOperationLogRepository | None = None,
     ):
         """コンストラクタ
 
@@ -47,11 +52,13 @@ class GetWorkHistoryUseCase:
             parliamentary_group_membership_repository: 議員団メンバーシップリポジトリ
             user_repository: ユーザーリポジトリ
             politician_operation_log_repository: 政治家操作ログリポジトリ（オプション）
+            proposal_operation_log_repository: 議案操作ログリポジトリ（オプション）
         """
         self.speaker_repo = speaker_repository
         self.membership_repo = parliamentary_group_membership_repository
         self.user_repo = user_repository
         self.politician_log_repo = politician_operation_log_repository
+        self.proposal_log_repo = proposal_operation_log_repository
 
     async def execute(
         self,
@@ -99,6 +106,15 @@ class GetWorkHistoryUseCase:
             )
             for wt in (work_types or [])
         )
+        include_proposal_operations = work_types is None or any(
+            wt
+            in (
+                WorkType.PROPOSAL_CREATE,
+                WorkType.PROPOSAL_UPDATE,
+                WorkType.PROPOSAL_DELETE,
+            )
+            for wt in (work_types or [])
+        )
 
         # 1. 発言者-政治家紐付け作業の取得
         if include_speaker_matching:
@@ -120,6 +136,13 @@ class GetWorkHistoryUseCase:
                 user_id, work_types, start_date, end_date
             )
             histories.extend(politician_histories)
+
+        # 4. 議案操作履歴の取得
+        if include_proposal_operations and self.proposal_log_repo:
+            proposal_histories = await self._get_proposal_operation_histories(
+                user_id, work_types, start_date, end_date
+            )
+            histories.extend(proposal_histories)
 
         # 実行日時で降順ソート
         histories.sort(key=lambda x: x.executed_at, reverse=True)
@@ -336,6 +359,89 @@ class GetWorkHistoryUseCase:
 
                 # 対象データの説明を作成
                 target_data = log.politician_name
+
+                histories.append(
+                    WorkHistoryDTO(
+                        user_id=log.user_id,
+                        user_name=user_name,
+                        user_email=user_email,
+                        work_type=work_type,
+                        target_data=target_data,
+                        executed_at=log.operated_at,
+                    )
+                )
+
+        return histories
+
+    async def _get_proposal_operation_histories(
+        self,
+        user_id: UUID | None,
+        work_types: list[WorkType] | None,
+        start_date: datetime | None,
+        end_date: datetime | None,
+    ) -> list[WorkHistoryDTO]:
+        """議案操作履歴を取得
+
+        Args:
+            user_id: フィルタリング対象のユーザーID
+            work_types: フィルタリング対象の作業タイプリスト
+            start_date: 開始日時
+            end_date: 終了日時
+
+        Returns:
+            議案操作履歴のリスト
+        """
+        if not self.proposal_log_repo:
+            return []
+
+        # 操作タイプのフィルタリング
+        operation_types_to_include: list[ProposalOperationType] = []
+        if work_types is None:
+            operation_types_to_include = list(ProposalOperationType)
+        else:
+            if WorkType.PROPOSAL_CREATE in work_types:
+                operation_types_to_include.append(ProposalOperationType.CREATE)
+            if WorkType.PROPOSAL_UPDATE in work_types:
+                operation_types_to_include.append(ProposalOperationType.UPDATE)
+            if WorkType.PROPOSAL_DELETE in work_types:
+                operation_types_to_include.append(ProposalOperationType.DELETE)
+
+        histories: list[WorkHistoryDTO] = []
+        user_cache: dict[UUID, tuple[str | None, str | None]] = {}
+
+        # 各操作タイプごとにログを取得
+        for op_type in operation_types_to_include:
+            logs = await self.proposal_log_repo.find_by_filters(
+                user_id=user_id,
+                operation_type=op_type,
+                start_date=start_date,
+                end_date=end_date,
+            )
+
+            for log in logs:
+                if log.user_id is None:
+                    continue
+
+                # ユーザー情報の取得（キャッシュを使用）
+                if log.user_id not in user_cache:
+                    user = await self.user_repo.get_by_id(log.user_id)
+                    user_cache[log.user_id] = (
+                        user.name if user else None,
+                        user.email if user else None,
+                    )
+
+                user_name, user_email = user_cache[log.user_id]
+
+                # 操作タイプからWorkTypeへの変換
+                work_type_map = {
+                    ProposalOperationType.CREATE: WorkType.PROPOSAL_CREATE,
+                    ProposalOperationType.UPDATE: WorkType.PROPOSAL_UPDATE,
+                    ProposalOperationType.DELETE: WorkType.PROPOSAL_DELETE,
+                }
+                work_type = work_type_map[log.operation_type]
+
+                # 対象データの説明を作成
+                target_data = log.proposal_title
 
                 histories.append(
                     WorkHistoryDTO(

@@ -15,12 +15,10 @@ class ScrapeProposalInputDTO:
 class ScrapeProposalOutputDTO:
     """Output DTO for scraped proposal information."""
 
-    content: str
+    title: str
     detail_url: str | None = None
     status_url: str | None = None
-    proposal_number: str | None = None
-    submission_date: str | None = None  # ISO format date
-    summary: str | None = None
+    votes_url: str | None = None
     meeting_id: int | None = None
 
 
@@ -28,13 +26,12 @@ class ScrapeProposalOutputDTO:
 class CreateProposalDTO:
     """DTO for creating a new proposal."""
 
-    content: str
+    title: str
     detail_url: str | None = None
     status_url: str | None = None
-    submission_date: str | None = None
-    proposal_number: str | None = None
+    votes_url: str | None = None
     meeting_id: int | None = None
-    summary: str | None = None
+    conference_id: int | None = None
 
 
 @dataclass
@@ -42,13 +39,12 @@ class UpdateProposalDTO:
     """DTO for updating an existing proposal."""
 
     id: int
-    content: str | None = None
+    title: str | None = None
     detail_url: str | None = None
     status_url: str | None = None
-    submission_date: str | None = None
-    proposal_number: str | None = None
+    votes_url: str | None = None
     meeting_id: int | None = None
-    summary: str | None = None
+    conference_id: int | None = None
 
 
 @dataclass
@@ -56,10 +52,9 @@ class ProposalDTO:
     """DTO representing a proposal entity."""
 
     id: int
-    content: str
+    title: str
     detail_url: str | None = None
     status_url: str | None = None
-    submission_date: str | None = None
-    proposal_number: str | None = None
+    votes_url: str | None = None
     meeting_id: int | None = None
-    summary: str | None = None
+    conference_id: int | None = None

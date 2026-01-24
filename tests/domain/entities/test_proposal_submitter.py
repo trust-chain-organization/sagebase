@@ -22,6 +22,7 @@ class TestProposalSubmitter:
         assert submitter.submitter_type == SubmitterType.POLITICIAN
         assert submitter.politician_id is None
         assert submitter.parliamentary_group_id is None
+        assert submitter.conference_id is None
         assert submitter.raw_name is None
         assert submitter.is_representative is False
         assert submitter.display_order == 0
@@ -91,6 +92,18 @@ class TestProposalSubmitter:
         mayor_submitter = create_proposal_submitter(submitter_type=SubmitterType.MAYOR)
         assert mayor_submitter.is_committee_submission() is False
 
+    def test_is_conference_submission(self) -> None:
+        """Test is_conference_submission method."""
+        conference_submitter = create_proposal_submitter(
+            submitter_type=SubmitterType.CONFERENCE
+        )
+        assert conference_submitter.is_conference_submission() is True
+
+        politician_submitter = create_proposal_submitter(
+            submitter_type=SubmitterType.POLITICIAN
+        )
+        assert politician_submitter.is_conference_submission() is False
+
     def test_is_matched_for_politician_type(self) -> None:
         """Test is_matched method for politician type."""
         matched_submitter = create_proposal_submitter(
@@ -136,6 +149,20 @@ class TestProposalSubmitter:
         other_submitter = create_proposal_submitter(submitter_type=SubmitterType.OTHER)
         assert other_submitter.is_matched() is True
 
+    def test_is_matched_for_conference_type(self) -> None:
+        """Test is_matched method for conference type."""
+        matched_submitter = create_proposal_submitter(
+            submitter_type=SubmitterType.CONFERENCE,
+            conference_id=10,
+        )
+        assert matched_submitter.is_matched() is True
+
+        unmatched_submitter = create_proposal_submitter(
+            submitter_type=SubmitterType.CONFERENCE,
+            conference_id=None,
+        )
+        assert unmatched_submitter.is_matched() is False
+
     def test_str_representation(self) -> None:
         """Test string representation of entity."""
         submitter = create_proposal_submitter(
@@ -176,11 +203,12 @@ class TestSubmitterType:
         assert SubmitterType.POLITICIAN.value == "politician"
         assert SubmitterType.PARLIAMENTARY_GROUP.value == "parliamentary_group"
         assert SubmitterType.COMMITTEE.value == "committee"
+        assert SubmitterType.CONFERENCE.value == "conference"
         assert SubmitterType.OTHER.value == "other"
 
     def test_enum_count(self) -> None:
-        """Test that there are exactly 5 submitter types."""
-        assert len(SubmitterType) == 5
+        """Test that there are exactly 6 submitter types."""
+        assert len(SubmitterType) == 6
 
     def test_enum_from_value(self) -> None:
         """Test creating enum from string value."""
@@ -188,6 +216,7 @@ class TestSubmitterType:
         assert SubmitterType("politician") == SubmitterType.POLITICIAN
         assert SubmitterType("parliamentary_group") == SubmitterType.PARLIAMENTARY_GROUP
         assert SubmitterType("committee") == SubmitterType.COMMITTEE
+        assert SubmitterType("conference") == SubmitterType.CONFERENCE
         assert SubmitterType("other") == SubmitterType.OTHER
 
     def test_enum_invalid_value(self) -> None:

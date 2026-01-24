@@ -4,6 +4,8 @@ This module provides the UI layer for proposal management,
 using the presenter pattern for business logic.
 """
 
+from typing import Any
+
 import streamlit as st
 
 from src.domain.entities.extracted_proposal_judge import ExtractedProposalJudge
@@ -45,8 +47,8 @@ def render_proposals_tab(presenter: ProposalPresenter) -> None:
     with col1:
         filter_options = {
             "すべて": "all",
-            "状態別": "by_status",
             "会議別": "by_meeting",
+            "会議体別": "by_conference",
         }
         selected_filter = st.selectbox(
             "表示フィルター", options=list(filter_options.keys()), index=0
@@ -54,23 +56,23 @@ def render_proposals_tab(presenter: ProposalPresenter) -> None:
         filter_type = filter_options[selected_filter]
 
     # Additional filters based on selection
-    status_filter = None
     meeting_filter = None
+    conference_filter = None
 
-    if filter_type == "by_status":
-        with col2:
-            status_filter = st.text_input("状態", placeholder="例: 可決")
-
-    elif filter_type == "by_meeting":
+    if filter_type == "by_meeting":
         with col2:
             meeting_filter = st.number_input("会議ID", min_value=1, step=1)
+
+    elif filter_type == "by_conference":
+        with col2:
+            conference_filter = st.number_input("会議体ID", min_value=1, step=1)
 
     # Load data
     try:
         result = presenter.load_data_filtered(
             filter_type=filter_type,
-            status=status_filter,
             meeting_id=meeting_filter,
+            conference_id=conference_filter,
         )
 
         # Display statistics
@@ -97,46 +99,119 @@ def render_proposals_tab(presenter: ProposalPresenter) -> None:
 
 def render_new_proposal_form(presenter: ProposalPresenter) -> None:
     """Render new proposal creation form."""
-    with st.expander("📝 新規議案登録"):
+    with st.expander("新規議案登録"):
         with st.form("new_proposal_form"):
-            content = st.text_area("議案内容 *", placeholder="議案の内容を入力")
+            title = st.text_area("議案タイトル *", placeholder="議案のタイトルを入力")
 
             col1, col2 = st.columns(2)
             with col1:
-                proposal_number = st.text_input("議案番号", placeholder="例: 第1号議案")
-                status = st.text_input("状態", placeholder="例: 審議中")
-                submitter = st.text_input("提出者", placeholder="例: 市長")
+                detail_url = st.text_input("詳細URL", placeholder="https://...")
+                status_url = st.text_input(
+                    "状態URL (optional)", placeholder="https://..."
+                )
+                votes_url = st.text_input(
+                    "賛否URL (optional)", placeholder="https://..."
+                )
 
             with col2:
-                meeting_id = st.number_input("会議ID", min_value=0, value=0, step=1)
-                submission_date = st.date_input("提出日")
-                detail_url = st.text_input("詳細URL", placeholder="https://...")
+                # Load meetings and conferences for selection
+                try:
+                    meetings = presenter.load_meetings()
+                    meeting_options: dict[str, int | None] = {"なし": None}
+                    meeting_options.update(
+                        {f"{m['name']} (ID: {m['id']})": m["id"] for m in meetings}
+                    )
+                    selected_meeting = st.selectbox(
+                        "紐づく会議 (optional)",
+                        options=list(meeting_options.keys()),
+                        index=0,
+                    )
+                    meeting_id = meeting_options[selected_meeting]
+                except Exception:
+                    meeting_id = None
+                    st.warning("会議一覧の読み込みに失敗しました")
 
-            status_url = st.text_input("状態URL", placeholder="https://...")
-            summary = st.text_area("要約", placeholder="議案の要約")
+                conferences: list[dict[str, Any]] = []
+                try:
+                    conferences = presenter.load_conferences()
+                    conference_options: dict[str, int | None] = {"なし": None}
+                    for c in conferences:
+                        conference_options[f"{c['name']} (ID: {c['id']})"] = c["id"]
+                    selected_conference = st.selectbox(
+                        "紐づく会議体 (optional)",
+                        options=list(conference_options.keys()),
+                        index=0,
+                    )
+                    conference_id = conference_options[selected_conference]
+                except Exception:
+                    conference_id = None
+                    st.warning("会議体一覧の読み込みに失敗しました")
+
+            # Load politicians for submitter selection
+            st.markdown("**提出者の選択**")
+            submitter_politician_ids: list[int] = []
+            submitter_conference_ids: list[int] = []
+
+            try:
+                politicians = presenter.load_politicians()
+                politician_options = {
+                    f"{p.name} (ID: {p.id})": p.id for p in politicians if p.id
+                }
+                selected_politicians = st.multiselect(
+                    "政治家から選択（複数選択可能）",
+                    options=list(politician_options.keys()),
+                )
+                submitter_politician_ids = [
+                    politician_options[name] for name in selected_politicians
+                ]
+            except Exception:
+                st.warning("政治家一覧の読み込みに失敗しました")
+
+            try:
+                # Use already loaded conferences for submitter selection
+                submitter_conference_options: dict[str, int] = {}
+                for c in conferences:
+                    key = f"{c['name']} (ID: {c['id']})"
+                    submitter_conference_options[key] = c["id"]
+                selected_submitter_conferences = st.multiselect(
+                    "会議体から選択（複数選択可能）",
+                    options=list(submitter_conference_options.keys()),
+                )
+                submitter_conference_ids = [
+                    submitter_conference_options[name]
+                    for name in selected_submitter_conferences
+                ]
+            except Exception:
+                st.warning("会議体一覧の読み込みに失敗しました")
 
             submitted = st.form_submit_button("登録")
 
             if submitted:
-                if not content:
-                    st.error("議案内容は必須です")
+                if not title:
+                    st.error("議案タイトルは必須です")
                 else:
                     try:
+                        user_id = presenter.get_current_user_id()
                         result = presenter.create(
-                            content=content,
-                            proposal_number=proposal_number or None,
-                            status=status or None,
-                            submitter=submitter or None,
-                            meeting_id=meeting_id if meeting_id > 0 else None,
-                            submission_date=(
-                                submission_date.isoformat() if submission_date else None
-                            ),
+                            title=title,
                             detail_url=detail_url or None,
                             status_url=status_url or None,
-                            summary=summary or None,
+                            votes_url=votes_url or None,
+                            meeting_id=meeting_id,
+                            conference_id=conference_id,
+                            user_id=user_id,
                         )
 
                         if result.success:
+                            # Register submitters if selected
+                            if (
+                                submitter_politician_ids or submitter_conference_ids
+                            ) and result.proposal:
+                                presenter.update_submitters(
+                                    result.proposal.id,  # type: ignore[arg-type]
+                                    politician_ids=submitter_politician_ids,
+                                    conference_ids=submitter_conference_ids,
+                                )
                             st.success(result.message)
                             st.rerun()
                         else:
@@ -147,7 +222,7 @@ def render_new_proposal_form(presenter: ProposalPresenter) -> None:
 
 def render_scrape_proposal_section(presenter: ProposalPresenter) -> None:
     """Render proposal scraping section."""
-    with st.expander("🔍 議案情報の自動抽出"):
+    with st.expander("議案情報の自動抽出"):
         st.markdown("URLから議案情報を自動的に抽出してデータベースに保存します。")
 
         with st.form("scrape_proposal_form"):
@@ -169,14 +244,13 @@ def render_scrape_proposal_section(presenter: ProposalPresenter) -> None:
                                 meeting_id=meeting_id if meeting_id > 0 else None,
                             )
 
-                            if result.proposal:
-                                st.success("議案情報を抽出しました！")
+                            if result:
+                                st.success("議案情報を抽出しました")
                                 st.json(
                                     {
-                                        "議案番号": result.proposal.proposal_number,
-                                        "内容": result.proposal.content[:100] + "...",
-                                        "提出者": result.proposal.submitter,
-                                        "提出日": result.proposal.submission_date,
+                                        "タイトル": result.title[:100] + "..."
+                                        if len(result.title) > 100
+                                        else result.title,
                                     }
                                 )
                                 st.rerun()
@@ -188,54 +262,301 @@ def render_scrape_proposal_section(presenter: ProposalPresenter) -> None:
 
 def render_proposal_row(presenter: ProposalPresenter, proposal: Proposal) -> None:
     """Render a single proposal row."""
+    # Check if this proposal is being edited
+    if proposal.id is not None and presenter.is_editing(proposal.id):
+        render_edit_proposal_form(presenter, proposal)
+    else:
+        render_proposal_display(presenter, proposal)
+
+
+def render_proposal_display(presenter: ProposalPresenter, proposal: Proposal) -> None:
+    """Render proposal in display mode."""
     with st.container():
         col1, col2 = st.columns([4, 1])
 
         with col1:
             st.markdown(f"**議案 #{proposal.id}**")
-            if proposal.proposal_number:
-                st.markdown(f"📋 {proposal.proposal_number}")
-            st.markdown(f"📝 {proposal.content[:100]}...")
+            st.markdown(f"{proposal.title[:100]}...")
 
-            col_info1, col_info2, col_info3 = st.columns(3)
+            col_info1, col_info2 = st.columns(2)
             with col_info1:
-                st.markdown(f"**状態**: {proposal.status or '未設定'}")
+                st.markdown(f"**会議ID**: {proposal.meeting_id or '未設定'}")
             with col_info2:
-                st.markdown(f"**提出者**: {proposal.submitter or '未設定'}")
-            with col_info3:
-                st.markdown(f"**提出日**: {proposal.submission_date or '未設定'}")
+                st.markdown(f"**会議体ID**: {proposal.conference_id or '未設定'}")
+
+            # Display submitters
+            try:
+                submitters = presenter.load_submitters(proposal.id)  # type: ignore[arg-type]
+                if submitters:
+                    politicians = presenter.load_politicians()
+                    politician_names = {p.id: p.name for p in politicians}
+                    conferences = presenter.load_conferences()
+                    conference_names = {c["id"]: c["name"] for c in conferences}
+
+                    submitter_display_parts = []
+
+                    # Politician submitters
+                    for s in submitters:
+                        if s.politician_id:
+                            name = politician_names.get(
+                                s.politician_id, f"政治家ID:{s.politician_id}"
+                            )
+                            submitter_display_parts.append(name)
+
+                    # Conference submitters
+                    for s in submitters:
+                        if s.conference_id:
+                            conf_name = conference_names.get(
+                                s.conference_id, f"ID:{s.conference_id}"
+                            )
+                            submitter_display_parts.append(f"[会議体] {conf_name}")
+
+                    if submitter_display_parts:
+                        st.markdown(f"**提出者**: {', '.join(submitter_display_parts)}")
+            except Exception:
+                pass
 
             if proposal.detail_url:
-                st.markdown(f"🔗 [詳細URL]({proposal.detail_url})")
+                st.markdown(f"[詳細URL]({proposal.detail_url})")
             if proposal.status_url:
-                st.markdown(f"🔗 [状態URL]({proposal.status_url})")
+                st.markdown(f"[状態URL]({proposal.status_url})")
+            if proposal.votes_url:
+                st.markdown(f"[賛否URL]({proposal.votes_url})")
 
         with col2:
             # Action buttons
-            with st.popover("⚙️ 操作"):
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
                 if st.button("編集", key=f"edit_proposal_{proposal.id}"):
                     if proposal.id is not None:
                         presenter.set_editing_mode(proposal.id)
                         st.rerun()
 
+            with col_btn2:
                 if st.button(
                     "削除",
                     key=f"delete_proposal_{proposal.id}",
-                    type="primary",
+                    type="secondary",
                 ):
-                    if st.button(
-                        "本当に削除しますか？",
-                        key=f"confirm_delete_{proposal.id}",
-                    ):
+                    st.session_state[f"confirm_delete_{proposal.id}"] = True
+
+            # Delete confirmation
+            if st.session_state.get(f"confirm_delete_{proposal.id}", False):
+                st.warning("本当に削除しますか？")
+                col_confirm1, col_confirm2 = st.columns(2)
+                with col_confirm1:
+                    if st.button("はい", key=f"confirm_yes_{proposal.id}"):
                         try:
-                            result = presenter.delete(proposal_id=proposal.id)
+                            user_id = presenter.get_current_user_id()
+                            result = presenter.delete(
+                                proposal_id=proposal.id,
+                                user_id=user_id,
+                            )
                             if result.success:
                                 st.success(result.message)
+                                del st.session_state[f"confirm_delete_{proposal.id}"]
                                 st.rerun()
                             else:
                                 st.error(result.message)
                         except Exception as e:
                             handle_ui_error(e, "議案の削除")
+                with col_confirm2:
+                    if st.button("いいえ", key=f"confirm_no_{proposal.id}"):
+                        del st.session_state[f"confirm_delete_{proposal.id}"]
+                        st.rerun()
+
+        st.divider()
+
+
+def render_edit_proposal_form(presenter: ProposalPresenter, proposal: Proposal) -> None:
+    """Render proposal edit form."""
+    with st.container():
+        st.markdown(f"### 議案 #{proposal.id} を編集中")
+
+        with st.form(f"edit_proposal_form_{proposal.id}"):
+            title = st.text_area(
+                "議案タイトル *",
+                value=proposal.title,
+                key=f"edit_title_{proposal.id}",
+            )
+
+            col1, col2 = st.columns(2)
+            with col1:
+                detail_url = st.text_input(
+                    "詳細URL",
+                    value=proposal.detail_url or "",
+                    key=f"edit_detail_url_{proposal.id}",
+                )
+                status_url = st.text_input(
+                    "状態URL",
+                    value=proposal.status_url or "",
+                    key=f"edit_status_url_{proposal.id}",
+                )
+                votes_url = st.text_input(
+                    "賛否URL",
+                    value=proposal.votes_url or "",
+                    key=f"edit_votes_url_{proposal.id}",
+                )
+
+            with col2:
+                # Load meetings
+                try:
+                    meetings = presenter.load_meetings()
+                    meeting_options: dict[str, int | None] = {"なし": None}
+                    meeting_options.update(
+                        {f"{m['name']} (ID: {m['id']})": m["id"] for m in meetings}
+                    )
+                    # Find current meeting selection
+                    current_meeting_idx = 0
+                    if proposal.meeting_id:
+                        for idx, (_, mid) in enumerate(meeting_options.items()):
+                            if mid == proposal.meeting_id:
+                                current_meeting_idx = idx
+                                break
+                    selected_meeting = st.selectbox(
+                        "紐づく会議",
+                        options=list(meeting_options.keys()),
+                        index=current_meeting_idx,
+                        key=f"edit_meeting_{proposal.id}",
+                    )
+                    meeting_id = meeting_options[selected_meeting]
+                except Exception:
+                    meeting_id = proposal.meeting_id
+                    st.warning("会議一覧の読み込みに失敗しました")
+
+                # Load conferences
+                conferences: list[dict[str, Any]] = []
+                try:
+                    conferences = presenter.load_conferences()
+                    conference_options: dict[str, int | None] = {"なし": None}
+                    for c in conferences:
+                        conference_options[f"{c['name']} (ID: {c['id']})"] = c["id"]
+                    # Find current conference selection
+                    current_conference_idx = 0
+                    if proposal.conference_id:
+                        for idx, (_, cid) in enumerate(conference_options.items()):
+                            if cid == proposal.conference_id:
+                                current_conference_idx = idx
+                                break
+                    selected_conference = st.selectbox(
+                        "紐づく会議体",
+                        options=list(conference_options.keys()),
+                        index=current_conference_idx,
+                        key=f"edit_conference_{proposal.id}",
+                    )
+                    conference_id = conference_options[selected_conference]
+                except Exception:
+                    conference_id = proposal.conference_id
+                    st.warning("会議体一覧の読み込みに失敗しました")
+
+            # Load current submitters and politicians/conferences for selection
+            st.markdown("**提出者の選択**")
+            submitter_politician_ids: list[int] = []
+            submitter_conference_ids: list[int] = []
+            current_conference_ids: list[int] = []
+
+            try:
+                politicians = presenter.load_politicians()
+                politician_options = {
+                    f"{p.name} (ID: {p.id})": p.id for p in politicians if p.id
+                }
+
+                # Get current submitters
+                current_submitters = presenter.load_submitters(proposal.id)  # type: ignore[arg-type]
+                current_politician_ids = [
+                    s.politician_id for s in current_submitters if s.politician_id
+                ]
+                current_conference_ids = [
+                    s.conference_id for s in current_submitters if s.conference_id
+                ]
+
+                # Find option names for current politician submitters
+                current_politician_selections = [
+                    name
+                    for name, pid in politician_options.items()
+                    if pid in current_politician_ids
+                ]
+
+                selected_politicians = st.multiselect(
+                    "政治家から選択（複数選択可能）",
+                    options=list(politician_options.keys()),
+                    default=current_politician_selections,
+                    key=f"edit_submitters_{proposal.id}",
+                )
+                submitter_politician_ids = [
+                    politician_options[name] for name in selected_politicians
+                ]
+            except Exception:
+                st.warning("政治家情報の読み込みに失敗しました")
+
+            try:
+                # Use already loaded conferences for submitter selection
+                submitter_conference_options: dict[str, int] = {}
+                for c in conferences:
+                    key = f"{c['name']} (ID: {c['id']})"
+                    submitter_conference_options[key] = c["id"]
+
+                # Find option names for current conference submitters
+                current_conference_selections = [
+                    name
+                    for name, cid in submitter_conference_options.items()
+                    if cid in current_conference_ids
+                ]
+
+                selected_submitter_conferences = st.multiselect(
+                    "会議体から選択（複数選択可能）",
+                    options=list(submitter_conference_options.keys()),
+                    default=current_conference_selections,
+                    key=f"edit_submitter_conferences_{proposal.id}",
+                )
+                submitter_conference_ids = [
+                    submitter_conference_options[name]
+                    for name in selected_submitter_conferences
+                ]
+            except Exception:
+                st.warning("会議体情報の読み込みに失敗しました")
+
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                submitted = st.form_submit_button("保存", type="primary")
+            with col_btn2:
+                cancelled = st.form_submit_button("キャンセル")
+
+            if submitted:
+                if not title:
+                    st.error("議案タイトルは必須です")
+                else:
+                    try:
+                        user_id = presenter.get_current_user_id()
+                        result = presenter.update(
+                            proposal_id=proposal.id,
+                            title=title,
+                            detail_url=detail_url or None,
+                            status_url=status_url or None,
+                            votes_url=votes_url or None,
+                            meeting_id=meeting_id,
+                            conference_id=conference_id,
+                            user_id=user_id,
+                        )
+
+                        if result.success:
+                            # Update submitters
+                            presenter.update_submitters(
+                                proposal.id,  # type: ignore[arg-type]
+                                politician_ids=submitter_politician_ids,
+                                conference_ids=submitter_conference_ids,
+                            )
+                            st.success(result.message)
+                            presenter.cancel_editing()
+                            st.rerun()
+                        else:
+                            st.error(result.message)
+                    except Exception as e:
+                        handle_ui_error(e, "議案の更新")
+
+            if cancelled:
+                presenter.cancel_editing()
+                st.rerun()
 
         st.divider()
 
@@ -290,7 +611,7 @@ def render_extracted_judges_tab(presenter: ProposalPresenter) -> None:
 
 def render_extract_judges_section(presenter: ProposalPresenter) -> None:
     """Render judge extraction section."""
-    with st.expander("🔍 賛否情報の自動抽出"):
+    with st.expander("賛否情報の自動抽出"):
         st.markdown("議案の状態URLから賛否情報を自動的に抽出します。")
 
         with st.form("extract_judges_form"):
@@ -332,7 +653,7 @@ def render_batch_operations(
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("🔗 一括マッチング", type="primary"):
+        if st.button("一括マッチング", type="primary"):
             with st.spinner("マッチング処理中..."):
                 try:
                     # Get unique proposal IDs from judges
@@ -348,7 +669,7 @@ def render_batch_operations(
                     handle_ui_error(e, "一括マッチング")
 
     with col2:
-        if st.button("✅ 一括承認（matched のみ）"):
+        if st.button("一括承認（matched のみ）"):
             with st.spinner("承認処理中..."):
                 try:
                     # Get unique proposal IDs from matched judges
@@ -381,15 +702,15 @@ def render_extracted_judge_row(
         with col1:
             # Status badge
             status_emoji = {
-                "pending": "⏳",
-                "matched": "✅",
-                "needs_review": "⚠️",
-                "no_match": "❌",
+                "pending": "?",
+                "matched": "OK",
+                "needs_review": "!",
+                "no_match": "X",
             }
-            emoji = status_emoji.get(judge.matching_status or "pending", "❓")
+            emoji = status_emoji.get(judge.matching_status or "pending", "?")
 
             st.markdown(
-                f"{emoji} **ID {judge.id}** - {judge.extracted_politician_name}"
+                f"[{emoji}] **ID {judge.id}** - {judge.extracted_politician_name}"
             )
 
             col_info1, col_info2, col_info3 = st.columns(3)
@@ -407,7 +728,7 @@ def render_extracted_judge_row(
 
         with col2:
             if judge.matching_status == "matched":
-                if st.button("✅ 承認", key=f"approve_{judge.id}"):
+                if st.button("承認", key=f"approve_{judge.id}"):
                     try:
                         # Create single judge
                         result = presenter.create_judges_from_matched(
@@ -418,7 +739,7 @@ def render_extracted_judge_row(
                     except Exception as e:
                         handle_ui_error(e, "承認処理")
             elif judge.matching_status == "pending":
-                if st.button("🔗 マッチング", key=f"match_{judge.id}"):
+                if st.button("マッチング", key=f"match_{judge.id}"):
                     try:
                         result = presenter.match_judges(proposal_id=judge.proposal_id)
                         st.success(f"マッチング完了: {result.matched_count}件")
@@ -475,17 +796,18 @@ def render_final_judges_tab(presenter: ProposalPresenter) -> None:
 def render_judge_statistics(judges: list[ProposalJudge]) -> None:
     """Render statistics for proposal judges."""
     # Count by vote
-    vote_counts = {}
+    vote_counts: dict[str, int] = {}
     for judge in judges:
         vote = judge.approve or "未設定"
         vote_counts[vote] = vote_counts.get(vote, 0) + 1
 
     st.markdown("### 統計情報")
 
-    cols = st.columns(len(vote_counts))
-    for i, (vote, count) in enumerate(vote_counts.items()):
-        with cols[i]:
-            st.metric(vote, count)
+    if vote_counts:
+        cols = st.columns(len(vote_counts))
+        for i, (vote, count) in enumerate(vote_counts.items()):
+            with cols[i]:
+                st.metric(vote, count)
 
 
 def render_final_judge_row(presenter: ProposalPresenter, judge: ProposalJudge) -> None:
@@ -504,10 +826,9 @@ def render_final_judge_row(presenter: ProposalPresenter, judge: ProposalJudge) -
                 pass
 
         with col2:
-            with st.popover("⚙️"):
-                if st.button("削除", key=f"delete_judge_{judge.id}"):
-                    # Note: Delete functionality would need to be added to presenter
-                    st.warning("削除機能は未実装です")
+            if st.button("削除", key=f"delete_judge_{judge.id}"):
+                # Note: Delete functionality would need to be added to presenter
+                st.warning("削除機能は未実装です")
 
         st.divider()
 

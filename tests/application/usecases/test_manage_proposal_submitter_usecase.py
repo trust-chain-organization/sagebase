@@ -79,7 +79,7 @@ class TestManageProposalSubmitterUseCase:
         """サンプルの議案エンティティを作成する."""
         return Proposal(
             id=1,
-            content="議案第1号 予算案",
+            title="議案第1号 予算案",
             meeting_id=10,
         )
 

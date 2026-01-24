@@ -28,16 +28,14 @@ def sample_proposals():
     return [
         Proposal(
             id=1,
-            content="予算案",
-            status="審議中",
-            proposal_number="第1号議案",
+            title="予算案",
+            detail_url="https://example.com/1",
             meeting_id=100,
         ),
         Proposal(
             id=2,
-            content="条例案",
-            status="可決",
-            proposal_number="第2号議案",
+            title="条例案",
+            status_url="https://example.com/status/2",
             meeting_id=100,
         ),
     ]
@@ -50,7 +48,7 @@ def sample_statistics():
         total=2,
         with_detail_url=1,
         with_status_url=1,
-        by_status={"審議中": 1, "可決": 1},
+        with_votes_url=0,
     )
 
 
@@ -133,17 +131,17 @@ class TestLoadData:
         assert len(result.proposals) == 2
         mock_use_case.list_proposals.assert_called_once()
 
-    async def test_load_data_filtered_with_status(
+    async def test_load_data_filtered_by_meeting(
         self, presenter, mock_use_case, sample_proposals, sample_statistics
     ):
-        """ステータスフィルタで読み込めることを確認"""
+        """会議IDフィルタで読み込めることを確認"""
         # Arrange
         mock_use_case.list_proposals.return_value = ProposalListOutputDto(
             proposals=[sample_proposals[0]], statistics=sample_statistics
         )
 
         # Act
-        result = await presenter._load_data_filtered_async("all", status="審議中")
+        result = await presenter._load_data_filtered_async("by_meeting", meeting_id=100)
 
         # Assert
         assert len(result.proposals) == 1
@@ -170,9 +168,7 @@ class TestCreate:
 
         # Act
         result = await presenter._create_async(
-            content="新規議案",
-            status="審議中",
-            proposal_number="第3号議案",
+            title="新規議案",
         )
 
         # Assert
@@ -187,7 +183,7 @@ class TestCreate:
         )
 
         # Act
-        result = await presenter._create_async(content="新規議案")
+        result = await presenter._create_async(title="新規議案")
 
         # Assert
         assert result.success is False
@@ -204,9 +200,7 @@ class TestUpdate:
         )
 
         # Act
-        result = await presenter._update_async(
-            proposal_id=1, content="更新された議案", status="可決"
-        )
+        result = await presenter._update_async(proposal_id=1, title="更新された議案")
 
         # Assert
         assert result.success is True
@@ -219,7 +213,7 @@ class TestUpdate:
         )
 
         # Act
-        result = await presenter._update_async(proposal_id=999, content="不明")
+        result = await presenter._update_async(proposal_id=999, title="不明")
 
         # Assert
         assert result.success is False
@@ -267,7 +261,7 @@ class TestToDataframe:
         assert isinstance(df, pd.DataFrame)
         assert len(df) == 2
         assert "ID" in df.columns
-        assert "内容" in df.columns
+        assert "タイトル" in df.columns
 
     def test_to_dataframe_empty(self, presenter):
         """空のリストを処理できることを確認"""

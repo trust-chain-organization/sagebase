@@ -27,6 +27,15 @@ class WorkType(str, Enum):
     POLITICIAN_DELETE = "politician_delete"
     """政治家削除作業"""
 
+    PROPOSAL_CREATE = "proposal_create"
+    """議案作成作業"""
+
+    PROPOSAL_UPDATE = "proposal_update"
+    """議案更新作業"""
+
+    PROPOSAL_DELETE = "proposal_delete"
+    """議案削除作業"""
+
 
 @dataclass
 class WorkHistoryDTO:
@@ -61,5 +70,8 @@ class WorkHistoryDTO:
             WorkType.POLITICIAN_CREATE: "政治家作成",
             WorkType.POLITICIAN_UPDATE: "政治家更新",
             WorkType.POLITICIAN_DELETE: "政治家削除",
+            WorkType.PROPOSAL_CREATE: "議案作成",
+            WorkType.PROPOSAL_UPDATE: "議案更新",
+            WorkType.PROPOSAL_DELETE: "議案削除",
         }
         return display_names.get(self.work_type, self.work_type.value)

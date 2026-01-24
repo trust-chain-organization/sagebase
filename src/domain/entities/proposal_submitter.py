@@ -16,6 +16,7 @@ class ProposalSubmitter(BaseEntity):
         submitter_type: SubmitterType,
         politician_id: int | None = None,
         parliamentary_group_id: int | None = None,
+        conference_id: int | None = None,
         raw_name: str | None = None,
         is_representative: bool = False,
         display_order: int = 0,
@@ -28,6 +29,7 @@ class ProposalSubmitter(BaseEntity):
             submitter_type: 提出者種別
             politician_id: 議員提出の場合のPolitician ID
             parliamentary_group_id: 会派提出の場合のParliamentaryGroup ID
+            conference_id: 会議体提出の場合のConference ID
             raw_name: 生の提出者名（マッチング前の文字列）
             is_representative: 代表提出者かどうか
             display_order: 表示順序
@@ -38,6 +40,7 @@ class ProposalSubmitter(BaseEntity):
         self.submitter_type = submitter_type
         self.politician_id = politician_id
         self.parliamentary_group_id = parliamentary_group_id
+        self.conference_id = conference_id
         self.raw_name = raw_name
         self.is_representative = is_representative
         self.display_order = display_order
@@ -58,12 +61,18 @@ class ProposalSubmitter(BaseEntity):
         """委員会提出かどうかを判定."""
         return self.submitter_type == SubmitterType.COMMITTEE
 
+    def is_conference_submission(self) -> bool:
+        """会議体提出かどうかを判定."""
+        return self.submitter_type == SubmitterType.CONFERENCE
+
     def is_matched(self) -> bool:
         """マッチング済みかどうかを判定."""
         if self.submitter_type == SubmitterType.POLITICIAN:
             return self.politician_id is not None
         if self.submitter_type == SubmitterType.PARLIAMENTARY_GROUP:
             return self.parliamentary_group_id is not None
+        if self.submitter_type == SubmitterType.CONFERENCE:
+            return self.conference_id is not None
         return True
 
     def __str__(self) -> str:

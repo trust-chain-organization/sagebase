@@ -50,10 +50,7 @@ class TestScrapeProposalUseCase:
 
         mock_scraper_service.is_supported_url.return_value = True
         mock_scraper_service.scrape_proposal.return_value = ScrapedProposal(
-            content="環境基本法改正案",
-            proposal_number="第210回国会 第1号",
-            submission_date="2023年12月1日",  # Keep original date format
-            summary="環境保護強化法案",
+            title="環境基本法改正案",
             url=input_dto.url,
         )
 
@@ -62,10 +59,7 @@ class TestScrapeProposalUseCase:
 
         # Assert
         assert isinstance(result, ScrapeProposalOutputDTO)
-        assert result.content == "環境基本法改正案"
-        assert result.proposal_number == "第210回国会 第1号"
-        assert result.submission_date == "2023年12月1日"  # Original format preserved
-        assert result.summary == "環境保護強化法案"
+        assert result.title == "環境基本法改正案"
         assert result.detail_url == input_dto.url
         assert result.meeting_id == 123
 
@@ -111,24 +105,17 @@ class TestScrapeProposalUseCase:
 
         mock_scraper_service.is_supported_url.return_value = True
         mock_scraper_service.scrape_proposal.return_value = ScrapedProposal(
-            content="環境基本法改正案",
-            proposal_number="第210回国会 第1号",
-            submission_date="2023年12月1日",
-            summary="環境保護強化法案",
+            title="環境基本法改正案",
             url=input_dto.url,
         )
 
         # No existing proposal
-        mock_proposal_repo.get_by_proposal_number.return_value = None
         mock_proposal_repo.find_by_url.return_value = None
 
         # Mock saved proposal
         saved_proposal = Proposal(
             id=1,
-            content="環境基本法改正案",
-            proposal_number="第210回国会 第1号",
-            submission_date="2023年12月1日",
-            summary="環境保護強化法案",
+            title="環境基本法改正案",
             detail_url=input_dto.url,
             meeting_id=123,
         )
@@ -140,53 +127,12 @@ class TestScrapeProposalUseCase:
         # Assert
         assert isinstance(result, ProposalDTO)
         assert result.id == 1
-        assert result.content == "環境基本法改正案"
-        assert result.proposal_number == "第210回国会 第1号"
+        assert result.title == "環境基本法改正案"
         assert result.meeting_id == 123
 
         # Verify repository calls
-        mock_proposal_repo.get_by_proposal_number.assert_called_once_with(
-            "第210回国会 第1号"
-        )
         mock_proposal_repo.find_by_url.assert_called_once_with(input_dto.url)
         mock_proposal_repo.create.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_scrape_and_save_existing_proposal_by_number(
-        self,
-        use_case: ScrapeProposalUseCase,
-        mock_proposal_repo: MagicMock,
-        mock_scraper_service: MagicMock,
-    ) -> None:
-        """Test that existing proposals by number are not duplicated."""
-        # Setup
-        input_dto = ScrapeProposalInputDTO(url="https://www.shugiin.go.jp/test")
-
-        mock_scraper_service.is_supported_url.return_value = True
-        mock_scraper_service.scrape_proposal.return_value = ScrapedProposal(
-            content="環境基本法改正案",
-            proposal_number="第210回国会 第1号",
-            url=input_dto.url,
-        )
-
-        # Existing proposal found by number
-        existing_proposal = Proposal(
-            id=1,
-            content="環境基本法改正案",
-            proposal_number="第210回国会 第1号",
-            detail_url="https://old-url.com",
-        )
-        mock_proposal_repo.get_by_proposal_number.return_value = existing_proposal
-
-        # Execute
-        result = await use_case.scrape_and_save(input_dto)
-
-        # Assert
-        assert result.id == 1
-        assert result.proposal_number == "第210回国会 第1号"
-
-        # Verify save was not called
-        mock_proposal_repo.create.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_scrape_and_save_existing_proposal_by_url(
@@ -201,15 +147,14 @@ class TestScrapeProposalUseCase:
 
         mock_scraper_service.is_supported_url.return_value = True
         mock_scraper_service.scrape_proposal.return_value = ScrapedProposal(
-            content="環境基本法改正案",
+            title="環境基本法改正案",
             url=input_dto.url,
         )
 
-        # No existing proposal by number, but found by URL
-        mock_proposal_repo.get_by_proposal_number.return_value = None
+        # Existing proposal found by URL
         existing_proposal = Proposal(
             id=2,
-            content="環境基本法改正案",
+            title="環境基本法改正案",
             detail_url=input_dto.url,
         )
         mock_proposal_repo.find_by_url.return_value = existing_proposal
@@ -239,7 +184,7 @@ class TestScrapeProposalUseCase:
         # Existing proposal
         existing_proposal = Proposal(
             id=proposal_id,
-            content="旧法案",
+            title="旧法案",
             meeting_id=123,
         )
         mock_proposal_repo.get_by_id.return_value = existing_proposal
@@ -247,20 +192,14 @@ class TestScrapeProposalUseCase:
         # Scraped data
         mock_scraper_service.is_supported_url.return_value = True
         mock_scraper_service.scrape_proposal.return_value = ScrapedProposal(
-            content="新環境基本法改正案",
-            proposal_number="第210回国会 第1号",
-            submission_date="2023年12月1日",
-            summary="環境保護強化法案",
+            title="新環境基本法改正案",
             url=new_url,
         )
 
         # Updated proposal
         updated_proposal = Proposal(
             id=proposal_id,
-            content="新環境基本法改正案",
-            proposal_number="第210回国会 第1号",
-            submission_date="2023年12月1日",
-            summary="環境保護強化法案",
+            title="新環境基本法改正案",
             detail_url=new_url,
             meeting_id=123,
         )
@@ -271,7 +210,7 @@ class TestScrapeProposalUseCase:
 
         # Assert
         assert result.id == proposal_id
-        assert result.content == "新環境基本法改正案"
+        assert result.title == "新環境基本法改正案"
         assert result.detail_url == new_url
         assert result.meeting_id == 123
 

@@ -250,6 +250,7 @@ def create_proposal_submitter(**kwargs: Any) -> ProposalSubmitter:
         "submitter_type": SubmitterType.POLITICIAN,
         "politician_id": None,
         "parliamentary_group_id": None,
+        "conference_id": None,
         "raw_name": "山田太郎",
         "is_representative": False,
         "display_order": 0,

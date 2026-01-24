@@ -13,4 +13,5 @@ class SubmitterType(Enum):
     POLITICIAN = "politician"
     PARLIAMENTARY_GROUP = "parliamentary_group"
     COMMITTEE = "committee"
+    CONFERENCE = "conference"
     OTHER = "other"

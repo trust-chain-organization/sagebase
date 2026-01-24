@@ -116,32 +116,18 @@ class ProposalScraperService(IProposalScraperService):
                     extracted_data = json.loads(llm_response)
                 except json.JSONDecodeError:
                     # If not valid JSON, try to extract from the text response
-                    extracted_data = {
-                        "content": "",
-                        "proposal_number": None,
-                        "submission_date": None,
-                        "summary": None,
-                    }
+                    extracted_data = {"title": ""}
                     # Simple fallback extraction from LLM text response
-                    if "content:" in llm_response:
-                        content_match = (
-                            llm_response.split("content:")[1].split("\n")[0].strip()
+                    if "title:" in llm_response:
+                        title_match = (
+                            llm_response.split("title:")[1].split("\n")[0].strip()
                         )
-                        extracted_data["content"] = content_match.strip('"').strip()
+                        extracted_data["title"] = title_match.strip('"').strip()
 
                 # Build the proposal data
                 return ScrapedProposal(
                     url=url,
-                    content=str(extracted_data.get("content", "")),
-                    proposal_number=extracted_data.get("proposal_number")
-                    if extracted_data.get("proposal_number")
-                    else None,
-                    submission_date=extracted_data.get("submission_date")
-                    if extracted_data.get("submission_date")
-                    else None,
-                    summary=extracted_data.get("summary")
-                    if extracted_data.get("summary")
-                    else None,
+                    title=str(extracted_data.get("title", "")),
                 )
 
             except Exception as e:

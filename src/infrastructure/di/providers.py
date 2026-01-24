@@ -129,6 +129,9 @@ from src.infrastructure.persistence.prompt_version_repository_impl import (
 from src.infrastructure.persistence.proposal_judge_repository_impl import (
     ProposalJudgeRepositoryImpl,
 )
+from src.infrastructure.persistence.proposal_operation_log_repository_impl import (
+    ProposalOperationLogRepositoryImpl,
+)
 from src.infrastructure.persistence.proposal_parliamentary_group_judge_repository_impl import (
     ProposalParliamentaryGroupJudgeRepositoryImpl,
 )
@@ -437,6 +440,11 @@ class RepositoryContainer(containers.DeclarativeContainer):
 
     politician_operation_log_repository = providers.Factory(
         PoliticianOperationLogRepositoryImpl,
+        session=database.async_session,
+    )
+
+    proposal_operation_log_repository = providers.Factory(
+        ProposalOperationLogRepositoryImpl,
         session=database.async_session,
     )
 

@@ -4,10 +4,16 @@ This module provides the presenter layer for proposal management,
 handling UI state and coordinating with use cases.
 """
 
+from __future__ import annotations
+
+import asyncio
+
 from typing import Any
+from uuid import UUID
 
 import pandas as pd
 
+from src.application.usecases.authenticate_user_usecase import AuthenticateUserUseCase
 from src.application.usecases.extract_proposal_judges_usecase import (
     CreateProposalJudgesInputDTO,
     CreateProposalJudgesOutputDTO,
@@ -33,19 +39,38 @@ from src.application.usecases.scrape_proposal_usecase import (
     ScrapeProposalOutputDTO,
 )
 from src.domain.entities.extracted_proposal_judge import ExtractedProposalJudge
+from src.domain.entities.politician import Politician
 from src.domain.entities.proposal import Proposal
 from src.domain.entities.proposal_judge import ProposalJudge
+from src.domain.entities.proposal_submitter import ProposalSubmitter
+from src.domain.value_objects.submitter_type import SubmitterType
 from src.infrastructure.di.container import Container
+from src.infrastructure.persistence.conference_repository_impl import (
+    ConferenceRepositoryImpl,
+)
 from src.infrastructure.persistence.extracted_proposal_judge_repository_impl import (
     ExtractedProposalJudgeRepositoryImpl,
+)
+from src.infrastructure.persistence.meeting_repository_impl import (
+    MeetingRepositoryImpl,
+)
+from src.infrastructure.persistence.politician_repository_impl import (
+    PoliticianRepositoryImpl,
 )
 from src.infrastructure.persistence.proposal_judge_repository_impl import (
     ProposalJudgeRepositoryImpl,
 )
+from src.infrastructure.persistence.proposal_operation_log_repository_impl import (
+    ProposalOperationLogRepositoryImpl,
+)
 from src.infrastructure.persistence.proposal_repository_impl import (
     ProposalRepositoryImpl,
 )
+from src.infrastructure.persistence.proposal_submitter_repository_impl import (
+    ProposalSubmitterRepositoryImpl,
+)
 from src.infrastructure.persistence.repository_adapter import RepositoryAdapter
+from src.interfaces.web.streamlit.auth import google_sign_in
 from src.interfaces.web.streamlit.dto.base import FormStateDTO
 from src.interfaces.web.streamlit.presenters.base import CRUDPresenter
 from src.interfaces.web.streamlit.utils.session_manager import SessionManager
@@ -66,10 +91,18 @@ class ProposalPresenter(CRUDPresenter[list[Proposal]]):
             ExtractedProposalJudgeRepositoryImpl
         )
         self.judge_repository = RepositoryAdapter(ProposalJudgeRepositoryImpl)
+        self.politician_repository = RepositoryAdapter(PoliticianRepositoryImpl)
+        self.meeting_repository = RepositoryAdapter(MeetingRepositoryImpl)
+        self.conference_repository = RepositoryAdapter(ConferenceRepositoryImpl)
+        self.operation_log_repository = RepositoryAdapter(
+            ProposalOperationLogRepositoryImpl
+        )
+        self.submitter_repository = RepositoryAdapter(ProposalSubmitterRepositoryImpl)
 
         # Initialize use cases
         self.manage_usecase = ManageProposalsUseCase(
-            self.proposal_repository  # type: ignore[arg-type]
+            repository=self.proposal_repository,  # type: ignore[arg-type]
+            operation_log_repository=self.operation_log_repository,  # type: ignore[arg-type]
         )
 
         # Session management
@@ -89,6 +122,23 @@ class ProposalPresenter(CRUDPresenter[list[Proposal]]):
         """Save form state to session."""
         self.session.set("form_state", self.form_state.__dict__)
 
+    def get_current_user_id(self) -> UUID | None:
+        """現在ログインしているユーザーのIDを取得する."""
+        user_info = google_sign_in.get_user_info()
+        if not user_info:
+            return None
+
+        try:
+            auth_usecase = AuthenticateUserUseCase(
+                user_repository=self.container.repositories.user_repository()
+            )
+            email = user_info.get("email", "")
+            name = user_info.get("name")
+            user = asyncio.run(auth_usecase.execute(email=email, name=name))
+            return user.user_id
+        except Exception:
+            return None
+
     def load_data(self) -> list[Proposal]:
         """Load proposals data."""
         result = self.load_data_filtered("all")
@@ -97,24 +147,26 @@ class ProposalPresenter(CRUDPresenter[list[Proposal]]):
     def load_data_filtered(
         self,
         filter_type: str = "all",
-        status: str | None = None,
         meeting_id: int | None = None,
+        conference_id: int | None = None,
     ) -> ProposalListOutputDto:
         """Load proposals with filter."""
         return self._run_async(
-            self._load_data_filtered_async(filter_type, status, meeting_id)
+            self._load_data_filtered_async(filter_type, meeting_id, conference_id)
         )
 
     async def _load_data_filtered_async(
         self,
         filter_type: str = "all",
-        status: str | None = None,
         meeting_id: int | None = None,
+        conference_id: int | None = None,
     ) -> ProposalListOutputDto:
         """Load proposals with filter (async implementation)."""
         try:
             input_dto = ProposalListInputDto(
-                filter_type=filter_type, status=status, meeting_id=meeting_id
+                filter_type=filter_type,
+                meeting_id=meeting_id,
+                conference_id=conference_id,
             )
             return await self.manage_usecase.list_proposals(input_dto)
         except Exception as e:
@@ -128,15 +180,13 @@ class ProposalPresenter(CRUDPresenter[list[Proposal]]):
     async def _create_async(self, **kwargs: Any) -> CreateProposalOutputDto:
         """Create a new proposal (async implementation)."""
         input_dto = CreateProposalInputDto(
-            content=kwargs["content"],
-            status=kwargs.get("status"),
+            title=kwargs["title"],
             detail_url=kwargs.get("detail_url"),
             status_url=kwargs.get("status_url"),
-            submission_date=kwargs.get("submission_date"),
-            submitter=kwargs.get("submitter"),
-            proposal_number=kwargs.get("proposal_number"),
+            votes_url=kwargs.get("votes_url"),
             meeting_id=kwargs.get("meeting_id"),
-            summary=kwargs.get("summary"),
+            conference_id=kwargs.get("conference_id"),
+            user_id=kwargs.get("user_id"),
         )
         return await self.manage_usecase.create_proposal(input_dto)
 
@@ -148,15 +198,13 @@ class ProposalPresenter(CRUDPresenter[list[Proposal]]):
         """Update a proposal (async implementation)."""
         input_dto = UpdateProposalInputDto(
             proposal_id=kwargs["proposal_id"],
-            content=kwargs.get("content"),
-            status=kwargs.get("status"),
+            title=kwargs.get("title"),
             detail_url=kwargs.get("detail_url"),
             status_url=kwargs.get("status_url"),
-            submission_date=kwargs.get("submission_date"),
-            submitter=kwargs.get("submitter"),
-            proposal_number=kwargs.get("proposal_number"),
+            votes_url=kwargs.get("votes_url"),
             meeting_id=kwargs.get("meeting_id"),
-            summary=kwargs.get("summary"),
+            conference_id=kwargs.get("conference_id"),
+            user_id=kwargs.get("user_id"),
         )
         return await self.manage_usecase.update_proposal(input_dto)
 
@@ -166,7 +214,10 @@ class ProposalPresenter(CRUDPresenter[list[Proposal]]):
 
     async def _delete_async(self, **kwargs: Any) -> DeleteProposalOutputDto:
         """Delete a proposal (async implementation)."""
-        input_dto = DeleteProposalInputDto(proposal_id=kwargs["proposal_id"])
+        input_dto = DeleteProposalInputDto(
+            proposal_id=kwargs["proposal_id"],
+            user_id=kwargs.get("user_id"),
+        )
         return await self.manage_usecase.delete_proposal(input_dto)
 
     def scrape_proposal(
@@ -275,17 +326,44 @@ class ProposalPresenter(CRUDPresenter[list[Proposal]]):
         else:
             return await self.judge_repository.get_all()  # type: ignore[attr-defined]
 
+    def load_politicians(self) -> list[Politician]:
+        """Load all politicians for selection."""
+        return self._run_async(self._load_politicians_async())
+
+    async def _load_politicians_async(self) -> list[Politician]:
+        """Load all politicians (async implementation)."""
+        return await self.politician_repository.get_all()  # type: ignore[attr-defined]
+
+    def load_meetings(self) -> list[dict[str, Any]]:
+        """Load all meetings for selection."""
+        return self._run_async(self._load_meetings_async())
+
+    async def _load_meetings_async(self) -> list[dict[str, Any]]:
+        """Load all meetings (async implementation)."""
+        meetings = await self.meeting_repository.get_all()  # type: ignore[attr-defined]
+        return [
+            {"id": m.id, "name": m.name or f"会議ID: {m.id}", "date": m.date}
+            for m in meetings
+        ]
+
+    def load_conferences(self) -> list[dict[str, Any]]:
+        """Load all conferences for selection."""
+        return self._run_async(self._load_conferences_async())
+
+    async def _load_conferences_async(self) -> list[dict[str, Any]]:
+        """Load all conferences (async implementation)."""
+        conferences = await self.conference_repository.get_all()  # type: ignore[attr-defined]
+        return [{"id": c.id, "name": c.name} for c in conferences]
+
     def to_dataframe(self, proposals: list[Proposal]) -> pd.DataFrame:
         """Convert proposals to DataFrame for display."""
         if not proposals:
             return pd.DataFrame(
                 {
                     "ID": [],
-                    "議案番号": [],
-                    "内容": [],
-                    "状態": [],
-                    "提出者": [],
-                    "提出日": [],
+                    "タイトル": [],
+                    "会議ID": [],
+                    "会議体ID": [],
                 }
             )
 
@@ -294,15 +372,13 @@ class ProposalPresenter(CRUDPresenter[list[Proposal]]):
             data.append(
                 {
                     "ID": proposal.id,
-                    "議案番号": proposal.proposal_number or "未設定",
-                    "内容": (
-                        proposal.content[:50] + "..."
-                        if len(proposal.content) > 50
-                        else proposal.content
+                    "タイトル": (
+                        proposal.title[:50] + "..."
+                        if len(proposal.title) > 50
+                        else proposal.title
                     ),
-                    "状態": proposal.status or "未設定",
-                    "提出者": proposal.submitter or "未設定",
-                    "提出日": proposal.submission_date or "未設定",
+                    "会議ID": proposal.meeting_id or "未設定",
+                    "会議体ID": proposal.conference_id or "未設定",
                 }
             )
 
@@ -395,13 +471,95 @@ class ProposalPresenter(CRUDPresenter[list[Proposal]]):
         """List all proposals.
 
         Args:
-            **kwargs: Can include filter_type, status, meeting_id
+            **kwargs: Can include filter_type, meeting_id, conference_id
 
         Returns:
             List of proposals
         """
         filter_type = kwargs.get("filter_type", "all")
-        status = kwargs.get("status")
         meeting_id = kwargs.get("meeting_id")
-        result = self.load_data_filtered(filter_type, status, meeting_id)
+        conference_id = kwargs.get("conference_id")
+        result = self.load_data_filtered(filter_type, meeting_id, conference_id)
         return result.proposals
+
+    def load_submitters(self, proposal_id: int) -> list[ProposalSubmitter]:
+        """Load submitters for a proposal.
+
+        Args:
+            proposal_id: ID of the proposal
+
+        Returns:
+            List of ProposalSubmitter entities
+        """
+        return self._run_async(self._load_submitters_async(proposal_id))
+
+    async def _load_submitters_async(self, proposal_id: int) -> list[ProposalSubmitter]:
+        """Load submitters for a proposal (async implementation)."""
+        return await self.submitter_repository.get_by_proposal(proposal_id)  # type: ignore[attr-defined]
+
+    def update_submitters(
+        self,
+        proposal_id: int,
+        politician_ids: list[int] | None = None,
+        conference_ids: list[int] | None = None,
+    ) -> list[ProposalSubmitter]:
+        """Update submitters for a proposal.
+
+        This method deletes existing submitters and creates new ones.
+
+        Args:
+            proposal_id: ID of the proposal
+            politician_ids: List of politician IDs to set as submitters
+            conference_ids: List of conference IDs to set as submitters
+
+        Returns:
+            List of created ProposalSubmitter entities
+        """
+        return self._run_async(
+            self._update_submitters_async(
+                proposal_id, politician_ids or [], conference_ids or []
+            )
+        )
+
+    async def _update_submitters_async(
+        self,
+        proposal_id: int,
+        politician_ids: list[int],
+        conference_ids: list[int],
+    ) -> list[ProposalSubmitter]:
+        """Update submitters for a proposal (async implementation)."""
+        # Delete existing submitters
+        await self.submitter_repository.delete_by_proposal(proposal_id)  # type: ignore[attr-defined]
+
+        # Create new submitters
+        if not politician_ids and not conference_ids:
+            return []
+
+        submitters = []
+        display_order = 0
+
+        # Add politician submitters
+        for idx, politician_id in enumerate(politician_ids):
+            submitter = ProposalSubmitter(
+                proposal_id=proposal_id,
+                submitter_type=SubmitterType.POLITICIAN,
+                politician_id=politician_id,
+                is_representative=(idx == 0),  # First politician is representative
+                display_order=display_order,
+            )
+            submitters.append(submitter)
+            display_order += 1
+
+        # Add conference submitters
+        for conference_id in conference_ids:
+            submitter = ProposalSubmitter(
+                proposal_id=proposal_id,
+                submitter_type=SubmitterType.CONFERENCE,
+                conference_id=conference_id,
+                is_representative=False,
+                display_order=display_order,
+            )
+            submitters.append(submitter)
+            display_order += 1
+
+        return await self.submitter_repository.bulk_create(submitters)  # type: ignore[attr-defined]

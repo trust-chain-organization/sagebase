@@ -38,11 +38,22 @@ class WorkHistoryPresenter:
             # リポジトリが利用できない場合は無視
             pass
 
+        # 議案操作ログリポジトリを取得（存在する場合）
+        proposal_operation_log_repo = None
+        try:
+            proposal_operation_log_repo = (
+                container.repositories.proposal_operation_log_repository()
+            )
+        except Exception:
+            # リポジトリが利用できない場合は無視
+            pass
+
         self.work_history_usecase = GetWorkHistoryUseCase(
             speaker_repository=container.repositories.speaker_repository(),
             parliamentary_group_membership_repository=container.repositories.parliamentary_group_membership_repository(),
             user_repository=container.repositories.user_repository(),
             politician_operation_log_repository=politician_operation_log_repo,
+            proposal_operation_log_repository=proposal_operation_log_repo,
         )
         self.logger = logging.getLogger(__name__)
 
@@ -182,4 +193,7 @@ class WorkHistoryPresenter:
             WorkType.POLITICIAN_CREATE: "政治家作成",
             WorkType.POLITICIAN_UPDATE: "政治家更新",
             WorkType.POLITICIAN_DELETE: "政治家削除",
+            WorkType.PROPOSAL_CREATE: "議案作成",
+            WorkType.PROPOSAL_UPDATE: "議案更新",
+            WorkType.PROPOSAL_DELETE: "議案削除",
         }

@@ -10,18 +10,6 @@ class ProposalRepository(BaseRepository[Proposal]):
     """Proposal repository interface."""
 
     @abstractmethod
-    async def get_by_status(self, status: str) -> list[Proposal]:
-        """Get proposals by status.
-
-        Args:
-            status: Status to filter by (e.g., "審議中", "可決", "否決")
-
-        Returns:
-            List of proposals with the specified status
-        """
-        pass
-
-    @abstractmethod
     async def get_by_meeting_id(self, meeting_id: int) -> list[Proposal]:
         """Get proposals by meeting ID.
 
@@ -34,29 +22,14 @@ class ProposalRepository(BaseRepository[Proposal]):
         pass
 
     @abstractmethod
-    async def get_by_proposal_number(self, proposal_number: str) -> Proposal | None:
-        """Get proposal by proposal number.
+    async def get_by_conference_id(self, conference_id: int) -> list[Proposal]:
+        """Get proposals by conference ID.
 
         Args:
-            proposal_number: Proposal number (e.g., "議案第1号")
+            conference_id: Conference ID to filter by
 
         Returns:
-            Proposal if found, None otherwise
-        """
-        pass
-
-    @abstractmethod
-    async def get_by_submission_date_range(
-        self, start_date: str, end_date: str
-    ) -> list[Proposal]:
-        """Get proposals submitted within a date range.
-
-        Args:
-            start_date: Start date in ISO format (YYYY-MM-DD)
-            end_date: End date in ISO format (YYYY-MM-DD)
-
-        Returns:
-            List of proposals submitted within the date range
+            List of proposals associated with the specified conference
         """
         pass
 
@@ -65,7 +38,7 @@ class ProposalRepository(BaseRepository[Proposal]):
         """Find proposal by URL.
 
         Args:
-            url: URL of the proposal
+            url: URL of the proposal (detail_url, status_url, or votes_url)
 
         Returns:
             Proposal if found, None otherwise
