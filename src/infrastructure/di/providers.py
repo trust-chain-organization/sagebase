@@ -677,9 +677,10 @@ class UseCaseContainer(containers.DeclarativeContainer):
     )
 
     # Manage Parliamentary Group Judges UseCase (Issue #1007)
-    # 会派賛否情報の手動管理用ユースケース
+    # 会派/政治家賛否情報の手動管理用ユースケース
     manage_parliamentary_group_judges_usecase = providers.Factory(
         ManageParliamentaryGroupJudgesUseCase,
         judge_repository=repositories.proposal_parliamentary_group_judge_repository,
         parliamentary_group_repository=repositories.parliamentary_group_repository,
+        politician_repository=repositories.politician_repository,
     )

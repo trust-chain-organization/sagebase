@@ -11,7 +11,10 @@ from src.domain.repositories.base import BaseRepository
 class ProposalParliamentaryGroupJudgeRepository(
     BaseRepository[ProposalParliamentaryGroupJudge]
 ):
-    """Repository interface for ProposalParliamentaryGroupJudge entities."""
+    """Repository interface for ProposalParliamentaryGroupJudge entities.
+
+    Many-to-Many構造: 1つの賛否レコードに複数の会派・政治家を紐付け可能。
+    """
 
     @abstractmethod
     async def get_by_proposal(
@@ -23,7 +26,7 @@ class ProposalParliamentaryGroupJudgeRepository(
             proposal_id: ID of the proposal
 
         Returns:
-            List of ProposalParliamentaryGroupJudge entities
+            List of ProposalParliamentaryGroupJudge entities with related IDs populated
         """
         pass
 
@@ -31,7 +34,7 @@ class ProposalParliamentaryGroupJudgeRepository(
     async def get_by_parliamentary_group(
         self, parliamentary_group_id: int
     ) -> list[ProposalParliamentaryGroupJudge]:
-        """Get all proposal judges for a specific parliamentary group.
+        """Get all proposal judges that include a specific parliamentary group.
 
         Args:
             parliamentary_group_id: ID of the parliamentary group
@@ -42,17 +45,46 @@ class ProposalParliamentaryGroupJudgeRepository(
         pass
 
     @abstractmethod
-    async def get_by_proposal_and_group(
-        self, proposal_id: int, parliamentary_group_id: int
+    async def get_by_proposal_and_groups(
+        self, proposal_id: int, parliamentary_group_ids: list[int]
     ) -> ProposalParliamentaryGroupJudge | None:
-        """Get judge for a specific proposal and parliamentary group.
+        """Get judge for proposal containing all specified parliamentary groups.
 
         Args:
             proposal_id: ID of the proposal
-            parliamentary_group_id: ID of the parliamentary group
+            parliamentary_group_ids: List of parliamentary group IDs
 
         Returns:
             ProposalParliamentaryGroupJudge entity or None if not found
+        """
+        pass
+
+    @abstractmethod
+    async def get_by_proposal_and_politicians(
+        self, proposal_id: int, politician_ids: list[int]
+    ) -> ProposalParliamentaryGroupJudge | None:
+        """Get judge for a specific proposal that contains all specified politicians.
+
+        Args:
+            proposal_id: ID of the proposal
+            politician_ids: List of politician IDs
+
+        Returns:
+            ProposalParliamentaryGroupJudge entity or None if not found
+        """
+        pass
+
+    @abstractmethod
+    async def get_by_politician(
+        self, politician_id: int
+    ) -> list[ProposalParliamentaryGroupJudge]:
+        """Get all proposal judges that include a specific politician.
+
+        Args:
+            politician_id: ID of the politician
+
+        Returns:
+            List of ProposalParliamentaryGroupJudge entities
         """
         pass
 
