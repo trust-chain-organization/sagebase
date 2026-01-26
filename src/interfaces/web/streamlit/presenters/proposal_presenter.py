@@ -8,11 +8,14 @@ from __future__ import annotations
 
 import asyncio
 
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 import pandas as pd
 
+from src.application.dtos.proposal_parliamentary_group_judge_dto import (
+    ProposalParliamentaryGroupJudgeDTO,
+)
 from src.application.usecases.authenticate_user_usecase import AuthenticateUserUseCase
 from src.application.usecases.extract_proposal_judges_usecase import (
     CreateProposalJudgesInputDTO,
@@ -22,6 +25,12 @@ from src.application.usecases.extract_proposal_judges_usecase import (
     ExtractProposalJudgesUseCase,
     MatchProposalJudgesInputDTO,
     MatchProposalJudgesOutputDTO,
+)
+from src.application.usecases.manage_parliamentary_group_judges_usecase import (
+    CreateJudgeOutputDTO,
+    DeleteJudgeOutputDTO,
+    ManageParliamentaryGroupJudgesUseCase,
+    UpdateJudgeOutputDTO,
 )
 from src.application.usecases.manage_proposals_usecase import (
     CreateProposalInputDto,
@@ -39,6 +48,7 @@ from src.application.usecases.scrape_proposal_usecase import (
     ScrapeProposalOutputDTO,
 )
 from src.domain.entities.extracted_proposal_judge import ExtractedProposalJudge
+from src.domain.entities.parliamentary_group import ParliamentaryGroup
 from src.domain.entities.politician import Politician
 from src.domain.entities.proposal import Proposal
 from src.domain.entities.proposal_judge import ProposalJudge
@@ -54,6 +64,9 @@ from src.infrastructure.persistence.extracted_proposal_judge_repository_impl imp
 from src.infrastructure.persistence.meeting_repository_impl import (
     MeetingRepositoryImpl,
 )
+from src.infrastructure.persistence.parliamentary_group_repository_impl import (
+    ParliamentaryGroupRepositoryImpl,
+)
 from src.infrastructure.persistence.politician_repository_impl import (
     PoliticianRepositoryImpl,
 )
@@ -62,6 +75,9 @@ from src.infrastructure.persistence.proposal_judge_repository_impl import (
 )
 from src.infrastructure.persistence.proposal_operation_log_repository_impl import (
     ProposalOperationLogRepositoryImpl,
+)
+from src.infrastructure.persistence.proposal_parliamentary_group_judge_repository_impl import (  # noqa: E501
+    ProposalParliamentaryGroupJudgeRepositoryImpl,
 )
 from src.infrastructure.persistence.proposal_repository_impl import (
     ProposalRepositoryImpl,
@@ -91,6 +107,12 @@ class ProposalPresenter(CRUDPresenter[list[Proposal]]):
             ExtractedProposalJudgeRepositoryImpl
         )
         self.judge_repository = RepositoryAdapter(ProposalJudgeRepositoryImpl)
+        self.parliamentary_group_judge_repository = RepositoryAdapter(
+            ProposalParliamentaryGroupJudgeRepositoryImpl
+        )
+        self.parliamentary_group_repository = RepositoryAdapter(
+            ParliamentaryGroupRepositoryImpl
+        )
         self.politician_repository = RepositoryAdapter(PoliticianRepositoryImpl)
         self.meeting_repository = RepositoryAdapter(MeetingRepositoryImpl)
         self.conference_repository = RepositoryAdapter(ConferenceRepositoryImpl)
@@ -103,6 +125,13 @@ class ProposalPresenter(CRUDPresenter[list[Proposal]]):
         self.manage_usecase = ManageProposalsUseCase(
             repository=self.proposal_repository,  # type: ignore[arg-type]
             operation_log_repository=self.operation_log_repository,  # type: ignore[arg-type]
+        )
+        self.manage_parliamentary_group_judges_usecase = (
+            ManageParliamentaryGroupJudgesUseCase(
+                judge_repository=self.parliamentary_group_judge_repository,  # type: ignore[arg-type]
+                parliamentary_group_repository=self.parliamentary_group_repository,  # type: ignore[arg-type]
+                politician_repository=self.politician_repository,  # type: ignore[arg-type]
+            )
         )
 
         # Session management
@@ -482,6 +511,8 @@ class ProposalPresenter(CRUDPresenter[list[Proposal]]):
         result = self.load_data_filtered(filter_type, meeting_id, conference_id)
         return result.proposals
 
+    # ========== Submitter Methods ==========
+
     def load_submitters(self, proposal_id: int) -> list[ProposalSubmitter]:
         """Load submitters for a proposal.
 
@@ -563,3 +594,292 @@ class ProposalPresenter(CRUDPresenter[list[Proposal]]):
             display_order += 1
 
         return await self.submitter_repository.bulk_create(submitters)  # type: ignore[attr-defined]
+
+    # ========== Parliamentary Group Judge Methods (Issue #1007) ==========
+
+    def load_parliamentary_group_judges(  # type: ignore[return]
+        self, proposal_id: int
+    ) -> list[ProposalParliamentaryGroupJudgeDTO]:
+        """会派賛否一覧を取得する.
+
+        Args:
+            proposal_id: 議案ID
+
+        Returns:
+            会派賛否DTOのリスト
+        """
+        return cast(
+            list[ProposalParliamentaryGroupJudgeDTO],
+            self._run_async(self._load_parliamentary_group_judges_async(proposal_id)),
+        )
+
+    async def _load_parliamentary_group_judges_async(  # type: ignore[return]
+        self, proposal_id: int
+    ) -> list[ProposalParliamentaryGroupJudgeDTO]:
+        """会派賛否一覧を取得する（非同期実装）."""
+        result = await self.manage_parliamentary_group_judges_usecase.list_by_proposal(
+            proposal_id
+        )
+        return cast(list[ProposalParliamentaryGroupJudgeDTO], result.judges)
+
+    def create_parliamentary_group_judge(
+        self,
+        proposal_id: int,
+        judgment: str,
+        judge_type: str = "parliamentary_group",
+        parliamentary_group_ids: list[int] | None = None,
+        politician_ids: list[int] | None = None,
+        member_count: int | None = None,
+        note: str | None = None,
+    ) -> CreateJudgeOutputDTO:
+        """会派/政治家賛否を新規登録する.
+
+        Many-to-Many構造: 1つの賛否レコードに複数の会派・政治家を紐付け可能。
+
+        Args:
+            proposal_id: 議案ID
+            judgment: 賛否（賛成/反対/棄権/欠席）
+            judge_type: 賛否種別（parliamentary_group/politician）
+            parliamentary_group_ids: 会派IDのリスト（会派単位の場合）
+            politician_ids: 政治家IDのリスト（政治家単位の場合）
+            member_count: 人数（会派単位の場合）
+            note: 備考
+
+        Returns:
+            作成結果DTO
+        """
+        return self._run_async(
+            self._create_parliamentary_group_judge_async(
+                proposal_id,
+                judgment,
+                judge_type,
+                parliamentary_group_ids,
+                politician_ids,
+                member_count,
+                note,
+            )
+        )
+
+    async def _create_parliamentary_group_judge_async(
+        self,
+        proposal_id: int,
+        judgment: str,
+        judge_type: str = "parliamentary_group",
+        parliamentary_group_ids: list[int] | None = None,
+        politician_ids: list[int] | None = None,
+        member_count: int | None = None,
+        note: str | None = None,
+    ) -> CreateJudgeOutputDTO:
+        """会派/政治家賛否を新規登録する（非同期実装）."""
+        return await self.manage_parliamentary_group_judges_usecase.create(
+            proposal_id=proposal_id,
+            judgment=judgment,
+            judge_type=judge_type,
+            parliamentary_group_ids=parliamentary_group_ids,
+            politician_ids=politician_ids,
+            member_count=member_count,
+            note=note,
+        )
+
+    def update_parliamentary_group_judge(
+        self,
+        judge_id: int,
+        judgment: str | None = None,
+        member_count: int | None = None,
+        note: str | None = None,
+        parliamentary_group_ids: list[int] | None = None,
+        politician_ids: list[int] | None = None,
+    ) -> UpdateJudgeOutputDTO:
+        """会派賛否を更新する.
+
+        Args:
+            judge_id: 会派賛否ID
+            judgment: 賛否（賛成/反対/棄権/欠席）
+            member_count: 人数
+            note: 備考
+            parliamentary_group_ids: 紐付ける会派IDのリスト（Noneの場合は変更しない）
+            politician_ids: 紐付ける政治家IDのリスト（Noneの場合は変更しない）
+
+        Returns:
+            更新結果DTO
+        """
+        return self._run_async(
+            self._update_parliamentary_group_judge_async(
+                judge_id,
+                judgment,
+                member_count,
+                note,
+                parliamentary_group_ids,
+                politician_ids,
+            )
+        )
+
+    async def _update_parliamentary_group_judge_async(
+        self,
+        judge_id: int,
+        judgment: str | None = None,
+        member_count: int | None = None,
+        note: str | None = None,
+        parliamentary_group_ids: list[int] | None = None,
+        politician_ids: list[int] | None = None,
+    ) -> UpdateJudgeOutputDTO:
+        """会派賛否を更新する（非同期実装）."""
+        return await self.manage_parliamentary_group_judges_usecase.update(
+            judge_id=judge_id,
+            judgment=judgment,
+            member_count=member_count,
+            note=note,
+            parliamentary_group_ids=parliamentary_group_ids,
+            politician_ids=politician_ids,
+        )
+
+    def delete_parliamentary_group_judge(self, judge_id: int) -> DeleteJudgeOutputDTO:
+        """会派賛否を削除する.
+
+        Args:
+            judge_id: 会派賛否ID
+
+        Returns:
+            削除結果DTO
+        """
+        return self._run_async(self._delete_parliamentary_group_judge_async(judge_id))
+
+    async def _delete_parliamentary_group_judge_async(
+        self, judge_id: int
+    ) -> DeleteJudgeOutputDTO:
+        """会派賛否を削除する（非同期実装）."""
+        return await self.manage_parliamentary_group_judges_usecase.delete(judge_id)
+
+    def load_parliamentary_groups_for_proposal(  # type: ignore[return]
+        self, proposal_id: int
+    ) -> list[ParliamentaryGroup]:
+        """議案に関連する会派一覧を取得する.
+
+        議案 → 会議 → 会議体 → 会派の流れで取得します。
+
+        Args:
+            proposal_id: 議案ID
+
+        Returns:
+            会派エンティティのリスト
+        """
+        return cast(
+            list[ParliamentaryGroup],
+            self._run_async(
+                self._load_parliamentary_groups_for_proposal_async(proposal_id)
+            ),
+        )
+
+    async def _load_parliamentary_groups_for_proposal_async(  # type: ignore[return]
+        self, proposal_id: int
+    ) -> list[ParliamentaryGroup]:
+        """議案に関連する会派一覧を取得する（非同期実装）."""
+        # 議案を取得
+        proposal = await self.proposal_repository.get_by_id(proposal_id)  # type: ignore[attr-defined]
+        if not proposal:
+            return []
+
+        # conference_idを取得（直接設定されている場合はそれを使用）
+        conference_id: int | None = None
+        if proposal.conference_id:
+            conference_id = proposal.conference_id
+        elif proposal.meeting_id:
+            # 会議から会議体IDを取得
+            meeting = await self.meeting_repository.get_by_id(proposal.meeting_id)  # type: ignore[attr-defined]
+            if meeting:
+                conference_id = meeting.conference_id
+
+        if not conference_id:
+            return []
+
+        # 会議体IDから会派一覧を取得
+        groups = await self.parliamentary_group_repository.get_by_conference_id(  # type: ignore[attr-defined]
+            conference_id, active_only=True
+        )
+        return cast(list[ParliamentaryGroup], groups)
+
+    def load_politicians_for_proposal(self, proposal_id: int) -> list[Politician]:
+        """議案に関連する政治家一覧を取得する.
+
+        議案 → 会議 → 会議体 → 政治家の流れで取得します。
+
+        Args:
+            proposal_id: 議案ID
+
+        Returns:
+            政治家エンティティのリスト
+        """
+        return cast(
+            list[Politician],
+            self._run_async(self._load_politicians_for_proposal_async(proposal_id)),
+        )
+
+    async def _load_politicians_for_proposal_async(  # type: ignore[return]
+        self, proposal_id: int
+    ) -> list[Politician]:
+        """議案に紐付け可能な政治家一覧を取得する（非同期実装）.
+
+        Args:
+            proposal_id: 議案ID（将来的な絞り込み用、現在は未使用）
+
+        Returns:
+            全政治家のリスト
+        """
+        _ = proposal_id  # 将来的な絞り込み用に引数は残す
+        politicians = await self.politician_repository.get_all()  # type: ignore[attr-defined]
+        return cast(list[Politician], politicians)
+
+    def parliamentary_group_judges_to_dataframe(
+        self, judges: list[ProposalParliamentaryGroupJudgeDTO]
+    ) -> pd.DataFrame:
+        """会派/政治家賛否DTOリストをDataFrameに変換する.
+
+        Many-to-Many構造対応: 複数の会派名・政治家名をカンマ区切りで表示。
+        """
+        if not judges:
+            return pd.DataFrame(
+                {
+                    "ID": [],
+                    "種別": [],
+                    "会派/政治家": [],
+                    "賛否": [],
+                    "人数": [],
+                    "備考": [],
+                    "登録日時": [],
+                }
+            )
+
+        data = []
+        for judge in judges:
+            if judge.judge_type == "parliamentary_group":
+                judge_type_display = "会派"
+                # 複数の会派名をカンマ区切りで結合
+                if judge.parliamentary_group_names:
+                    name_display = ", ".join(judge.parliamentary_group_names)
+                else:
+                    name_display = "（不明）"
+            else:
+                judge_type_display = "政治家"
+                # 複数の政治家名をカンマ区切りで結合
+                if judge.politician_names:
+                    name_display = ", ".join(judge.politician_names)
+                else:
+                    name_display = "（不明）"
+
+            created_at_str = "-"
+            if judge.created_at:
+                created_at_str = judge.created_at.strftime("%Y-%m-%d %H:%M")
+
+            data.append(
+                {
+                    "ID": judge.id,
+                    "種別": judge_type_display,
+                    "会派/政治家": name_display,
+                    "賛否": judge.judgment,
+                    "人数": judge.member_count if judge.member_count else "-",
+                    "備考": judge.note if judge.note else "-",
+                    "登録日時": created_at_str,
+                }
+            )
+
+        return pd.DataFrame(data)

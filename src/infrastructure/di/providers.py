@@ -26,6 +26,9 @@ from src.application.usecases.link_speaker_to_politician_usecase import (
 from src.application.usecases.manage_conference_members_usecase import (
     ManageConferenceMembersUseCase,
 )
+from src.application.usecases.manage_parliamentary_group_judges_usecase import (
+    ManageParliamentaryGroupJudgesUseCase,
+)
 from src.application.usecases.match_speakers_usecase import MatchSpeakersUseCase
 from src.application.usecases.process_minutes_usecase import ProcessMinutesUseCase
 from src.application.usecases.update_extracted_conference_member_from_extraction_usecase import (  # noqa: E501
@@ -671,4 +674,13 @@ class UseCaseContainer(containers.DeclarativeContainer):
         storage_service=services.storage_service,
         role_name_mapping_service=services.role_name_mapping_service,
         minutes_divider_service=services.minutes_divider_service,
+    )
+
+    # Manage Parliamentary Group Judges UseCase (Issue #1007)
+    # 会派/政治家賛否情報の手動管理用ユースケース
+    manage_parliamentary_group_judges_usecase = providers.Factory(
+        ManageParliamentaryGroupJudgesUseCase,
+        judge_repository=repositories.proposal_parliamentary_group_judge_repository,
+        parliamentary_group_repository=repositories.parliamentary_group_repository,
+        politician_repository=repositories.politician_repository,
     )
