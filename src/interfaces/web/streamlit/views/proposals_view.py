@@ -179,7 +179,21 @@ def render_proposals_tab(presenter: ProposalPresenter) -> None:
 
     if filter_type == "by_meeting":
         with col2:
-            meeting_filter = st.number_input("会議ID", min_value=1, step=1)
+            try:
+                meetings = presenter.load_meetings()
+                meeting_options: dict[str, int | None] = {"選択してください": None}
+                meeting_options.update(
+                    {f"{m['name']} (ID: {m['id']})": m["id"] for m in meetings}
+                )
+                selected_meeting = st.selectbox(
+                    "会議",
+                    options=list(meeting_options.keys()),
+                    key="filter_meeting_select",
+                )
+                meeting_filter = meeting_options[selected_meeting]
+            except Exception:
+                logger.exception("会議一覧の読み込みに失敗")
+                meeting_filter = st.number_input("会議ID", min_value=1, step=1)
 
     elif filter_type == "by_conference":
         with col2:

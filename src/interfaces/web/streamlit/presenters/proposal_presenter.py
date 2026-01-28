@@ -393,12 +393,40 @@ class ProposalPresenter(CRUDPresenter[list[Proposal]]):
         return self._run_async(self._load_meetings_async())
 
     async def _load_meetings_async(self) -> list[dict[str, Any]]:
-        """Load all meetings (async implementation)."""
+        """Load all meetings (async implementation).
+
+        会議の表示名は「会議体名 + 開催日」の形式で構築する。
+        """
         meetings = await self.meeting_repository.get_all()  # type: ignore[attr-defined]
-        return [
-            {"id": m.id, "name": m.name or f"会議ID: {m.id}", "date": m.date}
-            for m in meetings
-        ]
+
+        # 会議体のマップを構築（N+1問題対策）
+        conference_ids = {m.conference_id for m in meetings if m.conference_id}
+        conference_map: dict[int, str] = {}
+        for cid in conference_ids:
+            conference = await self.conference_repository.get_by_id(cid)  # type: ignore[attr-defined]
+            if conference:
+                conference_map[cid] = conference.name
+
+        result = []
+        for m in meetings:
+            # 表示名を構築: 会議体名 + 開催日
+            conference_name = (
+                conference_map.get(m.conference_id, "") if m.conference_id else ""
+            )
+            date_str = m.date.strftime("%Y-%m-%d") if m.date else ""
+
+            if conference_name and date_str:
+                display_name = f"{conference_name} ({date_str})"
+            elif conference_name:
+                display_name = conference_name
+            elif m.name:
+                display_name = m.name
+            else:
+                display_name = f"会議ID: {m.id}"
+
+            result.append({"id": m.id, "name": display_name, "date": m.date})
+
+        return result
 
     def load_conferences(self) -> list[dict[str, Any]]:
         """Load all conferences for selection."""
