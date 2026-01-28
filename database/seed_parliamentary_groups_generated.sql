@@ -15,3 +15,7 @@ ON CONFLICT (id) DO UPDATE SET
     url = EXCLUDED.url,
     description = EXCLUDED.description,
     is_active = EXCLUDED.is_active;
+
+-- Reset sequence to max id + 1 (Issue #1036)
+SELECT setval('parliamentary_groups_id_seq',
+    COALESCE((SELECT MAX(id) FROM parliamentary_groups), 0) + 1, false);
