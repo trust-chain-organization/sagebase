@@ -17,9 +17,12 @@ depends_on = None
 
 
 def upgrade() -> None:
-    """マイグレーション: 議案操作ログテーブルを作成."""
+    """マイグレーション: 議案操作ログテーブルを作成.
+
+    Note: init.sqlで既に最新スキーマが適用されている場合も安全に実行できる（冪等性）
+    """
     op.execute("""
-        CREATE TABLE proposal_operation_logs (
+        CREATE TABLE IF NOT EXISTS proposal_operation_logs (
             id SERIAL PRIMARY KEY,
             proposal_id INTEGER NOT NULL,
             proposal_title VARCHAR(500) NOT NULL,
@@ -33,21 +36,21 @@ def upgrade() -> None:
         );
     """)
 
-    # インデックス作成
+    # インデックス作成（冪等性確保のためIF NOT EXISTSを使用）
     op.execute("""
-        CREATE INDEX idx_proposal_operation_logs_user_id
+        CREATE INDEX IF NOT EXISTS idx_proposal_operation_logs_user_id
         ON proposal_operation_logs(user_id);
     """)
     op.execute("""
-        CREATE INDEX idx_proposal_operation_logs_operated_at
+        CREATE INDEX IF NOT EXISTS idx_proposal_operation_logs_operated_at
         ON proposal_operation_logs(operated_at DESC);
     """)
     op.execute("""
-        CREATE INDEX idx_proposal_operation_logs_operation_type
+        CREATE INDEX IF NOT EXISTS idx_proposal_operation_logs_operation_type
         ON proposal_operation_logs(operation_type);
     """)
     op.execute("""
-        CREATE INDEX idx_proposal_operation_logs_proposal_id
+        CREATE INDEX IF NOT EXISTS idx_proposal_operation_logs_proposal_id
         ON proposal_operation_logs(proposal_id);
     """)
 

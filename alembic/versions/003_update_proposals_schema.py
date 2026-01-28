@@ -23,9 +23,21 @@ def upgrade() -> None:
     - contentをtitleにリネーム
     - votes_url、conference_idを追加
     - status、submission_date、submitter、proposal_number、summaryを削除
+
+    Note: init.sqlで既に最新スキーマが適用されている場合も安全に実行できる（冪等性）
     """
-    # 1. contentをtitleにリネーム
-    op.execute("ALTER TABLE proposals RENAME COLUMN content TO title;")
+    # 1. contentをtitleにリネーム（contentカラムが存在する場合のみ）
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'proposals' AND column_name = 'content'
+            ) THEN
+                ALTER TABLE proposals RENAME COLUMN content TO title;
+            END IF;
+        END$$;
+    """)
 
     # 2. 新規カラム追加
     op.execute("ALTER TABLE proposals ADD COLUMN IF NOT EXISTS votes_url VARCHAR;")

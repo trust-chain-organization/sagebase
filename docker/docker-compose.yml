@@ -109,15 +109,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # init.sql: Extensions と enum型 のみ作成（最小限のブートストラップ）
+      # スキーマは Alembic migration 001 で作成される
       - ../database/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
-      - ../database/02_run_migrations.sql:/docker-entrypoint-initdb.d/02_run_migrations.sql:ro
-      - ../database/migrations:/docker-entrypoint-initdb.d/02_migrations:ro
-      - ../database/seed_governing_bodies_generated.sql:/docker-entrypoint-initdb.d/03_seed_governing_bodies_generated.sql:ro
-      - ../database/seed_political_parties_generated.sql:/docker-entrypoint-initdb.d/04_seed_political_parties_generated.sql:ro
-      - ../database/seed_conferences_generated.sql:/docker-entrypoint-initdb.d/05_seed_conferences_generated.sql:ro
-      - ../database/seed_parliamentary_groups_generated.sql:/docker-entrypoint-initdb.d/06_seed_parliamentary_groups_generated.sql:ro
-      - ../database/seed_meetings_generated.sql:/docker-entrypoint-initdb.d/07_seed_meetings_generated.sql:ro
-      - ../database/seed_politicians_generated.sql:/docker-entrypoint-initdb.d/08_seed_politicians_generated.sql:ro
+      # Note: シードファイルは Alembic 実行後に `just up` で適用される
+      # See: docs/ADR/0006-alembic-migration-unification.md
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sagebase_user -d sagebase_db"]
       interval: 10s

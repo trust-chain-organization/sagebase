@@ -1,7 +1,7 @@
 -- Generated from database on 2026-01-26 02:44:12
 -- politicians seed data
 
-INSERT INTO politicians (name, political_party_id, prefecture, electoral_district, profile_page_url) VALUES
+INSERT INTO politicians (name, political_party_id, prefecture, district, profile_page_url) VALUES
 -- NHK党
 ('宮城そういち', (SELECT id FROM political_parties WHERE name = 'NHK党'), NULL, NULL, NULL),
 ('山田太郎', (SELECT id FROM political_parties WHERE name = 'NHK党'), NULL, '東京1区', 'https://example.com/profile'),
