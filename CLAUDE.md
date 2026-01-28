@@ -187,6 +187,14 @@ src/
 - `database/02_run_migrations.sql`への追加が必要な時
 - マイグレーションの命名規則（連番）を確認したい時
 
+#### seed-file-management
+**使用タイミング**:
+- シードファイル（`database/seed_*.sql`）を作成・修正する時
+- シードデータ生成機能（`generate_seed_file`など）を実装する時
+- IDを明示的に指定したINSERT文を書く時
+- `ON CONFLICT` や UPSERT を含むINSERT文を書く時
+- **重要**: IDを指定した場合は必ずシーケンスリセットを追加すること
+
 ### Data Processing
 
 #### data-processing-workflows
