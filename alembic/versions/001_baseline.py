@@ -2,18 +2,22 @@
 
 このマイグレーションは既存のデータベーススキーマのベースラインを設定します。
 
-既存のデータベースがある場合:
-- init.sql で作成されたテーブル
-- database/migrations/ 配下の45個のSQLマイグレーション
-これらが適用済みであることを前提とします。
+=== 2026-01-28 更新 ===
+init.sql に全てのスキーマ変更が統合されました:
+- レガシーマイグレーション: database/migrations/001〜048
+- Alembicマイグレーション: 003〜007の変更内容
 
 新規データベースの場合:
-- Docker起動時に init.sql と 02_run_migrations.sql が自動実行されます
-- このマイグレーションは「既に適用済み」としてマークするだけです
+- Docker起動時に init.sql のみが自動実行されます
+- Alembicは `just up` 実行時に `alembic upgrade head` で最新状態をマーク
+
+既存のデータベースがある場合:
+- `alembic stamp head` で現在のスキーマが最新であることをマーク
 
 Revision ID: 001
 Revises:
 Create Date: 2025-01-20
+Updated: 2026-01-28 (ADR 0006)
 """
 
 # revision identifiers, used by Alembic.
@@ -29,9 +33,9 @@ def upgrade() -> None:
     このマイグレーションは実際のスキーマ変更を行いません。
     既存のデータベースに対してAlembicのバージョン管理を開始するためのマーカーです。
 
-    既存のスキーマは以下で管理されています:
-    - database/init.sql: 初期スキーマ
-    - database/migrations/001-045: 追加のマイグレーション
+    2026-01-28以降:
+    - database/init.sql に全てのスキーマが統合されています
+    - レガシーマイグレーション（001-048）は履歴として保持
     """
     # 既存スキーマのベースライン - 変更なし
     # alembic_version テーブルが作成され、このリビジョンが記録されます

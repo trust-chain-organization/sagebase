@@ -259,14 +259,12 @@ jobs:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_db
         run: |
           # Run initial schema setup for CI
+          # init_ci.sql now contains the complete schema (legacy migrations integrated)
           PGPASSWORD=test psql -h localhost -U test -d test_db -f database/init_ci.sql
 
-          # Create a temporary file to combine all migrations
-          cat database/migrations/*.sql > /tmp/all_migrations.sql
-
-          # Run all migrations in a single psql session
-          echo "Running all migrations..."
-          PGPASSWORD=test psql -h localhost -U test -d test_db -f /tmp/all_migrations.sql
+          # Mark Alembic as up-to-date (stamp head)
+          # This tells Alembic that the current schema is at the latest version
+          uv run alembic stamp head
 
           # Verify tables were created
           echo "Verifying database setup..."

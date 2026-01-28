@@ -182,7 +182,11 @@ def downgrade() -> None:
 
 ## レガシーマイグレーションについて
 
-既存の `database/migrations/` 配下の45個のSQLファイルは履歴として保持されています。
-**新規マイグレーションは必ずAlembicを使用してください。**
+**重要**: レガシーマイグレーション方式は廃止されました。
 
-`just migrate-legacy` は互換性のために残されていますが、通常は使用しません。
+- `database/migrations/` 配下の48個のSQLファイルは**履歴として保持**されています
+- 全てのスキーマ変更は `database/init.sql` に統合されました
+- **新規マイグレーションは必ずAlembicを使用してください**
+- `just migrate-legacy` は非推奨となり、実行するとエラーになります
+
+詳細は [ADR 0006: マイグレーションのAlembic統一](../../../docs/ADR/0006-alembic-migration-unification.md) を参照してください。

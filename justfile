@@ -165,12 +165,21 @@ migrate-history: _setup_worktree
 migrate-new message: _setup_worktree
 	docker compose {{compose_cmd}} exec sagebase uv run alembic revision -m "{{message}}"
 
-# Run legacy SQL migrations (for backward compatibility during transition)
+# Run legacy SQL migrations (DEPRECATED - use `just migrate` instead)
 migrate-legacy: _setup_worktree
 	#!/bin/bash
-	echo "Running legacy SQL migrations..."
-	docker compose {{compose_cmd}} exec postgres psql -U sagebase_user -d sagebase_db -f /docker-entrypoint-initdb.d/02_run_migrations.sql
-	echo "Legacy migrations complete!"
+	echo ""
+	echo "⚠️  WARNING: migrate-legacy is DEPRECATED"
+	echo "================================================"
+	echo "This command is no longer needed."
+	echo "All schema changes are now included in init.sql."
+	echo ""
+	echo "Use 'just migrate' for Alembic migrations instead."
+	echo ""
+	echo "See: docs/ADR/0006-alembic-migration-unification.md"
+	echo "================================================"
+	echo ""
+	exit 1
 
 # Run tests with type checking
 test: _setup_worktree
