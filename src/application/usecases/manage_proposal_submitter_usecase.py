@@ -47,6 +47,15 @@ class ClearSubmitterOutputDTO:
     deleted_count: int = 0
 
 
+@dataclass
+class UpdateSubmittersOutputDTO:
+    """提出者一括更新の結果DTO."""
+
+    success: bool
+    message: str
+    submitters: list[ProposalSubmitterDTO] | None = None
+
+
 class ManageProposalSubmitterUseCase:
     """議案提出者の手動設定UseCase.
 
@@ -214,6 +223,145 @@ class ManageProposalSubmitterUseCase:
             return ClearSubmitterOutputDTO(
                 success=False,
                 message=f"クリア中にエラーが発生しました: {e!s}",
+            )
+
+    async def update_submitters(
+        self,
+        proposal_id: int,
+        politician_ids: list[int] | None = None,
+        conference_ids: list[int] | None = None,
+        parliamentary_group_id: int | None = None,
+        other_submitter: tuple[SubmitterType, str] | None = None,
+    ) -> UpdateSubmittersOutputDTO:
+        """議案の提出者を一括更新する.
+
+        既存の提出者を全て削除し、新しい提出者を作成します。
+
+        Args:
+            proposal_id: 議案ID
+            politician_ids: 議員IDリスト（複数可）
+            conference_ids: 会議体IDリスト（複数可）
+            parliamentary_group_id: 会派ID（単一）
+            other_submitter: その他の提出者（種別, 名前）
+
+        Returns:
+            更新結果DTO
+        """
+        try:
+            # 議案の存在確認
+            proposal = await self.proposal_repository.get_by_id(proposal_id)
+            if not proposal:
+                return UpdateSubmittersOutputDTO(
+                    success=False,
+                    message=f"議案ID {proposal_id} が見つかりません",
+                )
+
+            # 既存の提出者を削除
+            await self.proposal_submitter_repository.delete_by_proposal(proposal_id)
+
+            # 提出者が指定されていない場合
+            has_submitters = (
+                politician_ids
+                or conference_ids
+                or parliamentary_group_id
+                or other_submitter
+            )
+            if not has_submitters:
+                return UpdateSubmittersOutputDTO(
+                    success=True,
+                    message="提出者をクリアしました",
+                    submitters=[],
+                )
+
+            # 新しい提出者エンティティを作成
+            submitters: list[ProposalSubmitter] = []
+            display_order = 0
+
+            # 議員提出者を追加
+            for idx, politician_id in enumerate(politician_ids or []):
+                # 議員の存在確認
+                politician = await self.politician_repository.get_by_id(politician_id)
+                if not politician:
+                    self.logger.warning(f"議員ID {politician_id} が見つかりません")
+                    continue
+
+                submitter = ProposalSubmitter(
+                    proposal_id=proposal_id,
+                    submitter_type=SubmitterType.POLITICIAN,
+                    politician_id=politician_id,
+                    is_representative=(idx == 0),  # 最初の議員が代表
+                    display_order=display_order,
+                )
+                submitters.append(submitter)
+                display_order += 1
+
+            # 会議体提出者を追加
+            for conference_id in conference_ids or []:
+                submitter = ProposalSubmitter(
+                    proposal_id=proposal_id,
+                    submitter_type=SubmitterType.CONFERENCE,
+                    conference_id=conference_id,
+                    is_representative=False,
+                    display_order=display_order,
+                )
+                submitters.append(submitter)
+                display_order += 1
+
+            # 会派提出者を追加
+            if parliamentary_group_id:
+                # 会派の存在確認
+                parliamentary_group = (
+                    await self.parliamentary_group_repository.get_by_id(
+                        parliamentary_group_id
+                    )
+                )
+                if not parliamentary_group:
+                    return UpdateSubmittersOutputDTO(
+                        success=False,
+                        message=f"会派ID {parliamentary_group_id} が見つかりません",
+                    )
+
+                submitter = ProposalSubmitter(
+                    proposal_id=proposal_id,
+                    submitter_type=SubmitterType.PARLIAMENTARY_GROUP,
+                    parliamentary_group_id=parliamentary_group_id,
+                    is_representative=True,
+                    display_order=display_order,
+                )
+                submitters.append(submitter)
+                display_order += 1
+
+            # その他の提出者を追加（市長、委員会など）
+            if other_submitter:
+                submitter_type, raw_name = other_submitter
+                submitter = ProposalSubmitter(
+                    proposal_id=proposal_id,
+                    submitter_type=submitter_type,
+                    raw_name=raw_name,
+                    is_representative=True,
+                    display_order=display_order,
+                )
+                submitters.append(submitter)
+
+            # 一括作成
+            created_submitters = await self.proposal_submitter_repository.bulk_create(
+                submitters
+            )
+
+            # DTOに変換
+            submitter_dtos = [await self._entity_to_dto(s) for s in created_submitters]
+
+            return UpdateSubmittersOutputDTO(
+                success=True,
+                message=f"{len(submitter_dtos)}件の提出者を登録しました",
+                submitters=submitter_dtos,
+            )
+
+        except Exception as e:
+            self.logger.error(f"提出者更新エラー: {e}", exc_info=True)
+            return UpdateSubmittersOutputDTO(
+                success=False,
+                message=f"更新中にエラーが発生しました: {e!s}",
             )
 
     async def get_submitter_candidates(

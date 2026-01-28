@@ -321,3 +321,459 @@ class TestFormState:
 
         # Act & Assert
         assert presenter.is_editing(proposal_id=1) is False
+
+
+# ========== Submitter Methods Tests (Issue #1023) ==========
+
+
+class TestSetSubmitter:
+    """set_submitterメソッドのテスト"""
+
+    async def test_set_submitter_success(self, presenter):
+        """提出者を設定できることを確認"""
+        from datetime import UTC, datetime
+
+        from src.application.dtos.proposal_submitter_dto import ProposalSubmitterDTO
+        from src.application.usecases.manage_proposal_submitter_usecase import (
+            SetSubmitterOutputDTO,
+        )
+        from src.domain.value_objects.submitter_type import SubmitterType
+
+        # Arrange
+        mock_submitter_usecase = AsyncMock()
+        presenter.manage_submitter_usecase = mock_submitter_usecase
+
+        expected_dto = ProposalSubmitterDTO(
+            id=1,
+            proposal_id=1,
+            submitter_type="politician",
+            politician_id=10,
+            politician_name="山田太郎",
+            parliamentary_group_id=None,
+            parliamentary_group_name=None,
+            raw_name="山田太郎",
+            is_representative=True,
+            display_order=0,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+        mock_submitter_usecase.set_submitter.return_value = SetSubmitterOutputDTO(
+            success=True,
+            message="提出者情報を設定しました",
+            submitter=expected_dto,
+        )
+
+        # Act
+        result = await presenter._set_submitter_async(
+            proposal_id=1,
+            submitter="山田太郎",
+            submitter_type=SubmitterType.POLITICIAN,
+            submitter_politician_id=10,
+        )
+
+        # Assert
+        assert result.success is True
+        assert result.submitter is not None
+        mock_submitter_usecase.set_submitter.assert_called_once()
+
+    async def test_set_submitter_failure(self, presenter):
+        """提出者設定の失敗を確認"""
+        from src.application.usecases.manage_proposal_submitter_usecase import (
+            SetSubmitterOutputDTO,
+        )
+        from src.domain.value_objects.submitter_type import SubmitterType
+
+        # Arrange
+        mock_submitter_usecase = AsyncMock()
+        presenter.manage_submitter_usecase = mock_submitter_usecase
+
+        mock_submitter_usecase.set_submitter.return_value = SetSubmitterOutputDTO(
+            success=False,
+            message="議案ID 999 が見つかりません",
+        )
+
+        # Act
+        result = await presenter._set_submitter_async(
+            proposal_id=999,
+            submitter="山田太郎",
+            submitter_type=SubmitterType.POLITICIAN,
+            submitter_politician_id=10,
+        )
+
+        # Assert
+        assert result.success is False
+        assert "見つかりません" in result.message
+
+
+class TestClearSubmitter:
+    """clear_submitterメソッドのテスト"""
+
+    async def test_clear_submitter_success(self, presenter):
+        """提出者クリアが成功することを確認"""
+        from src.application.usecases.manage_proposal_submitter_usecase import (
+            ClearSubmitterOutputDTO,
+        )
+
+        # Arrange
+        mock_submitter_usecase = AsyncMock()
+        presenter.manage_submitter_usecase = mock_submitter_usecase
+
+        mock_submitter_usecase.clear_submitter.return_value = ClearSubmitterOutputDTO(
+            success=True,
+            message="提出者情報をクリアしました",
+            deleted_count=1,
+        )
+
+        # Act
+        result = await presenter._clear_submitter_async(proposal_id=1)
+
+        # Assert
+        assert result.success is True
+        assert result.deleted_count == 1
+        mock_submitter_usecase.clear_submitter.assert_called_once_with(1)
+
+    async def test_clear_submitter_no_data(self, presenter):
+        """クリアするデータがない場合を確認"""
+        from src.application.usecases.manage_proposal_submitter_usecase import (
+            ClearSubmitterOutputDTO,
+        )
+
+        # Arrange
+        mock_submitter_usecase = AsyncMock()
+        presenter.manage_submitter_usecase = mock_submitter_usecase
+
+        mock_submitter_usecase.clear_submitter.return_value = ClearSubmitterOutputDTO(
+            success=True,
+            message="クリアする提出者情報がありませんでした",
+            deleted_count=0,
+        )
+
+        # Act
+        result = await presenter._clear_submitter_async(proposal_id=1)
+
+        # Assert
+        assert result.success is True
+        assert result.deleted_count == 0
+
+
+class TestGetSubmitterCandidates:
+    """get_submitter_candidatesメソッドのテスト"""
+
+    async def test_get_submitter_candidates_success(self, presenter):
+        """提出者候補を取得できることを確認"""
+        from src.application.dtos.submitter_candidates_dto import (
+            ParliamentaryGroupCandidateDTO,
+            PoliticianCandidateDTO,
+            SubmitterCandidatesDTO,
+        )
+
+        # Arrange
+        mock_submitter_usecase = AsyncMock()
+        presenter.manage_submitter_usecase = mock_submitter_usecase
+
+        expected_candidates = SubmitterCandidatesDTO(
+            conference_id=1,
+            politicians=[
+                PoliticianCandidateDTO(id=1, name="山田太郎"),
+                PoliticianCandidateDTO(id=2, name="佐藤花子"),
+            ],
+            parliamentary_groups=[
+                ParliamentaryGroupCandidateDTO(id=1, name="自民党"),
+                ParliamentaryGroupCandidateDTO(id=2, name="公明党"),
+            ],
+        )
+        mock_submitter_usecase.get_submitter_candidates.return_value = (
+            expected_candidates
+        )
+
+        # Act
+        result = await presenter._get_submitter_candidates_async(conference_id=1)
+
+        # Assert
+        assert result.conference_id == 1
+        assert len(result.politicians) == 2
+        assert len(result.parliamentary_groups) == 2
+        mock_submitter_usecase.get_submitter_candidates.assert_called_once_with(1)
+
+
+class TestGetConferenceIdForProposal:
+    """get_conference_id_for_proposalメソッドのテスト"""
+
+    async def test_get_conference_id_success(self, presenter):
+        """議案から会議体IDを取得できることを確認"""
+        from src.domain.entities.meeting import Meeting
+        from src.domain.entities.proposal import Proposal
+
+        # Arrange
+        mock_proposal_repo = AsyncMock()
+        mock_meeting_repo = AsyncMock()
+        presenter.proposal_repository = mock_proposal_repo
+        presenter.meeting_repository = mock_meeting_repo
+
+        mock_proposal_repo.get_by_id.return_value = Proposal(
+            id=1,
+            title="テスト議案",
+            meeting_id=100,
+        )
+        mock_meeting_repo.get_by_id.return_value = Meeting(
+            id=100,
+            name="テスト会議",
+            conference_id=10,
+        )
+
+        # Act
+        result = await presenter._get_conference_id_for_proposal_async(proposal_id=1)
+
+        # Assert
+        assert result == 10
+
+    async def test_get_conference_id_proposal_not_found(self, presenter):
+        """議案が見つからない場合を確認"""
+        # Arrange
+        mock_proposal_repo = AsyncMock()
+        presenter.proposal_repository = mock_proposal_repo
+
+        mock_proposal_repo.get_by_id.return_value = None
+
+        # Act
+        result = await presenter._get_conference_id_for_proposal_async(proposal_id=999)
+
+        # Assert
+        assert result is None
+
+    async def test_get_conference_id_no_meeting_id(self, presenter):
+        """議案にmeeting_idがない場合を確認"""
+        from src.domain.entities.proposal import Proposal
+
+        # Arrange
+        mock_proposal_repo = AsyncMock()
+        presenter.proposal_repository = mock_proposal_repo
+
+        mock_proposal_repo.get_by_id.return_value = Proposal(
+            id=1,
+            title="テスト議案",
+            meeting_id=None,  # meeting_idがない
+        )
+
+        # Act
+        result = await presenter._get_conference_id_for_proposal_async(proposal_id=1)
+
+        # Assert
+        assert result is None
+
+
+class TestUpdateSubmitters:
+    """update_submittersメソッドのテスト"""
+
+    async def test_update_submitters_with_politicians(self, presenter):
+        """議員提出者を設定できることを確認"""
+        from datetime import UTC, datetime
+
+        from src.application.dtos.proposal_submitter_dto import ProposalSubmitterDTO
+        from src.application.usecases.manage_proposal_submitter_usecase import (
+            UpdateSubmittersOutputDTO,
+        )
+
+        # Arrange
+        mock_submitter_usecase = AsyncMock()
+        presenter.manage_submitter_usecase = mock_submitter_usecase
+
+        expected_dtos = [
+            ProposalSubmitterDTO(
+                id=1,
+                proposal_id=1,
+                submitter_type="politician",
+                politician_id=10,
+                politician_name="山田太郎",
+                parliamentary_group_id=None,
+                parliamentary_group_name=None,
+                raw_name=None,
+                is_representative=True,
+                display_order=0,
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            ),
+            ProposalSubmitterDTO(
+                id=2,
+                proposal_id=1,
+                submitter_type="politician",
+                politician_id=11,
+                politician_name="佐藤花子",
+                parliamentary_group_id=None,
+                parliamentary_group_name=None,
+                raw_name=None,
+                is_representative=False,
+                display_order=1,
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            ),
+        ]
+        mock_submitter_usecase.update_submitters.return_value = (
+            UpdateSubmittersOutputDTO(
+                success=True,
+                message="2件の提出者を登録しました",
+                submitters=expected_dtos,
+            )
+        )
+
+        # Act
+        result = await presenter._update_submitters_async(
+            proposal_id=1,
+            politician_ids=[10, 11],
+        )
+
+        # Assert
+        assert result.success is True
+        assert result.submitters is not None
+        assert len(result.submitters) == 2
+        mock_submitter_usecase.update_submitters.assert_called_once()
+
+    async def test_update_submitters_with_parliamentary_group(self, presenter):
+        """会派提出者を設定できることを確認"""
+        from datetime import UTC, datetime
+
+        from src.application.dtos.proposal_submitter_dto import ProposalSubmitterDTO
+        from src.application.usecases.manage_proposal_submitter_usecase import (
+            UpdateSubmittersOutputDTO,
+        )
+
+        # Arrange
+        mock_submitter_usecase = AsyncMock()
+        presenter.manage_submitter_usecase = mock_submitter_usecase
+
+        expected_dto = ProposalSubmitterDTO(
+            id=1,
+            proposal_id=1,
+            submitter_type="parliamentary_group",
+            politician_id=None,
+            politician_name=None,
+            parliamentary_group_id=5,
+            parliamentary_group_name="自民党",
+            raw_name=None,
+            is_representative=True,
+            display_order=0,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+        mock_submitter_usecase.update_submitters.return_value = (
+            UpdateSubmittersOutputDTO(
+                success=True,
+                message="1件の提出者を登録しました",
+                submitters=[expected_dto],
+            )
+        )
+
+        # Act
+        result = await presenter._update_submitters_async(
+            proposal_id=1,
+            parliamentary_group_id=5,
+        )
+
+        # Assert
+        assert result.success is True
+        assert result.submitters is not None
+        assert len(result.submitters) == 1
+        assert result.submitters[0].parliamentary_group_id == 5
+
+    async def test_update_submitters_with_other_type(self, presenter):
+        """市長・委員会等の提出者を設定できることを確認"""
+        from datetime import UTC, datetime
+
+        from src.application.dtos.proposal_submitter_dto import ProposalSubmitterDTO
+        from src.application.usecases.manage_proposal_submitter_usecase import (
+            UpdateSubmittersOutputDTO,
+        )
+        from src.domain.value_objects.submitter_type import SubmitterType
+
+        # Arrange
+        mock_submitter_usecase = AsyncMock()
+        presenter.manage_submitter_usecase = mock_submitter_usecase
+
+        expected_dto = ProposalSubmitterDTO(
+            id=1,
+            proposal_id=1,
+            submitter_type="mayor",
+            politician_id=None,
+            politician_name=None,
+            parliamentary_group_id=None,
+            parliamentary_group_name=None,
+            raw_name="田中市長",
+            is_representative=True,
+            display_order=0,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+        mock_submitter_usecase.update_submitters.return_value = (
+            UpdateSubmittersOutputDTO(
+                success=True,
+                message="1件の提出者を登録しました",
+                submitters=[expected_dto],
+            )
+        )
+
+        # Act
+        result = await presenter._update_submitters_async(
+            proposal_id=1,
+            other_submitter=(SubmitterType.MAYOR, "田中市長"),
+        )
+
+        # Assert
+        assert result.success is True
+        assert result.submitters is not None
+        assert len(result.submitters) == 1
+        assert result.submitters[0].raw_name == "田中市長"
+
+    async def test_update_submitters_clear(self, presenter):
+        """提出者をクリアできることを確認"""
+        from src.application.usecases.manage_proposal_submitter_usecase import (
+            UpdateSubmittersOutputDTO,
+        )
+
+        # Arrange
+        mock_submitter_usecase = AsyncMock()
+        presenter.manage_submitter_usecase = mock_submitter_usecase
+
+        mock_submitter_usecase.update_submitters.return_value = (
+            UpdateSubmittersOutputDTO(
+                success=True,
+                message="提出者をクリアしました",
+                submitters=[],
+            )
+        )
+
+        # Act
+        result = await presenter._update_submitters_async(
+            proposal_id=1,
+            # 何も指定しない
+        )
+
+        # Assert
+        assert result.success is True
+        assert result.submitters == []
+
+    async def test_update_submitters_failure(self, presenter):
+        """提出者更新の失敗を確認"""
+        from src.application.usecases.manage_proposal_submitter_usecase import (
+            UpdateSubmittersOutputDTO,
+        )
+
+        # Arrange
+        mock_submitter_usecase = AsyncMock()
+        presenter.manage_submitter_usecase = mock_submitter_usecase
+
+        mock_submitter_usecase.update_submitters.return_value = (
+            UpdateSubmittersOutputDTO(
+                success=False,
+                message="議案ID 999 が見つかりません",
+            )
+        )
+
+        # Act
+        result = await presenter._update_submitters_async(
+            proposal_id=999,
+            politician_ids=[10],
+        )
+
+        # Assert
+        assert result.success is False
+        assert "見つかりません" in result.message
