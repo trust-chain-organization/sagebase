@@ -11,6 +11,7 @@ import streamlit as st
 from src.application.dtos.proposal_parliamentary_group_judge_dto import (
     ProposalParliamentaryGroupJudgeDTO,
 )
+from src.common.logging import get_logger
 from src.domain.entities.extracted_proposal_judge import ExtractedProposalJudge
 from src.domain.entities.proposal import Proposal
 from src.domain.entities.proposal_judge import ProposalJudge
@@ -21,6 +22,9 @@ from src.interfaces.web.streamlit.presenters.politician_presenter import (
 from src.interfaces.web.streamlit.presenters.proposal_presenter import ProposalPresenter
 from src.interfaces.web.streamlit.utils.error_handler import handle_ui_error
 from src.interfaces.web.streamlit.views.politicians_view import PREFECTURES
+
+
+logger = get_logger(__name__)
 
 
 # 提出者種別のアイコンマッピング
@@ -251,8 +255,8 @@ def render_new_proposal_form(presenter: ProposalPresenter) -> None:
                     key = f"{created_pol_name} (ID: {created_pol_id})"
                     if key in politician_opts:
                         default_selections = [key]
-                    del st.session_state["created_politician_id"]
-                    del st.session_state["created_politician_name"]
+                    st.session_state.pop("created_politician_id", None)
+                    st.session_state.pop("created_politician_name", None)
 
                 col_pol, col_btn = st.columns([4, 1])
                 with col_pol:
@@ -271,6 +275,7 @@ def render_new_proposal_form(presenter: ProposalPresenter) -> None:
                     politician_opts[name] for name in selected_pols_new
                 ]
             except Exception:
+                logger.exception("議員情報の読み込みに失敗")
                 st.warning("議員情報の読み込みに失敗しました")
 
         elif selected_type_new == "parliamentary_group":
@@ -314,6 +319,7 @@ def render_new_proposal_form(presenter: ProposalPresenter) -> None:
                     )
                     meeting_id = meeting_options[selected_meeting]
                 except Exception:
+                    logger.exception("会議一覧の読み込みに失敗")
                     meeting_id = None
                     st.warning("会議一覧の読み込みに失敗しました")
 
@@ -330,6 +336,7 @@ def render_new_proposal_form(presenter: ProposalPresenter) -> None:
                     )
                     conference_id = conference_options[selected_conference]
                 except Exception:
+                    logger.exception("会議体一覧の読み込みに失敗")
                     conference_id = None
                     st.warning("会議体一覧の読み込みに失敗しました")
 
@@ -356,6 +363,7 @@ def render_new_proposal_form(presenter: ProposalPresenter) -> None:
                                 submitter_name_new = pg.name
                                 break
                 except Exception:
+                    logger.exception("会派情報の読み込みに失敗")
                     st.warning("会派情報の読み込みに失敗しました")
 
             submitted = st.form_submit_button("登録")
@@ -516,6 +524,7 @@ def render_submitters_display(presenter: ProposalPresenter, proposal: Proposal) 
             st.markdown("**提出者**: 未設定")
 
     except Exception:
+        logger.exception("提出者情報の読み込みに失敗")
         st.markdown("**提出者**: （読み込みエラー）")
 
 
@@ -658,8 +667,8 @@ def render_edit_proposal_form(presenter: ProposalPresenter, proposal: Proposal) 
                     key = f"{created_pol_name} (ID: {created_pol_id})"
                     if key in politician_options and key not in default_selections:
                         default_selections.append(key)
-                    del st.session_state["created_politician_id"]
-                    del st.session_state["created_politician_name"]
+                    st.session_state.pop("created_politician_id", None)
+                    st.session_state.pop("created_politician_name", None)
 
                 col_pol, col_btn = st.columns([4, 1])
                 with col_pol:
@@ -678,6 +687,7 @@ def render_edit_proposal_form(presenter: ProposalPresenter, proposal: Proposal) 
                     politician_options[name] for name in selected_pols
                 ]
             except Exception:
+                logger.exception("議員情報の読み込みに失敗")
                 st.warning("議員情報の読み込みに失敗しました")
 
         elif selected_type == "parliamentary_group":
@@ -714,6 +724,7 @@ def render_edit_proposal_form(presenter: ProposalPresenter, proposal: Proposal) 
                             submitter_name = pg.name
                             break
             except Exception:
+                logger.exception("会派情報の読み込みに失敗")
                 st.warning("会派情報の読み込みに失敗しました")
 
         elif selected_type in ("mayor", "committee", "other"):
@@ -777,6 +788,7 @@ def render_edit_proposal_form(presenter: ProposalPresenter, proposal: Proposal) 
                     )
                     meeting_id = meeting_options[selected_meeting]
                 except Exception:
+                    logger.exception("会議一覧の読み込みに失敗")
                     meeting_id = proposal.meeting_id
                     st.warning("会議一覧の読み込みに失敗しました")
 
@@ -800,6 +812,7 @@ def render_edit_proposal_form(presenter: ProposalPresenter, proposal: Proposal) 
                     )
                     conference_id = conference_options[selected_conference]
                 except Exception:
+                    logger.exception("会議体一覧の読み込みに失敗")
                     conference_id = proposal.conference_id
                     st.warning("会議体一覧の読み込みに失敗しました")
 
