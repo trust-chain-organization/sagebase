@@ -132,7 +132,7 @@ def render_proposals_page() -> None:
 
     # Create tabs
     tab1, tab2, tab3, tab4 = st.tabs(
-        ["議案管理", "LLM抽出結果", "確定賛否情報", "会派賛否"]
+        ["議案管理", "LLM抽出結果", "確定賛否情報", "賛否"]
     )
 
     with tab1:
@@ -1150,7 +1150,7 @@ JUDGMENT_OPTIONS = ["賛成", "反対", "棄権", "欠席"]
 
 def render_parliamentary_group_judges_tab(presenter: ProposalPresenter) -> None:
     """Render the parliamentary group judges tab."""
-    st.subheader("会派賛否")
+    st.subheader("賛否")
     st.markdown("会派単位の賛否情報を手動で登録・管理します。")
 
     # 議案選択
@@ -1191,27 +1191,27 @@ def render_parliamentary_group_judges_tab(presenter: ProposalPresenter) -> None:
             if selected_proposal.conference_id:
                 st.markdown(f"**会議体ID**: {selected_proposal.conference_id}")
 
-        # 会派賛否一覧
+        # 賛否一覧
         render_parliamentary_group_judges_list(presenter, proposal_id)
 
         # 新規登録フォーム
         render_parliamentary_group_judge_form(presenter, proposal_id)
 
     except Exception as e:
-        handle_ui_error(e, "会派賛否タブの読み込み")
+        handle_ui_error(e, "賛否タブの読み込み")
 
 
 def render_parliamentary_group_judges_list(
     presenter: ProposalPresenter, proposal_id: int
 ) -> None:
     """Render parliamentary group judges list for a proposal."""
-    st.markdown("### 会派賛否一覧")
+    st.markdown("### 賛否一覧")
 
     try:
         judges = presenter.load_parliamentary_group_judges(proposal_id)
 
         if not judges:
-            st.info("この議案に登録された会派賛否はありません。")
+            st.info("この議案に登録された賛否はありません。")
             return
 
         # 統計情報
@@ -1222,29 +1222,54 @@ def render_parliamentary_group_judges_list(
             render_parliamentary_group_judge_row(presenter, judge, proposal_id)
 
     except Exception as e:
-        handle_ui_error(e, "会派賛否一覧の読み込み")
+        handle_ui_error(e, "賛否一覧の読み込み")
 
 
 def render_parliamentary_group_judge_statistics(
     judges: list[ProposalParliamentaryGroupJudgeDTO],
 ) -> None:
     """Render statistics for parliamentary group judges."""
-    # 賛否ごとの集計
-    judgment_counts: dict[str, int] = {}
+    # 賛否ごとの集計（会派数/政治家数を正しくカウント）
+    judgment_pg_counts: dict[str, int] = {}  # 会派数
+    judgment_pol_counts: dict[str, int] = {}  # 政治家数
     total_members = 0
 
     for judge in judges:
         judgment = judge.judgment
-        judgment_counts[judgment] = judgment_counts.get(judgment, 0) + 1
+        if judge.is_parliamentary_group_judge():
+            # 会派賛否: 紐づく会派の数をカウント
+            pg_count = len(judge.parliamentary_group_ids)
+            judgment_pg_counts[judgment] = (
+                judgment_pg_counts.get(judgment, 0) + pg_count
+            )
+        else:
+            # 政治家賛否: 紐づく政治家の数をカウント
+            pol_count = len(judge.politician_ids)
+            judgment_pol_counts[judgment] = (
+                judgment_pol_counts.get(judgment, 0) + pol_count
+            )
         if judge.member_count:
             total_members += judge.member_count
 
-    # 表示
-    cols = st.columns(len(judgment_counts) + 1)
+    # 全ての判定種別を取得
+    all_judgments = set(judgment_pg_counts.keys()) | set(judgment_pol_counts.keys())
 
-    for i, (judgment, count) in enumerate(judgment_counts.items()):
+    if not all_judgments:
+        return
+
+    # 表示
+    cols = st.columns(len(all_judgments) + 1)
+
+    for i, judgment in enumerate(sorted(all_judgments)):
         with cols[i]:
-            st.metric(judgment, f"{count}会派")
+            pg_count = judgment_pg_counts.get(judgment, 0)
+            pol_count = judgment_pol_counts.get(judgment, 0)
+            parts = []
+            if pg_count > 0:
+                parts.append(f"{pg_count}会派")
+            if pol_count > 0:
+                parts.append(f"{pol_count}名")
+            st.metric(judgment, " / ".join(parts) if parts else "-")
 
     with cols[-1]:
         st.metric("総人数", total_members if total_members > 0 else "-")
@@ -1418,7 +1443,7 @@ def render_parliamentary_group_judge_row(
                             else:
                                 st.error(result.message)
                         except Exception as e:
-                            handle_ui_error(e, "会派賛否の更新")
+                            handle_ui_error(e, "賛否の更新")
 
                 st.divider()
 
@@ -1464,7 +1489,7 @@ def render_parliamentary_group_judge_row(
                                 else:
                                     st.error(result.message)
                             except Exception as e:
-                                handle_ui_error(e, "会派賛否の削除")
+                                handle_ui_error(e, "賛否の削除")
                     with col_del2:
                         if st.button(
                             "キャンセル",
