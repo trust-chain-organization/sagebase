@@ -48,6 +48,8 @@ up-detached: _setup_worktree
 	echo "Running database migrations with Alembic..."
 	docker compose {{compose_cmd}} exec sagebase uv run alembic upgrade head 2>&1 || true
 	echo "✅ Migrations complete!"
+	# Load seed data (only on first run)
+	./scripts/load-seeds.sh "{{compose_cmd}}"
 	echo "Containers started in detached mode"
 	echo "Run 'just logs' to view logs"
 
@@ -63,6 +65,8 @@ up-fast: _setup_worktree
 	echo "Running database migrations with Alembic..."
 	docker compose {{compose_cmd}} exec sagebase uv run alembic upgrade head 2>&1 || true
 	echo "✅ Migrations complete!"
+	# Load seed data (only on first run)
+	./scripts/load-seeds.sh "{{compose_cmd}}"
 	# Run test-setup.sh if it exists (for initial database setup)
 	if [ -f scripts/test-setup.sh ] && docker compose {{compose_cmd}} exec postgres psql -U sagebase_user -d sagebase_db -c "SELECT COUNT(*) FROM meetings;" 2>/dev/null | grep -q "0"; then
 		echo "Setting up test data..."
@@ -104,6 +108,8 @@ up: _setup_worktree
 	echo "Running database migrations with Alembic..."
 	docker compose {{compose_cmd}} exec sagebase uv run alembic upgrade head 2>&1 || true
 	echo "✅ Migrations complete!"
+	# Load seed data (only on first run)
+	./scripts/load-seeds.sh "{{compose_cmd}}"
 	# Note: Playwright is pre-installed in Dockerfile, no need to install here
 	# Run test-setup.sh if it exists (for initial database setup)
 	if [ -f scripts/test-setup.sh ] && docker compose {{compose_cmd}} exec postgres psql -U sagebase_user -d sagebase_db -c "SELECT COUNT(*) FROM meetings;" 2>/dev/null | grep -q "0"; then

@@ -1,4 +1,4 @@
-# ADR 0006: マイグレーションのAlembic統一
+# ADR 0006: マイグレーションのAlembic完全統一
 
 ## Status
 
@@ -23,55 +23,93 @@ Sagebaseプロジェクトでは、データベースマイグレーションに
 ### 問題
 
 - **開発者の混乱**: 新しいマイグレーションをどちらの方式で作成すべきか不明確
-- **二重管理**: 一部のマイグレーションが両方式で重複
+- **二重管理**: 一部のマイグレーションが両方式で重複、init.sqlとの同期維持が必要
 - **CI環境との不整合**: ローカルとCIで異なるマイグレーション適用方法
 - **ロールバック不可**: レガシー方式ではスキーマ変更を元に戻せない
+- **Single Source of Truthの欠如**: init.sqlとAlembic migrationsの両方にスキーマ定義が存在
 
 ## Decision
 
 ### 決定事項
 
-1. **Alembicに統一**: 新規マイグレーションは全てAlembicで管理
-2. **init.sqlの更新**: レガシーマイグレーション（001〜048）とAlembicマイグレーション（003〜007）を統合した完全なスキーマを `init.sql` に反映
-3. **レガシーファイルの削除**: `database/migrations/` を削除（履歴はgitに残る）
-4. **migrate-legacyの削除**: justfileの `migrate-legacy` コマンドを削除
+1. **Alembicを唯一のスキーマ定義源（Single Source of Truth）とする**
+2. **init.sqlは最小限のブートストラップのみ**（extensions + enum型）
+3. **Migration 001で完全なスキーマを作成**
+4. **シードファイルはAlembic実行後に読み込む**
+5. **レガシーファイルの削除**: `database/migrations/` を削除
+6. **migrate-legacyの削除**: justfileの `migrate-legacy` コマンドを削除
+
+### アーキテクチャ
+
+```
+Database Initialization Flow:
+┌─────────────────────────────────────────────────────────────┐
+│ 1. PostgreSQL起動                                           │
+│    └─ init.sql: Extensions + ENUM型のみ作成                │
+├─────────────────────────────────────────────────────────────┤
+│ 2. alembic upgrade head                                     │
+│    ├─ 001_baseline.py: 全テーブル・インデックス・トリガー  │
+│    ├─ 002_example.py: (例示用、変更なし)                   │
+│    ├─ 003_update_proposals.py: proposals変更               │
+│    ├─ 004_create_operation_logs.py: 操作ログ               │
+│    ├─ 005_add_conference_id.py: submitters拡張             │
+│    ├─ 006_create_relations.py: Many-to-Many構造            │
+│    └─ 007_reset_sequence.py: シーケンスリセット            │
+├─────────────────────────────────────────────────────────────┤
+│ 3. load-seeds.sh                                            │
+│    └─ シードファイル読み込み（初回のみ）                   │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ### 具体的な変更
 
-#### init.sql
-- 全てのテーブル定義を最新状態に更新
-- レガシーマイグレーションで追加されたカラム、インデックス、制約を統合
-- Alembicマイグレーションの変更も反映（proposals.content → titleなど）
+#### init.sql / init_ci.sql
+- **Before**: 完全なスキーマ定義（887行）
+- **After**: 最小限のブートストラップ（25行）
+  - `CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`
+  - `CREATE TYPE entity_type AS ENUM (...)`
+
+#### Migration 001 (001_baseline.py)
+- **Before**: 空（既存スキーマのマーカーのみ）
+- **After**: 完全なスキーマ作成（780行）
+  - 全テーブル定義
+  - 全インデックス
+  - 全トリガー関数・トリガー
+  - 全テーブルコメント
 
 #### docker-compose.yml
-- `02_run_migrations.sql` のマウントを削除
-- `database/migrations/` のマウントを削除
-- シードファイルの番号を再採番（02〜07）
+- シードファイルのマウントを削除（docker-entrypoint-initdb.dから）
+- init.sqlのみマウント
+
+#### justfile
+- `./scripts/load-seeds.sh` を Alembic 実行後に呼び出し
+- `up`, `up-fast`, `up-detached` 全てで実行
 
 #### CI環境
-- `init_ci.sql` 適用後に `alembic stamp head` を実行
-- Alembicが最新バージョンとして認識するよう設定
+- `alembic stamp head` → `alembic upgrade head` に変更
 
 ## Consequences
 
 ### 利点
 
-1. **一元管理**: マイグレーションの管理方法が統一され、開発者の混乱を解消
-2. **ロールバック可能**: Alembicの `downgrade` 機能で安全にスキーマ変更を戻せる
-3. **CI/CD改善**: ローカルとCI環境で同じマイグレーション方式を使用
-4. **新規環境構築の簡素化**: `init.sql` + `alembic upgrade head` のみで最新状態に
+1. **Single Source of Truth**: スキーマ定義はAlembic migrationsのみ
+2. **一元管理**: マイグレーションの管理方法が統一され、開発者の混乱を解消
+3. **ロールバック可能**: Alembicの `downgrade` 機能で安全にスキーマ変更を戻せる
+4. **CI/CD改善**: ローカルとCI環境で完全に同じマイグレーション方式を使用
+5. **同期不要**: init.sqlとAlembicの同期維持が不要に
 
 ### トレードオフ
 
 1. **既存環境の移行作業**: 既存のデータベースでは `alembic stamp head` の実行が必要
 2. **履歴の断絶**: レガシーマイグレーションの履歴はAlembicでは追跡されない（gitの履歴で参照可能）
+3. **初回起動時の処理増加**: Alembic + シード読み込みで若干時間がかかる
 
 ### 移行ガイド
 
 #### 新規環境
 特別な対応は不要。`just up` で自動的に最新スキーマが構築される。
 
-#### 既存環境
+#### 既存環境（この変更前のスキーマがある場合）
 既にデータがある環境では、以下のコマンドでAlembicのバージョン管理を開始：
 
 ```bash
