@@ -439,6 +439,52 @@ class TestParliamentaryGroupRepositoryIntegration:
         assert updated_again.is_active is False
         assert updated_again.name == "更新後会派"  # Unchanged
 
+    @pytest.mark.asyncio
+    async def test_create_multiple_groups_no_id_collision(
+        self, db_session, setup_test_data, group_repository
+    ):
+        """Issue #1036: 連続して議員団を作成してもIDが衝突しないことを確認
+
+        シーケンスが正しく機能していれば、連続作成でもユニークなIDが割り当てられる。
+        """
+        conference_id = setup_test_data["conference_id"]
+        created_ids = []
+
+        # 複数の議員団を連続して作成
+        for i in range(5):
+            group = ParliamentaryGroup(
+                name=f"シーケンステスト会派{i + 1}",
+                conference_id=conference_id,
+                is_active=True,
+            )
+            created_group = await group_repository.create(group)
+            assert created_group.id is not None
+            assert created_group.id not in created_ids, (
+                f"ID {created_group.id} が重複しています"
+            )
+            created_ids.append(created_group.id)
+
+        # すべてのIDがユニークであることを確認
+        assert len(created_ids) == len(set(created_ids))
+
+    @pytest.mark.asyncio
+    async def test_create_group_with_none_id(
+        self, db_session, setup_test_data, group_repository
+    ):
+        """Issue #1036: id=Noneでエンティティを作成してもエラーにならないことを確認"""
+        group = ParliamentaryGroup(
+            id=None,
+            name="IDがNoneの会派",
+            conference_id=setup_test_data["conference_id"],
+            is_active=True,
+        )
+
+        created_group = await group_repository.create(group)
+
+        assert created_group.id is not None
+        assert created_group.id > 0
+        assert created_group.name == "IDがNoneの会派"
+
 
 @pytest.fixture
 def setup_membership_group(db_session, setup_test_data, group_repository):

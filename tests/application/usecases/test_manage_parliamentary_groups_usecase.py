@@ -476,3 +476,84 @@ class TestManageParliamentaryGroupsUseCase:
         # Assert
         assert result.success is True
         mock_parliamentary_group_repository.delete.assert_called_once_with(1)
+
+    @pytest.mark.asyncio
+    async def test_create_parliamentary_group_with_none_id(
+        self, use_case, mock_parliamentary_group_repository
+    ):
+        """Issue #1036: 新規作成時にIDがNoneで渡されることを確認。
+
+        シーケンス衝突を防ぐため、新規エンティティのIDはNoneである必要がある。
+        """
+        # Arrange
+        mock_parliamentary_group_repository.get_by_name_and_conference.return_value = (
+            None
+        )
+        created_group = ParliamentaryGroup(
+            id=10,
+            name="新しい会派",
+            conference_id=1,
+            url="https://example.com",
+            description="テスト会派",
+            is_active=True,
+        )
+        mock_parliamentary_group_repository.create.return_value = created_group
+
+        input_dto = CreateParliamentaryGroupInputDto(
+            name="新しい会派",
+            conference_id=1,
+            url="https://example.com",
+            description="テスト会派",
+            is_active=True,
+        )
+
+        # Act
+        result = await use_case.create_parliamentary_group(input_dto)
+
+        # Assert
+        assert result.success is True
+        # リポジトリに渡されるエンティティのIDがNoneであることを確認
+        create_call = mock_parliamentary_group_repository.create.call_args
+        created_entity = create_call[0][0]
+        assert created_entity.id is None, "新規作成時のエンティティIDはNoneであるべき"
+        assert created_entity.name == "新しい会派"
+        assert created_entity.conference_id == 1
+
+    @pytest.mark.asyncio
+    async def test_create_multiple_parliamentary_groups_sequentially(
+        self, use_case, mock_parliamentary_group_repository
+    ):
+        """Issue #1036: 連続して議員団を作成できることを確認。
+
+        シーケンスが正しく機能している場合、連続作成でもIDが衝突しない。
+        """
+        # Arrange
+        mock_parliamentary_group_repository.get_by_name_and_conference.return_value = (
+            None
+        )
+
+        # 連続して異なるIDで作成される
+        created_groups = [
+            ParliamentaryGroup(
+                id=i + 1,
+                name=f"会派{i + 1}",
+                conference_id=1,
+                is_active=True,
+            )
+            for i in range(3)
+        ]
+        mock_parliamentary_group_repository.create.side_effect = created_groups
+
+        # Act & Assert
+        for i in range(3):
+            input_dto = CreateParliamentaryGroupInputDto(
+                name=f"会派{i + 1}",
+                conference_id=1,
+                is_active=True,
+            )
+            result = await use_case.create_parliamentary_group(input_dto)
+            assert result.success is True
+            assert result.parliamentary_group.id == i + 1
+
+        # 3回呼び出されたことを確認
+        assert mock_parliamentary_group_repository.create.call_count == 3

@@ -211,7 +211,6 @@ class ManageParliamentaryGroupsUseCase:
 
             # Create new parliamentary group
             parliamentary_group = ParliamentaryGroup(
-                id=0,  # Will be assigned by database
                 name=input_dto.name,
                 conference_id=input_dto.conference_id,
                 url=input_dto.url,
@@ -416,7 +415,15 @@ class ManageParliamentaryGroupsUseCase:
             seed_content += "    conference_id = EXCLUDED.conference_id,\n"
             seed_content += "    url = EXCLUDED.url,\n"
             seed_content += "    description = EXCLUDED.description,\n"
-            seed_content += "    is_active = EXCLUDED.is_active;\n"
+            seed_content += "    is_active = EXCLUDED.is_active;\n\n"
+
+            # Issue #1036: シーケンスリセットを追加（ID衝突防止）
+            seed_content += "-- Reset sequence to max id + 1 (Issue #1036)\n"
+            seed_content += "SELECT setval('parliamentary_groups_id_seq',\n"
+            seed_content += (
+                "    COALESCE((SELECT MAX(id) FROM parliamentary_groups), 0) + 1, "
+                "false);\n"
+            )
 
             # Save to file
             file_path = "database/seed_parliamentary_groups_generated.sql"
