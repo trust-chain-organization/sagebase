@@ -211,7 +211,6 @@ class ManageParliamentaryGroupsUseCase:
 
             # Create new parliamentary group
             parliamentary_group = ParliamentaryGroup(
-                id=0,  # Will be assigned by database
                 name=input_dto.name,
                 conference_id=input_dto.conference_id,
                 url=input_dto.url,

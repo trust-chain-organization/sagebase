@@ -51,5 +51,6 @@
 \i /docker-entrypoint-initdb.d/02_migrations/046_create_proposal_submitters.sql
 \i /docker-entrypoint-initdb.d/02_migrations/047_extend_proposal_parliamentary_group_judges.sql
 \i /docker-entrypoint-initdb.d/02_migrations/048_create_proposal_judge_relations.sql
+\i /docker-entrypoint-initdb.d/02_migrations/049_reset_parliamentary_groups_sequence.sql
 
 \echo 'Migrations completed.'
