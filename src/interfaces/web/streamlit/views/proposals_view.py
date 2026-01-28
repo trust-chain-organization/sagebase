@@ -15,8 +15,12 @@ from src.domain.entities.extracted_proposal_judge import ExtractedProposalJudge
 from src.domain.entities.proposal import Proposal
 from src.domain.entities.proposal_judge import ProposalJudge
 from src.domain.value_objects.submitter_type import SubmitterType
+from src.interfaces.web.streamlit.presenters.politician_presenter import (
+    PoliticianPresenter,
+)
 from src.interfaces.web.streamlit.presenters.proposal_presenter import ProposalPresenter
 from src.interfaces.web.streamlit.utils.error_handler import handle_ui_error
+from src.interfaces.web.streamlit.views.politicians_view import PREFECTURES
 
 
 # 提出者種別のアイコンマッピング
@@ -48,6 +52,74 @@ def get_submitter_type_icon(submitter_type: str) -> str:
 def get_submitter_type_label(submitter_type: str) -> str:
     """提出者種別の日本語ラベルを取得する."""
     return SUBMITTER_TYPE_LABELS.get(submitter_type, "その他")
+
+
+@st.dialog("政治家を新規作成")
+def show_create_politician_dialog() -> None:
+    """政治家作成ダイアログを表示する."""
+    politician_presenter = PoliticianPresenter()
+
+    # 政党リストを取得
+    parties = politician_presenter.get_all_parties()
+    party_options = ["無所属"] + [p.name for p in parties]
+    party_map = {p.name: p.id for p in parties}
+
+    # 都道府県リスト（空文字を除く）
+    prefectures = [p for p in PREFECTURES if p]
+
+    name = st.text_input("名前 *", key="dialog_politician_name")
+    prefecture = st.selectbox(
+        "選挙区都道府県 *", prefectures, key="dialog_politician_prefecture"
+    )
+    selected_party = st.selectbox("政党", party_options, key="dialog_politician_party")
+    district = st.text_input(
+        "選挙区 *", placeholder="例: ○○市議会", key="dialog_politician_district"
+    )
+    profile_url = st.text_input(
+        "プロフィールURL（任意）", key="dialog_politician_profile_url"
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("登録", type="primary", use_container_width=True):
+            # バリデーション
+            if not name:
+                st.error("名前を入力してください")
+                return
+            if not prefecture:
+                st.error("選挙区都道府県を選択してください")
+                return
+            if not district:
+                st.error("選挙区を入力してください")
+                return
+
+            # 政党IDを取得
+            party_id = (
+                party_map.get(selected_party) if selected_party != "無所属" else None
+            )
+
+            # 政治家を作成
+            success, politician_id, error = politician_presenter.create(
+                name=name,
+                prefecture=prefecture,
+                party_id=party_id,
+                district=district,
+                profile_url=profile_url if profile_url else None,
+                user_id=None,
+            )
+
+            if success and politician_id:
+                st.success(f"政治家「{name}」を作成しました（ID: {politician_id}）")
+                # 作成した政治家情報をsession_stateに保存
+                st.session_state["created_politician_id"] = politician_id
+                st.session_state["created_politician_name"] = name
+                st.rerun()
+            else:
+                st.error(f"登録に失敗しました: {error}")
+
+    with col2:
+        if st.button("キャンセル", use_container_width=True):
+            st.rerun()
 
 
 def render_proposals_page() -> None:
@@ -171,11 +243,33 @@ def render_new_proposal_form(presenter: ProposalPresenter) -> None:
                 politician_opts.update(
                     {f"{p.name} (ID: {p.id})": p.id for p in politicians if p.id}
                 )
-                selected_pol_new = st.selectbox(
-                    "議員を選択",
-                    options=list(politician_opts.keys()),
-                    key="new_submitter_politician",
-                )
+
+                # 作成直後の政治家を選択肢の先頭に追加
+                created_pol_id = st.session_state.get("created_politician_id")
+                created_pol_name = st.session_state.get("created_politician_name")
+                default_idx = 0
+                if created_pol_id and created_pol_name:
+                    # 既に選択肢にあるか確認
+                    key = f"{created_pol_name} (ID: {created_pol_id})"
+                    if key in politician_opts:
+                        default_idx = list(politician_opts.keys()).index(key)
+                    # session_stateをクリア
+                    del st.session_state["created_politician_id"]
+                    del st.session_state["created_politician_name"]
+
+                col_pol, col_btn = st.columns([4, 1])
+                with col_pol:
+                    selected_pol_new = st.selectbox(
+                        "議員を選択",
+                        options=list(politician_opts.keys()),
+                        index=default_idx,
+                        key="new_submitter_politician",
+                    )
+                with col_btn:
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    if st.button("➕ 新規", key="new_politician_btn"):
+                        show_create_politician_dialog()
+
                 submitter_politician_id_new = politician_opts[selected_pol_new]
                 if submitter_politician_id_new:
                     for p in politicians:
@@ -542,19 +636,35 @@ def render_edit_proposal_form(presenter: ProposalPresenter, proposal: Proposal) 
                     {f"{p.name} (ID: {p.id})": p.id for p in politicians if p.id}
                 )
 
+                # 作成直後の政治家を選択
+                created_pol_id = st.session_state.get("created_politician_id")
+                created_pol_name = st.session_state.get("created_politician_name")
                 current_pol_idx = 0
-                if current_submitter and current_submitter.politician_id:
+                if created_pol_id and created_pol_name:
+                    key = f"{created_pol_name} (ID: {created_pol_id})"
+                    if key in politician_options:
+                        current_pol_idx = list(politician_options.keys()).index(key)
+                    del st.session_state["created_politician_id"]
+                    del st.session_state["created_politician_name"]
+                elif current_submitter and current_submitter.politician_id:
                     for idx, (_, pid) in enumerate(politician_options.items()):
                         if pid == current_submitter.politician_id:
                             current_pol_idx = idx
                             break
 
-                selected_pol = st.selectbox(
-                    "議員を選択",
-                    options=list(politician_options.keys()),
-                    index=current_pol_idx,
-                    key=f"edit_submitter_politician_{proposal.id}",
-                )
+                col_pol, col_btn = st.columns([4, 1])
+                with col_pol:
+                    selected_pol = st.selectbox(
+                        "議員を選択",
+                        options=list(politician_options.keys()),
+                        index=current_pol_idx,
+                        key=f"edit_submitter_politician_{proposal.id}",
+                    )
+                with col_btn:
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    if st.button("➕ 新規", key=f"edit_politician_btn_{proposal.id}"):
+                        show_create_politician_dialog()
+
                 submitter_politician_id = politician_options[selected_pol]
                 if submitter_politician_id:
                     for p in politicians:
