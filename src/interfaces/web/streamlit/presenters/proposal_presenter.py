@@ -68,6 +68,9 @@ from src.infrastructure.persistence.conference_repository_impl import (
 from src.infrastructure.persistence.extracted_proposal_judge_repository_impl import (
     ExtractedProposalJudgeRepositoryImpl,
 )
+from src.infrastructure.persistence.governing_body_repository_impl import (
+    GoverningBodyRepositoryImpl,
+)
 from src.infrastructure.persistence.meeting_repository_impl import (
     MeetingRepositoryImpl,
 )
@@ -126,6 +129,7 @@ class ProposalPresenter(CRUDPresenter[list[Proposal]]):
         self.politician_repository = RepositoryAdapter(PoliticianRepositoryImpl)
         self.meeting_repository = RepositoryAdapter(MeetingRepositoryImpl)
         self.conference_repository = RepositoryAdapter(ConferenceRepositoryImpl)
+        self.governing_body_repository = RepositoryAdapter(GoverningBodyRepositoryImpl)
         self.operation_log_repository = RepositoryAdapter(
             ProposalOperationLogRepositoryImpl
         )
@@ -404,6 +408,100 @@ class ProposalPresenter(CRUDPresenter[list[Proposal]]):
         """Load all conferences (async implementation)."""
         conferences = await self.conference_repository.get_all()  # type: ignore[attr-defined]
         return [{"id": c.id, "name": c.name} for c in conferences]
+
+    def load_governing_bodies(self) -> list[dict[str, Any]]:
+        """Load all governing bodies for selection."""
+        return self._run_async(self._load_governing_bodies_async())
+
+    async def _load_governing_bodies_async(self) -> list[dict[str, Any]]:
+        """Load all governing bodies (async implementation)."""
+        governing_bodies = await self.governing_body_repository.get_all()  # type: ignore[attr-defined]
+        return [{"id": g.id, "name": g.name} for g in governing_bodies]
+
+    def build_proposal_related_data_map(
+        self, proposals: list[Proposal]
+    ) -> dict[int, dict[str, str | None]]:
+        """議案一覧から、会議体名・開催主体名のマップを構築する.
+
+        N+1問題を避けるため、一括でデータを取得してマップ化する。
+
+        Args:
+            proposals: 議案のリスト
+
+        Returns:
+            議案ID -> {"conference_name": str | None, "governing_body_name": str | None}
+        """
+        return self._run_async(self._build_proposal_related_data_map_async(proposals))
+
+    async def _build_proposal_related_data_map_async(
+        self, proposals: list[Proposal]
+    ) -> dict[int, dict[str, str | None]]:
+        """議案一覧から、会議体名・開催主体名のマップを構築する（非同期実装）."""
+        result: dict[int, dict[str, str | None]] = {}
+
+        # 議案からconference_idを収集
+        conference_ids: set[int] = set()
+        meeting_ids: set[int] = set()
+        for p in proposals:
+            if p.conference_id:
+                conference_ids.add(p.conference_id)
+            if p.meeting_id:
+                meeting_ids.add(p.meeting_id)
+
+        # 会議情報を取得してconference_idを追加収集
+        meeting_conference_map: dict[int, int | None] = {}
+        if meeting_ids:
+            for mid in meeting_ids:
+                meeting = await self.meeting_repository.get_by_id(mid)  # type: ignore[attr-defined]
+                if meeting:
+                    meeting_conference_map[mid] = meeting.conference_id
+                    if meeting.conference_id:
+                        conference_ids.add(meeting.conference_id)
+
+        # 会議体情報を取得
+        conference_map: dict[int, dict[str, Any]] = {}
+        governing_body_ids: set[int] = set()
+        for cid in conference_ids:
+            conference = await self.conference_repository.get_by_id(cid)  # type: ignore[attr-defined]
+            if conference:
+                conference_map[cid] = {
+                    "name": conference.name,
+                    "governing_body_id": conference.governing_body_id,
+                }
+                governing_body_ids.add(conference.governing_body_id)
+
+        # 開催主体情報を取得
+        governing_body_map: dict[int, str] = {}
+        for gid in governing_body_ids:
+            governing_body = await self.governing_body_repository.get_by_id(gid)  # type: ignore[attr-defined]
+            if governing_body:
+                governing_body_map[gid] = governing_body.name
+
+        # 各議案のマップを構築
+        for p in proposals:
+            if p.id is None:
+                continue
+
+            conference_id = p.conference_id
+            if not conference_id and p.meeting_id:
+                conference_id = meeting_conference_map.get(p.meeting_id)
+
+            conference_name: str | None = None
+            governing_body_name: str | None = None
+
+            if conference_id and conference_id in conference_map:
+                conf_data = conference_map[conference_id]
+                conference_name = conf_data["name"]
+                gb_id = conf_data["governing_body_id"]
+                if gb_id and gb_id in governing_body_map:
+                    governing_body_name = governing_body_map[gb_id]
+
+            result[p.id] = {
+                "conference_name": conference_name,
+                "governing_body_name": governing_body_name,
+            }
+
+        return result
 
     def to_dataframe(self, proposals: list[Proposal]) -> pd.DataFrame:
         """Convert proposals to DataFrame for display."""

@@ -165,6 +165,7 @@ def render_proposals_tab(presenter: ProposalPresenter) -> None:
             "すべて": "all",
             "会議別": "by_meeting",
             "会議体別": "by_conference",
+            "開催主体別": "by_governing_body",
         }
         selected_filter = st.selectbox(
             "表示フィルター", options=list(filter_options.keys()), index=0
@@ -172,8 +173,9 @@ def render_proposals_tab(presenter: ProposalPresenter) -> None:
         filter_type = filter_options[selected_filter]
 
     # Additional filters based on selection
-    meeting_filter = None
-    conference_filter = None
+    meeting_filter: int | None = None
+    conference_filter: int | None = None
+    governing_body_filter: int | None = None
 
     if filter_type == "by_meeting":
         with col2:
@@ -181,19 +183,96 @@ def render_proposals_tab(presenter: ProposalPresenter) -> None:
 
     elif filter_type == "by_conference":
         with col2:
-            conference_filter = st.number_input("会議体ID", min_value=1, step=1)
+            try:
+                conferences = presenter.load_conferences()
+                conference_options: dict[str, int | None] = {"選択してください": None}
+                conference_options.update(
+                    {f"{c['name']} (ID: {c['id']})": c["id"] for c in conferences}
+                )
+                selected_conference = st.selectbox(
+                    "会議体",
+                    options=list(conference_options.keys()),
+                    key="filter_conference_select",
+                )
+                conference_filter = conference_options[selected_conference]
+            except Exception:
+                logger.exception("会議体一覧の読み込みに失敗")
+                conference_filter = st.number_input("会議体ID", min_value=1, step=1)
+
+    elif filter_type == "by_governing_body":
+        with col2:
+            try:
+                governing_bodies = presenter.load_governing_bodies()
+                governing_body_options: dict[str, int | None] = {
+                    "選択してください": None
+                }
+                governing_body_options.update(
+                    {f"{g['name']} (ID: {g['id']})": g["id"] for g in governing_bodies}
+                )
+                selected_governing_body = st.selectbox(
+                    "開催主体",
+                    options=list(governing_body_options.keys()),
+                    key="filter_governing_body_select",
+                )
+                governing_body_filter = governing_body_options[selected_governing_body]
+            except Exception:
+                logger.exception("開催主体一覧の読み込みに失敗")
+                st.warning("開催主体一覧の読み込みに失敗しました")
 
     # Load data
     try:
+        # 開催主体フィルターの場合は、その開催主体に属する会議体を取得してフィルター
+        actual_conference_filter = conference_filter
+        if filter_type == "by_governing_body" and governing_body_filter:
+            # 開催主体に属する会議体を取得
+            conferences = presenter.load_conferences()
+            # 注: conferencesにはgoverning_body_idが含まれていないので、
+            # 現状は会議体を全件取得して、関連データマップでフィルターする
+            filter_type = "all"  # まず全件取得して後でフィルター
+            actual_conference_filter = None
+
         result = presenter.load_data_filtered(
             filter_type=filter_type,
             meeting_id=meeting_filter,
-            conference_id=conference_filter,
+            conference_id=actual_conference_filter,
         )
+
+        # Build related data map for display
+        proposals = result.proposals
+        related_data_map: dict[int, dict[str, str | None]] = {}
+        if proposals:
+            related_data_map = presenter.build_proposal_related_data_map(proposals)
+
+            # 開催主体フィルターが指定されている場合は、マップを使ってフィルタリング
+            if governing_body_filter:
+                # 開催主体名を取得
+                try:
+                    governing_bodies = presenter.load_governing_bodies()
+                    target_gb_name: str | None = None
+                    for gb in governing_bodies:
+                        if gb["id"] == governing_body_filter:
+                            target_gb_name = gb["name"]
+                            break
+
+                    if target_gb_name:
+                        proposals = [
+                            p
+                            for p in proposals
+                            if p.id
+                            and related_data_map.get(p.id, {}).get(
+                                "governing_body_name"
+                            )
+                            == target_gb_name
+                        ]
+                except Exception:
+                    logger.exception("開催主体フィルターの適用に失敗")
+
+        # Store related data map in session for use in render functions
+        st.session_state["proposal_related_data_map"] = related_data_map
 
         # Display statistics
         with col3:
-            st.metric("議案数", result.statistics.total)
+            st.metric("議案数", len(proposals))
 
         # New proposal section
         render_new_proposal_form(presenter)
@@ -202,9 +281,9 @@ def render_proposals_tab(presenter: ProposalPresenter) -> None:
         render_scrape_proposal_section(presenter)
 
         # Display proposals list
-        if result.proposals:
+        if proposals:
             st.subheader("議案一覧")
-            for proposal in result.proposals:
+            for proposal in proposals:
                 render_proposal_row(presenter, proposal)
         else:
             st.info("表示する議案がありません。")
@@ -530,6 +609,14 @@ def render_submitters_display(presenter: ProposalPresenter, proposal: Proposal) 
 
 def render_proposal_display(presenter: ProposalPresenter, proposal: Proposal) -> None:
     """Render proposal in display mode."""
+    # Get related data from session state
+    related_data_map: dict[int, dict[str, str | None]] = st.session_state.get(
+        "proposal_related_data_map", {}
+    )
+    related_data = related_data_map.get(proposal.id, {}) if proposal.id else {}
+    conference_name = related_data.get("conference_name")
+    governing_body_name = related_data.get("governing_body_name")
+
     with st.container():
         col1, col2 = st.columns([4, 1])
 
@@ -539,9 +626,17 @@ def render_proposal_display(presenter: ProposalPresenter, proposal: Proposal) ->
 
             col_info1, col_info2 = st.columns(2)
             with col_info1:
-                st.markdown(f"**会議ID**: {proposal.meeting_id or '未設定'}")
+                # 会議体名を表示（取得できない場合はIDを表示）
+                if conference_name:
+                    st.markdown(f"**会議体**: {conference_name}")
+                else:
+                    st.markdown(f"**会議体ID**: {proposal.conference_id or '未設定'}")
             with col_info2:
-                st.markdown(f"**会議体ID**: {proposal.conference_id or '未設定'}")
+                # 開催主体名を表示
+                if governing_body_name:
+                    st.markdown(f"**開催主体**: {governing_body_name}")
+                else:
+                    st.markdown("**開催主体**: 未設定")
 
             # Display submitters with type icons
             render_submitters_display(presenter, proposal)

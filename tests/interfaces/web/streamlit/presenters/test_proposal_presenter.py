@@ -777,3 +777,158 @@ class TestUpdateSubmitters:
         # Assert
         assert result.success is False
         assert "見つかりません" in result.message
+
+
+# ========== Issue #1017: 会議体名・開催主体名表示機能のテスト ==========
+
+
+class TestLoadGoverningBodies:
+    """load_governing_bodiesメソッドのテスト"""
+
+    async def test_load_governing_bodies_success(self, presenter):
+        """開催主体一覧を取得できることを確認"""
+        from src.domain.entities.governing_body import GoverningBody
+
+        # Arrange
+        mock_governing_body_repo = AsyncMock()
+        presenter.governing_body_repository = mock_governing_body_repo
+
+        mock_governing_body_repo.get_all.return_value = [
+            GoverningBody(id=1, name="東京都"),
+            GoverningBody(id=2, name="横浜市"),
+        ]
+
+        # Act
+        result = await presenter._load_governing_bodies_async()
+
+        # Assert
+        assert len(result) == 2
+        assert result[0]["id"] == 1
+        assert result[0]["name"] == "東京都"
+        assert result[1]["id"] == 2
+        assert result[1]["name"] == "横浜市"
+        mock_governing_body_repo.get_all.assert_called_once()
+
+    async def test_load_governing_bodies_empty(self, presenter):
+        """開催主体が空の場合を確認"""
+        # Arrange
+        mock_governing_body_repo = AsyncMock()
+        presenter.governing_body_repository = mock_governing_body_repo
+
+        mock_governing_body_repo.get_all.return_value = []
+
+        # Act
+        result = await presenter._load_governing_bodies_async()
+
+        # Assert
+        assert len(result) == 0
+
+
+class TestBuildProposalRelatedDataMap:
+    """build_proposal_related_data_mapメソッドのテスト"""
+
+    async def test_build_related_data_map_with_conference_id(self, presenter):
+        """conference_idを持つ議案の関連データマップを構築できることを確認"""
+        from src.domain.entities.conference import Conference
+        from src.domain.entities.governing_body import GoverningBody
+        from src.domain.entities.proposal import Proposal
+
+        # Arrange
+        mock_conference_repo = AsyncMock()
+        mock_governing_body_repo = AsyncMock()
+        mock_meeting_repo = AsyncMock()
+        presenter.conference_repository = mock_conference_repo
+        presenter.governing_body_repository = mock_governing_body_repo
+        presenter.meeting_repository = mock_meeting_repo
+
+        proposals = [
+            Proposal(id=1, title="議案A", conference_id=10),
+            Proposal(id=2, title="議案B", conference_id=10),
+        ]
+
+        mock_conference_repo.get_by_id.return_value = Conference(
+            id=10, name="東京都議会本会議", governing_body_id=100
+        )
+        mock_governing_body_repo.get_by_id.return_value = GoverningBody(
+            id=100, name="東京都"
+        )
+
+        # Act
+        result = await presenter._build_proposal_related_data_map_async(proposals)
+
+        # Assert
+        assert 1 in result
+        assert result[1]["conference_name"] == "東京都議会本会議"
+        assert result[1]["governing_body_name"] == "東京都"
+        assert 2 in result
+        assert result[2]["conference_name"] == "東京都議会本会議"
+        assert result[2]["governing_body_name"] == "東京都"
+
+    async def test_build_related_data_map_with_meeting_id(self, presenter):
+        """meeting_idを持つ議案の関連データマップを構築できることを確認"""
+        from src.domain.entities.conference import Conference
+        from src.domain.entities.governing_body import GoverningBody
+        from src.domain.entities.meeting import Meeting
+        from src.domain.entities.proposal import Proposal
+
+        # Arrange
+        mock_conference_repo = AsyncMock()
+        mock_governing_body_repo = AsyncMock()
+        mock_meeting_repo = AsyncMock()
+        presenter.conference_repository = mock_conference_repo
+        presenter.governing_body_repository = mock_governing_body_repo
+        presenter.meeting_repository = mock_meeting_repo
+
+        proposals = [
+            Proposal(id=1, title="議案A", meeting_id=200),
+        ]
+
+        mock_meeting_repo.get_by_id.return_value = Meeting(
+            id=200, name="第1回定例会", conference_id=10
+        )
+        mock_conference_repo.get_by_id.return_value = Conference(
+            id=10, name="横浜市議会", governing_body_id=101
+        )
+        mock_governing_body_repo.get_by_id.return_value = GoverningBody(
+            id=101, name="横浜市"
+        )
+
+        # Act
+        result = await presenter._build_proposal_related_data_map_async(proposals)
+
+        # Assert
+        assert 1 in result
+        assert result[1]["conference_name"] == "横浜市議会"
+        assert result[1]["governing_body_name"] == "横浜市"
+
+    async def test_build_related_data_map_no_related_data(self, presenter):
+        """関連データがない議案の場合を確認"""
+        from src.domain.entities.proposal import Proposal
+
+        # Arrange
+        mock_conference_repo = AsyncMock()
+        mock_governing_body_repo = AsyncMock()
+        mock_meeting_repo = AsyncMock()
+        presenter.conference_repository = mock_conference_repo
+        presenter.governing_body_repository = mock_governing_body_repo
+        presenter.meeting_repository = mock_meeting_repo
+
+        proposals = [
+            Proposal(id=1, title="議案A"),  # conference_id, meeting_idなし
+        ]
+
+        # Act
+        result = await presenter._build_proposal_related_data_map_async(proposals)
+
+        # Assert
+        assert 1 in result
+        assert result[1]["conference_name"] is None
+        assert result[1]["governing_body_name"] is None
+
+    async def test_build_related_data_map_empty_proposals(self, presenter):
+        """空の議案リストの場合を確認"""
+        # Act
+        result = await presenter._build_proposal_related_data_map_async([])
+
+        # Assert
+        assert result == {}
