@@ -23,7 +23,7 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (15)
+# Generated classes (16)
 # #########################################################################
 
 class AttendeesMapping(BaseModel):
@@ -62,6 +62,12 @@ class PageClassification(BaseModel):
     reason: typing.Optional[str] = Field(default=None, description='Reason for classification')
     has_child_links: typing.Optional[bool] = Field(default=None, description='Whether the page has child links')
     has_member_info: typing.Optional[bool] = Field(default=None, description='Whether the page has member information')
+
+class ParliamentaryGroupJudgeExtraction(BaseModel):
+    group_name: typing.Optional[str] = Field(default=None, description='会派名（抽出された生の文字列）')
+    judgment: typing.Optional[types.JudgmentType] = Field(default=None, description='賛否')
+    member_count: typing.Optional[int] = Field(default=None, description='人数（判明している場合）')
+    note: typing.Optional[str] = Field(default=None, description='備考')
 
 class ParliamentaryGroupMember(BaseModel):
     name: typing.Optional[str] = Field(default=None, description='議員名（フルネーム）')

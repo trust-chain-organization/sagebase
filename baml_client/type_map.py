@@ -34,6 +34,9 @@ type_map = {
     "types.PageClassification": types.PageClassification,
     "stream_types.PageClassification": stream_types.PageClassification,
 
+    "types.ParliamentaryGroupJudgeExtraction": types.ParliamentaryGroupJudgeExtraction,
+    "stream_types.ParliamentaryGroupJudgeExtraction": stream_types.ParliamentaryGroupJudgeExtraction,
+
     "types.ParliamentaryGroupMember": types.ParliamentaryGroupMember,
     "stream_types.ParliamentaryGroupMember": stream_types.ParliamentaryGroupMember,
 
@@ -61,5 +64,7 @@ type_map = {
     "types.SpeakerAndSpeechContent": types.SpeakerAndSpeechContent,
     "stream_types.SpeakerAndSpeechContent": stream_types.SpeakerAndSpeechContent,
 
+
+    "types.JudgmentType": types.JudgmentType,
 
 }

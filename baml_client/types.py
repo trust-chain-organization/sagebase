@@ -37,11 +37,17 @@ def get_checks(checks: typing.Dict[CheckName, Check]) -> typing.List[Check]:
 def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
     return all(check.status == "succeeded" for check in get_checks(checks))
 # #########################################################################
-# Generated enums (0)
+# Generated enums (1)
 # #########################################################################
 
+class JudgmentType(str, Enum):
+    FOR = "FOR"
+    AGAINST = "AGAINST"
+    ABSTAIN = "ABSTAIN"
+    ABSENT = "ABSENT"
+
 # #########################################################################
-# Generated classes (15)
+# Generated classes (16)
 # #########################################################################
 
 class AttendeesMapping(BaseModel):
@@ -80,6 +86,12 @@ class PageClassification(BaseModel):
     reason: str = Field(description='Reason for classification')
     has_child_links: bool = Field(description='Whether the page has child links')
     has_member_info: bool = Field(description='Whether the page has member information')
+
+class ParliamentaryGroupJudgeExtraction(BaseModel):
+    group_name: str = Field(description='会派名（抽出された生の文字列）')
+    judgment: JudgmentType = Field(description='賛否')
+    member_count: typing.Optional[int] = Field(default=None, description='人数（判明している場合）')
+    note: typing.Optional[str] = Field(default=None, description='備考')
 
 class ParliamentaryGroupMember(BaseModel):
     name: str = Field(description='議員名（フルネーム）')
